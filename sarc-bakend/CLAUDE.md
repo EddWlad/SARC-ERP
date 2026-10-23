@@ -12,12 +12,13 @@ Spring Boot 4 / Java 25 / PostgreSQL 18. Especificacion funcional: `../documents
 
 ```
 shared/            kernel compartido: error, audit, security, persistence, pagination, time, web,
-                   domain (tipos comunes), storage (archivos), report (PDF/Excel corporativos)
+                   domain (tipos comunes), storage (archivos), report (PDF/Excel corporativos),
+                   catalog (puertos publicos entre modulos), importing (lectura tabular y trabajos)
 modules/<modulo>/
   api/             controller/  request/  response/
   application/     service/  command/  result/  port/
   domain/          model/  policy/  repository/
-  infrastructure/  persistence/  security/  config/  bootstrap/  report/
+  infrastructure/  persistence/  security/  config/  bootstrap/  report/  parser/
 ```
 
 Dependencias: `api -> application -> domain <- infrastructure`.
@@ -26,13 +27,14 @@ Dependencias: `api -> application -> domain <- infrastructure`.
 - `application`: casos de uso, transacciones (`@Transactional`) y autorizacion (`@PreAuthorize`). Conoce puertos, no adaptadores.
 - `infrastructure`: adaptadores (JPA, Spring Session, Spring Security).
 - `api`: controladores y DTOs `record`. Nunca devuelve entidades JPA.
-- Un modulo no importa clases de otro modulo; se comunican por puertos publicos o eventos.
+- Un modulo no importa clases de otro modulo; se comunican por puertos publicos (`shared/catalog`, implementados por el modulo duenio) o eventos.
 
 ## Organizacion de paquetes
 
 - Dentro de cada capa se agrupa por **rol**, nunca por construccion de Java: no hay carpetas `records/` ni `enums/`. Un enum va junto al modelo que describe (`Role`, `UserStatus` en `domain/model`); un record va donde su rol (`request`, `response`, `command`, value object en `model`, `*Properties` en `config`).
 - Cada rol tiene un subpaquete fijo y se crea al aparecer su primera clase: `command` (entrada de un caso de uso), `result` (salida), `port` (interfaz de salida hacia el exterior), `model` (entidades, value objects y enums), `policy` (reglas parametrizables sin identidad), `repository` (puerto de persistencia y sus criterios). No se inventan roles nuevos sin ADR.
-- Cuando `domain/model` supere ~10 clases, se parte por agregado (`model/equipment/`), no por tipo.
+- `domain/model` se parte por agregado (`model/equipment/`) cuando el modulo tiene mas de un agregado raiz; nunca por tipo (ADR 0006).
+- `shared` se organiza por capacidad transversal; solo entra lo que usan dos o mas modulos. `shared/domain`, `shared/catalog` y `shared/pagination` son Java puro (ArchUnit).
 - Visibilidad minima: lo que cruza paquetes (DTOs, comandos, puertos) es `public`; controladores, servicios auxiliares y adaptadores quedan package-private.
 - Los controladores viven en `api.controller` (ArchUnit lo verifica).
 

@@ -5,8 +5,8 @@ import java.util.UUID;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ExternalIdentity;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ExternalPlatform;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.externalidentity.ExternalIdentity;
+import com.tidsec.sarc_bakend.shared.domain.ExternalPlatform;
 
 public record ExternalIdentityResponse(
 		UUID id,

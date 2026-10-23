@@ -2,7 +2,7 @@ package com.tidsec.sarc_bakend.modules.inventory.application.result;
 
 import java.util.UUID;
 
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.Connector;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.Connector;
 
 /** Conector activo de un equipo. */
 public record ConnectorView(UUID id, int ordinal, UUID connectorTypeId, String connectorTypeCode,

@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import com.tidsec.sarc_bakend.modules.inventory.application.command.RegisterExternalIdentityCommand;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ExternalPlatform;
+import com.tidsec.sarc_bakend.shared.domain.ExternalPlatform;
 
 /** Identificador del equipo en una plataforma; {@code scope} distingue cuentas o sitios (opcional). */
 public record ExternalIdentityRequest(

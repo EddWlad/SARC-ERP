@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tidsec.sarc_bakend.modules.inventory.application.command.UpdateConnectorTypeCommand;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ConnectorType;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.connectortype.ConnectorType;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.ConnectorTypeRepository;
 import com.tidsec.sarc_bakend.shared.audit.AuditTrail;
 import com.tidsec.sarc_bakend.shared.error.ConflictException;

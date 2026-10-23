@@ -1,12 +1,9 @@
 package com.tidsec.sarc_bakend.modules.inventory.application.service;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -23,6 +20,7 @@ import com.tidsec.sarc_bakend.modules.inventory.application.result.InventoryRepo
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentRepository;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentSearchCriteria;
 import com.tidsec.sarc_bakend.shared.audit.AuditTrail;
+import com.tidsec.sarc_bakend.shared.audit.ContentFingerprint;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 import com.tidsec.sarc_bakend.shared.report.ReportFile;
 import com.tidsec.sarc_bakend.shared.report.ReportFormat;
@@ -75,7 +73,7 @@ public class InventoryReportService {
 				"format", format.name(),
 				"filters", describe(criteria),
 				"rows", String.valueOf(rows.size()),
-				"sha256", sha256(content)));
+				"sha256", ContentFingerprint.sha256(content)));
 		return new ReportFile("inventario-" + FILE_STAMP.format(cutOff) + "." + format.extension(), format, content);
 	}
 
@@ -92,12 +90,4 @@ public class InventoryReportService {
 		return filters.isEmpty() ? "Todo el inventario (excepto eliminados)" : "Filtros: " + filters;
 	}
 
-	private static String sha256(byte[] content) {
-		try {
-			return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
-		}
-		catch (NoSuchAlgorithmException ex) {
-			throw new IllegalStateException("SHA-256 no disponible", ex);
-		}
-	}
 }

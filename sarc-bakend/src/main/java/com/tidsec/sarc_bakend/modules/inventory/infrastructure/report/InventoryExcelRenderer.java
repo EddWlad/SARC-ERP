@@ -13,6 +13,7 @@ import com.tidsec.sarc_bakend.modules.inventory.application.result.InventoryRepo
 import com.tidsec.sarc_bakend.modules.inventory.application.result.InventorySummary;
 import com.tidsec.sarc_bakend.shared.report.CorporateBranding;
 import com.tidsec.sarc_bakend.shared.report.CorporateWorkbook;
+import com.tidsec.sarc_bakend.shared.report.DomainLabels;
 import com.tidsec.sarc_bakend.shared.report.ReportFormat;
 
 /** Excel del inventario: una hoja de indicadores y otra con el detalle para verificar las cifras. */
@@ -47,7 +48,7 @@ class InventoryExcelRenderer implements InventoryReportRenderer {
 		rows.add(List.of("Total", "Equipos (sin eliminados)", summary.totalEquipment()));
 		rows.add(List.of("Total", "Eliminados", summary.deletedEquipment()));
 		add(rows, "Red", summary.byNetwork(), Enum::name);
-		add(rows, "Tipo", summary.byType(), InventoryLabels::of);
+		add(rows, "Tipo", summary.byType(), DomainLabels::of);
 		add(rows, "Marca", summary.byBrand(), InventoryLabels::of);
 		add(rows, "Estado", summary.byAdminStatus(), InventoryLabels::of);
 		add(rows, "Uso (puntos)", summary.pointsByUsageStatus(), InventoryLabels::of);
@@ -62,7 +63,7 @@ class InventoryExcelRenderer implements InventoryReportRenderer {
 
 	private static List<Object> row(EquipmentView equipment) {
 		return List.of(equipment.name(), equipment.assignedCode(), equipment.serial(), equipment.network().name(),
-				InventoryLabels.of(equipment.type()), InventoryLabels.of(equipment.brand()),
+				DomainLabels.of(equipment.type()), InventoryLabels.of(equipment.brand()),
 				InventoryLabels.of(equipment.adminStatus()), InventoryLabels.of(equipment.usageStatus()),
 				InventoryLabels.connectorCodes(equipment.connectors()), equipment.connectors().size(),
 				equipment.location() == null ? "" : equipment.location(), equipment.id().toString());

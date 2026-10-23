@@ -35,6 +35,15 @@ class ArchitectureTest {
 			.that().areAnnotatedWith(RestController.class)
 			.should().resideInAPackage("..modules..api.controller..");
 
+	/**
+	 * Vocabulario y contratos compartidos que usan los dominios de los modulos: deben ser Java puro,
+	 * igual que esos dominios.
+	 */
+	@ArchTest
+	static final ArchRule shared_kernel_is_free_of_spring = noClasses()
+			.that().resideInAnyPackage("..shared.domain..", "..shared.catalog..", "..shared.pagination..")
+			.should().dependOnClassesThat().resideInAPackage("org.springframework..");
+
 	@ArchTest
 	static final ArchRule shared_does_not_depend_on_modules = noClasses()
 			.that().resideInAPackage("..shared..")

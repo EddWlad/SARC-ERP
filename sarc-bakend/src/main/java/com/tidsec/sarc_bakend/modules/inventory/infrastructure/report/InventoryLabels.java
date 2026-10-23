@@ -3,9 +3,8 @@ package com.tidsec.sarc_bakend.modules.inventory.infrastructure.report;
 import java.util.List;
 
 import com.tidsec.sarc_bakend.modules.inventory.application.result.ConnectorView;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.EquipmentBrand;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.InfrastructureType;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.UsageStatus;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.EquipmentBrand;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.UsageStatus;
 import com.tidsec.sarc_bakend.shared.domain.AdministrativeStatus;
 
 /** Textos en espanol de las categorias del inventario para los reportes. */
@@ -16,13 +15,6 @@ final class InventoryLabels {
 
 	static String connectorCodes(List<ConnectorView> connectors) {
 		return String.join(", ", connectors.stream().map(ConnectorView::connectorTypeCode).toList());
-	}
-
-	static String of(InfrastructureType type) {
-		return switch (type) {
-			case CHARGING_POINT -> "Punto de carga";
-			case CHARGING_STATION -> "Electrolinera";
-		};
 	}
 
 	static String of(EquipmentBrand brand) {

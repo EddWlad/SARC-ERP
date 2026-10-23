@@ -1,6 +1,7 @@
 package com.tidsec.sarc_bakend.modules.inventory.infrastructure.persistence;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,17 +25,17 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ChargingNetwork;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.Connector;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ConnectorType;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.Equipment;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.EquipmentBrand;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.InfrastructureType;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.UsageStatus;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.connectortype.ConnectorType;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.Connector;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.Equipment;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.EquipmentBrand;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.UsageStatus;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentCount;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentRepository;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentSearchCriteria;
 import com.tidsec.sarc_bakend.shared.domain.AdministrativeStatus;
+import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
+import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 import com.tidsec.sarc_bakend.shared.pagination.PageQuery;
 import com.tidsec.sarc_bakend.shared.pagination.PageResult;
 
@@ -60,6 +61,16 @@ class EquipmentRepositoryAdapter implements EquipmentRepository {
 	@Override
 	public Optional<Equipment> findById(UUID id) {
 		return jpa.findById(id);
+	}
+
+	@Override
+	public List<Equipment> findAllById(Collection<UUID> ids) {
+		return jpa.findAllById(ids);
+	}
+
+	@Override
+	public List<Equipment> findBySerials(Collection<String> serials) {
+		return jpa.findBySerialIn(serials);
 	}
 
 	/**

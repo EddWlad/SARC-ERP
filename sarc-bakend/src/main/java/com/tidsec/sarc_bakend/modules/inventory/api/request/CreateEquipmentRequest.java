@@ -9,11 +9,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import com.tidsec.sarc_bakend.modules.inventory.application.command.RegisterEquipmentCommand;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ChargingNetwork;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.EquipmentBrand;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.EquipmentDetails;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.InfrastructureType;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.UsageStatus;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.EquipmentBrand;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.EquipmentDetails;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.UsageStatus;
+import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
+import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 
 /**
  * Alta de un equipo. {@code assignedCode} solo se envia en puntos KIA; en los demas es la serie.

@@ -3,7 +3,7 @@ package com.tidsec.sarc_bakend.modules.inventory.application.service;
 import org.springframework.stereotype.Component;
 
 import com.tidsec.sarc_bakend.modules.inventory.application.result.EquipmentView;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.Equipment;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.Equipment;
 import com.tidsec.sarc_bakend.shared.security.CurrentActor;
 import com.tidsec.sarc_bakend.shared.storage.FileStorage;
 

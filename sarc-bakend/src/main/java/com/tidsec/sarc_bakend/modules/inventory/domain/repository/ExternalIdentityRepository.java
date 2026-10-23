@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ExternalIdentity;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ExternalPlatform;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.externalidentity.ExternalIdentity;
+import com.tidsec.sarc_bakend.shared.domain.ExternalPlatform;
 
 /** Puerto de las identidades externas de los equipos. */
 public interface ExternalIdentityRepository {
@@ -17,6 +17,9 @@ public interface ExternalIdentityRepository {
 	List<ExternalIdentity> findByEquipmentId(UUID equipmentId);
 
 	Optional<ExternalIdentity> findByKey(ExternalPlatform platform, String scope, String externalId);
+
+	/** Identidades verificadas de una plataforma, para conciliar importaciones. */
+	List<ExternalIdentity> findVerified(ExternalPlatform platform);
 
 	void delete(ExternalIdentity identity);
 }

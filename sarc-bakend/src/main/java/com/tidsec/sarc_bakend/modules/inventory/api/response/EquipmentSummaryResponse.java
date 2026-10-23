@@ -7,11 +7,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import com.tidsec.sarc_bakend.modules.inventory.application.result.ConnectorView;
 import com.tidsec.sarc_bakend.modules.inventory.application.result.EquipmentView;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ChargingNetwork;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.EquipmentBrand;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.InfrastructureType;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.UsageStatus;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.EquipmentBrand;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.UsageStatus;
 import com.tidsec.sarc_bakend.shared.domain.AdministrativeStatus;
+import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
+import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 
 /** Fila del listado de inventario (sin horario ni datos restringidos). */
 public record EquipmentSummaryResponse(

@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ChargingNetwork;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.InfrastructureType;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.UsageStatus;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.UsageStatus;
+import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
+import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 
 class EquipmentClassificationTest {

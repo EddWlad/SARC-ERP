@@ -92,6 +92,39 @@ export type ScheduleRequest = {
     exceptions: Array<ExceptionRequest>;
 };
 
+export type RowDecisionRequest = {
+    rowIds: Array<string>;
+    test?: boolean | null;
+    approved?: boolean | null;
+};
+
+export type ImportRowResponse = {
+    id: string;
+    rowNumber: number;
+    externalSessionId?: string | null;
+    startedAt?: string | null;
+    endedAt?: string | null;
+    energyKwh?: number | null;
+    site?: string | null;
+    charger?: string | null;
+    serial?: string | null;
+    connector?: string | null;
+    equipmentId?: string | null;
+    network?: 'KIA' | 'JAC' | 'CONECTZ';
+    classification: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'INVALID' | 'DUPLICATE' | 'PENDING_LINK';
+    issues: Array<Issue>;
+    nonPreferredSource: boolean;
+    requiresApproval: boolean;
+    test: boolean;
+    approved: boolean;
+    outcome?: 'INSERTED' | 'CORRECTED' | 'UNCHANGED' | 'SKIPPED';
+};
+
+export type Issue = {
+    code: string;
+    message: string;
+};
+
 export type CreateUserRequest = {
     email: string;
     fullName: string;
@@ -159,6 +192,40 @@ export type ExternalIdentityRequest = {
     alias?: string;
 };
 
+export type PendingLinkResponse = {
+    linked: number;
+    stillPending: number;
+};
+
+export type ImportBatchResponse = {
+    id: string;
+    source: 'ENERLINK' | 'WALLBOX';
+    scope: string;
+    origin: 'FILE' | 'PASTE';
+    fileName: string;
+    checksum: string;
+    status: 'PARSING' | 'READY' | 'CONFIRMING' | 'COMPLETED' | 'FAILED' | 'DISCARDED';
+    failureCode?: string | null;
+    failureMessage?: string | null;
+    totalRows: number;
+    newRows: number;
+    identicalRows: number;
+    modifiedRows: number;
+    invalidRows: number;
+    duplicateRows: number;
+    pendingLinkRows: number;
+    appliedRows: number;
+    createdAt: string;
+    confirmedAt?: string | null;
+    version: number;
+};
+
+export type PasteImportRequest = {
+    source: 'ENERLINK' | 'WALLBOX';
+    scope?: string;
+    text: string;
+};
+
 export type CreateConnectorTypeRequest = {
     code: string;
     name: string;
@@ -200,6 +267,38 @@ export type UpdateUserRequest = {
 export type ChangeStatusRequest = {
     version: number;
     status: 'DELETED' | 'ACTIVE' | 'INACTIVE';
+};
+
+export type MarkTestRequest = {
+    version: number;
+    test: boolean;
+};
+
+export type EquipmentRefResponse = {
+    id: string;
+    name: string;
+    assignedCode: string;
+    network: 'KIA' | 'JAC' | 'CONECTZ';
+    type: 'CHARGING_POINT' | 'CHARGING_STATION';
+};
+
+export type SessionResponse = {
+    id: string;
+    source: 'ENERLINK' | 'WALLBOX';
+    externalSessionId: string;
+    startedAt: string;
+    endedAt: string;
+    startDate: string;
+    energyKwh: number;
+    state: 'VALIDATED' | 'PENDING_LINK' | 'TEST';
+    equipment?: EquipmentRefResponse;
+    site?: string | null;
+    charger?: string | null;
+    serial?: string | null;
+    connector?: string | null;
+    revision: number;
+    importBatchId: string;
+    version: number;
 };
 
 export type UpdateConnectorTypeRequest = {
@@ -258,6 +357,60 @@ export type EquipmentSummaryResponse = {
 
 export type PageResultEquipmentSummaryResponse = {
     content: Array<EquipmentSummaryResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type ConsumptionSummaryResponse = {
+    from: string;
+    to: string;
+    official: Totals;
+    averageKwhPerSession: number;
+    top: Array<Ranked>;
+    daily: Array<Day>;
+    pendingLink: Totals;
+    test: Totals;
+    generatedAt: string;
+};
+
+export type Day = {
+    date: string;
+    sessions: number;
+    energyKwh: number;
+};
+
+export type Ranked = {
+    equipment?: EquipmentRefResponse;
+    sessions: number;
+    energyKwh: number;
+};
+
+export type Totals = {
+    sessions: number;
+    energyKwh: number;
+    equipment: number;
+};
+
+export type PageResultSessionResponse = {
+    content: Array<SessionResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type PageResultImportBatchResponse = {
+    content: Array<ImportBatchResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type PageResultImportRowResponse = {
+    content: Array<ImportRowResponse>;
     page: number;
     size: number;
     totalElements: number;
@@ -359,6 +512,24 @@ export type AttachImageResponses = {
 };
 
 export type AttachImageResponse = AttachImageResponses[keyof AttachImageResponses];
+
+export type DecideData = {
+    body: RowDecisionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/energy/imports/{id}/rows/decision';
+};
+
+export type DecideResponses = {
+    /**
+     * OK
+     */
+    200: Array<ImportRowResponse>;
+};
+
+export type DecideResponse = DecideResponses[keyof DecideResponses];
 
 export type ListData = {
     body?: never;
@@ -511,6 +682,132 @@ export type AddExternalIdentityResponses = {
 
 export type AddExternalIdentityResponse = AddExternalIdentityResponses[keyof AddExternalIdentityResponses];
 
+export type LinkPendingData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/energy/sessions/link-pending';
+};
+
+export type LinkPendingResponses = {
+    /**
+     * OK
+     */
+    200: PendingLinkResponse;
+};
+
+export type LinkPendingResponse = LinkPendingResponses[keyof LinkPendingResponses];
+
+export type HistoryData = {
+    body?: never;
+    path?: never;
+    query?: {
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/energy/imports';
+};
+
+export type HistoryResponses = {
+    /**
+     * OK
+     */
+    200: PageResultImportBatchResponse;
+};
+
+export type HistoryResponse = HistoryResponses[keyof HistoryResponses];
+
+export type UploadData = {
+    body?: {
+        file: Blob | File;
+    };
+    path?: never;
+    query: {
+        source: 'ENERLINK' | 'WALLBOX';
+        scope?: string;
+    };
+    url: '/api/v1/energy/imports';
+};
+
+export type UploadResponses = {
+    /**
+     * Accepted
+     */
+    202: ImportBatchResponse;
+};
+
+export type UploadResponse = UploadResponses[keyof UploadResponses];
+
+export type RetryData = {
+    body: VersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/energy/imports/{id}/retry';
+};
+
+export type RetryResponses = {
+    /**
+     * Accepted
+     */
+    202: ImportBatchResponse;
+};
+
+export type RetryResponse = RetryResponses[keyof RetryResponses];
+
+export type DiscardData = {
+    body: VersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/energy/imports/{id}/discard';
+};
+
+export type DiscardResponses = {
+    /**
+     * OK
+     */
+    200: ImportBatchResponse;
+};
+
+export type DiscardResponse = DiscardResponses[keyof DiscardResponses];
+
+export type ConfirmData = {
+    body: VersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/energy/imports/{id}/confirm';
+};
+
+export type ConfirmResponses = {
+    /**
+     * Accepted
+     */
+    202: ImportBatchResponse;
+};
+
+export type ConfirmResponse = ConfirmResponses[keyof ConfirmResponses];
+
+export type PasteData = {
+    body: PasteImportRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/energy/imports/paste';
+};
+
+export type PasteResponses = {
+    /**
+     * Accepted
+     */
+    202: ImportBatchResponse;
+};
+
+export type PasteResponse = PasteResponses[keyof PasteResponses];
+
 export type List2Data = {
     body?: never;
     path?: never;
@@ -611,6 +908,24 @@ export type ChangeStatusResponses = {
 
 export type ChangeStatusResponse = ChangeStatusResponses[keyof ChangeStatusResponses];
 
+export type MarkTestData = {
+    body: MarkTestRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/energy/sessions/{id}/test';
+};
+
+export type MarkTestResponses = {
+    /**
+     * OK
+     */
+    200: SessionResponse;
+};
+
+export type MarkTestResponse = MarkTestResponses[keyof MarkTestResponses];
+
 export type Update2Data = {
     body: UpdateConnectorTypeRequest;
     path: {
@@ -695,6 +1010,120 @@ export type ResolveResponses = {
 };
 
 export type ResolveResponse = ResolveResponses[keyof ResolveResponses];
+
+export type Summary1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        from: string;
+        to: string;
+        network?: 'KIA' | 'JAC' | 'CONECTZ';
+        type?: 'CHARGING_POINT' | 'CHARGING_STATION';
+        source?: 'ENERLINK' | 'WALLBOX';
+        equipmentId?: string;
+    };
+    url: '/api/v1/energy/summary';
+};
+
+export type Summary1Responses = {
+    /**
+     * OK
+     */
+    200: ConsumptionSummaryResponse;
+};
+
+export type Summary1Response = Summary1Responses[keyof Summary1Responses];
+
+export type SearchData = {
+    body?: never;
+    path?: never;
+    query?: {
+        from?: string;
+        to?: string;
+        network?: 'KIA' | 'JAC' | 'CONECTZ';
+        type?: 'CHARGING_POINT' | 'CHARGING_STATION';
+        source?: 'ENERLINK' | 'WALLBOX';
+        equipmentId?: string;
+        state?: 'VALIDATED' | 'PENDING_LINK' | 'TEST';
+        text?: string;
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/energy/sessions';
+};
+
+export type SearchResponses = {
+    /**
+     * OK
+     */
+    200: PageResultSessionResponse;
+};
+
+export type SearchResponse = SearchResponses[keyof SearchResponses];
+
+export type Report1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        format: 'PDF' | 'XLSX';
+        from: string;
+        to: string;
+        network?: 'KIA' | 'JAC' | 'CONECTZ';
+        type?: 'CHARGING_POINT' | 'CHARGING_STATION';
+        source?: 'ENERLINK' | 'WALLBOX';
+        equipmentId?: string;
+    };
+    url: '/api/v1/energy/report';
+};
+
+export type Report1Responses = {
+    /**
+     * OK
+     */
+    200: string;
+};
+
+export type Report1Response = Report1Responses[keyof Report1Responses];
+
+export type Get1Data = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/energy/imports/{id}';
+};
+
+export type Get1Responses = {
+    /**
+     * OK
+     */
+    200: ImportBatchResponse;
+};
+
+export type Get1Response = Get1Responses[keyof Get1Responses];
+
+export type RowsData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        classification?: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'INVALID' | 'DUPLICATE' | 'PENDING_LINK';
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/energy/imports/{id}/rows';
+};
+
+export type RowsResponses = {
+    /**
+     * OK
+     */
+    200: PageResultImportRowResponse;
+};
+
+export type RowsResponse = RowsResponses[keyof RowsResponses];
 
 export type MeData = {
     body?: never;

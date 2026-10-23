@@ -1,6 +1,6 @@
 # ADR 0002 - Organizacion de paquetes dentro de cada capa
 
-Estado: aceptada (22-oct-2026). Complementa la ADR 0001.
+Estado: aceptada (22-oct-2026). Complementa la ADR 0001. La regla de particion del modelo y la organizacion de `shared` se precisan en la ADR 0006.
 
 ## Contexto
 

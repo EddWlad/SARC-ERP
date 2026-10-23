@@ -11,6 +11,12 @@ public interface FileStorage {
 	/** Guarda el contenido dentro de la carpeta logica indicada y devuelve su referencia. */
 	String store(String folder, byte[] content);
 
+	/**
+	 * Guarda un documento original (p. ej. el archivo de una importacion) para trazabilidad. No se
+	 * expone URL de descarga: solo queda la referencia junto al registro que lo origino.
+	 */
+	String storeDocument(String folder, String filename, byte[] content);
+
 	void delete(String reference);
 
 	/**

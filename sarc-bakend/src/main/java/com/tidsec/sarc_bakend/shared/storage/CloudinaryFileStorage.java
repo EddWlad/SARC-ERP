@@ -50,6 +50,25 @@ class CloudinaryFileStorage implements FileStorage {
 	}
 
 	@Override
+	public String storeDocument(String folder, String filename, byte[] content) {
+		try {
+			Map<?, ?> result = cloudinary.uploader().upload(content, ObjectUtils.asMap(
+					"type", DELIVERY_TYPE,
+					"resource_type", "raw",
+					"folder", rootFolder + "/" + folder,
+					"filename_override", filename,
+					"use_filename", true,
+					"unique_filename", true,
+					"overwrite", false));
+			return (String) result.get("public_id");
+		}
+		catch (IOException | RuntimeException ex) {
+			log.error("No se pudo subir el documento a Cloudinary", ex);
+			throw unavailable();
+		}
+	}
+
+	@Override
 	public void delete(String reference) {
 		try {
 			cloudinary.uploader().destroy(reference, ObjectUtils.asMap("type", DELIVERY_TYPE, "resource_type", "image"));

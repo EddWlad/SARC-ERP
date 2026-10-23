@@ -11,9 +11,10 @@ import java.util.Locale;
 
 import javax.imageio.ImageIO;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
+
+import com.tidsec.sarc_bakend.shared.time.OperatingZone;
 
 /**
  * Identidad corporativa de los reportes (PRD RF-RPT-03): logos de EOS Tech Company y Autoeastern,
@@ -28,10 +29,10 @@ public class CorporateBranding {
 	private final ZoneId zone;
 	private final DateTimeFormatter dateTimeFormatter;
 
-	CorporateBranding(@Value("${sarc.reports.time-zone:America/Guayaquil}") String zone) {
+	CorporateBranding(OperatingZone operatingZone) {
 		this.eosLogo = loadTrimmed("reports/logos/eos-tech.png");
 		this.autoeasternLogo = loadTrimmed("reports/logos/autoeastern.jpg");
-		this.zone = ZoneId.of(zone);
+		this.zone = operatingZone.zone();
 		this.dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("es-EC"))
 				.withZone(this.zone);
 	}

@@ -11,12 +11,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tidsec.sarc_bakend.modules.inventory.application.command.RegisterExternalIdentityCommand;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.Equipment;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ExternalIdentity;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ExternalPlatform;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.Equipment;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.externalidentity.ExternalIdentity;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentRepository;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.ExternalIdentityRepository;
 import com.tidsec.sarc_bakend.shared.audit.AuditTrail;
+import com.tidsec.sarc_bakend.shared.domain.ExternalPlatform;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 import com.tidsec.sarc_bakend.shared.error.ConflictException;
 import com.tidsec.sarc_bakend.shared.error.NotFoundException;

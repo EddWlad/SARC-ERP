@@ -37,12 +37,12 @@ import com.tidsec.sarc_bakend.modules.inventory.application.command.ChangeEquipm
 import com.tidsec.sarc_bakend.modules.inventory.application.service.EquipmentQueryService;
 import com.tidsec.sarc_bakend.modules.inventory.application.service.EquipmentService;
 import com.tidsec.sarc_bakend.modules.inventory.application.service.ExternalIdentityService;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ChargingNetwork;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.EquipmentBrand;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.InfrastructureType;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.UsageStatus;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.EquipmentBrand;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.UsageStatus;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentSearchCriteria;
 import com.tidsec.sarc_bakend.shared.domain.AdministrativeStatus;
+import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
+import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 import com.tidsec.sarc_bakend.shared.pagination.PageQuery;
 import com.tidsec.sarc_bakend.shared.pagination.PageResult;
 

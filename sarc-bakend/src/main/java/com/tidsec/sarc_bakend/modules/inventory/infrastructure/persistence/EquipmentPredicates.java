@@ -8,7 +8,7 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.Equipment;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.Equipment;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentSearchCriteria;
 import com.tidsec.sarc_bakend.shared.domain.AdministrativeStatus;
 

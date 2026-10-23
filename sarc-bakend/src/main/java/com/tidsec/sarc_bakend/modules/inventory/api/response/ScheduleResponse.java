@@ -8,7 +8,7 @@ import java.util.List;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import com.tidsec.sarc_bakend.modules.inventory.application.result.EquipmentView;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ScheduleMode;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.ScheduleMode;
 
 /** Horario del equipo; un intervalo con cierre anterior a la apertura cruza la medianoche. */
 public record ScheduleResponse(ScheduleMode mode, List<IntervalResponse> intervals, List<ExceptionResponse> exceptions) {

@@ -11,9 +11,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import com.tidsec.sarc_bakend.modules.inventory.application.command.DefineScheduleCommand;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ScheduleException;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ScheduleMode;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.WeeklyInterval;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.ScheduleException;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.ScheduleMode;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.WeeklyInterval;
 
 /**
  * Horario completo del equipo. En WEEKLY cada intervalo es un dia con apertura y cierre (si cierra

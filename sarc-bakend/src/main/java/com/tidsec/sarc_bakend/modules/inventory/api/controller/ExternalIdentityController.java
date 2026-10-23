@@ -17,10 +17,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.tidsec.sarc_bakend.modules.inventory.api.request.VersionRequest;
 import com.tidsec.sarc_bakend.modules.inventory.api.response.ExternalIdentityResponse;
 import com.tidsec.sarc_bakend.modules.inventory.application.service.ExternalIdentityService;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ExternalPlatform;
+import com.tidsec.sarc_bakend.shared.domain.ExternalPlatform;
+import com.tidsec.sarc_bakend.shared.web.VersionRequest;
 
 @RestController
 @RequestMapping("/api/v1/external-identities")

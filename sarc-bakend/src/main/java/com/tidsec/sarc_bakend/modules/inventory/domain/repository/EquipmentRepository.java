@@ -1,11 +1,12 @@
 package com.tidsec.sarc_bakend.modules.inventory.domain.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.Equipment;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.Equipment;
 import com.tidsec.sarc_bakend.shared.pagination.PageQuery;
 import com.tidsec.sarc_bakend.shared.pagination.PageResult;
 
@@ -15,6 +16,11 @@ public interface EquipmentRepository {
 	Equipment save(Equipment equipment);
 
 	Optional<Equipment> findById(UUID id);
+
+	List<Equipment> findAllById(Collection<UUID> ids);
+
+	/** Series ya normalizadas; incluye inactivos y eliminados. */
+	List<Equipment> findBySerials(Collection<String> serials);
 
 	/**
 	 * Equipos que ya usan alguno de estos identificadores (serie, codigo asignado o UID/PUK),

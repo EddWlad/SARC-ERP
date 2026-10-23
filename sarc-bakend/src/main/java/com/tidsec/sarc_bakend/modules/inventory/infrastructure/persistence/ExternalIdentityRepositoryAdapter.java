@@ -6,9 +6,9 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ExternalIdentity;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ExternalPlatform;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.externalidentity.ExternalIdentity;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.ExternalIdentityRepository;
+import com.tidsec.sarc_bakend.shared.domain.ExternalPlatform;
 
 @Component
 class ExternalIdentityRepositoryAdapter implements ExternalIdentityRepository {
@@ -37,6 +37,11 @@ class ExternalIdentityRepositoryAdapter implements ExternalIdentityRepository {
 	@Override
 	public Optional<ExternalIdentity> findByKey(ExternalPlatform platform, String scope, String externalId) {
 		return jpa.findByPlatformAndScopeAndExternalId(platform, scope, externalId);
+	}
+
+	@Override
+	public List<ExternalIdentity> findVerified(ExternalPlatform platform) {
+		return jpa.findByPlatformAndVerifiedTrue(platform);
 	}
 
 	@Override

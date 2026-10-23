@@ -4,7 +4,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ConnectorType;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.connectortype.ConnectorType;
 
 interface ConnectorTypeJpaRepository extends JpaRepository<ConnectorType, UUID> {
 

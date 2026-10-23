@@ -22,8 +22,8 @@ import com.tidsec.sarc_bakend.modules.inventory.application.command.DefineSchedu
 import com.tidsec.sarc_bakend.modules.inventory.application.command.RegisterEquipmentCommand;
 import com.tidsec.sarc_bakend.modules.inventory.application.command.UpdateEquipmentCommand;
 import com.tidsec.sarc_bakend.modules.inventory.application.result.EquipmentView;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ConnectorType;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.Equipment;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.connectortype.ConnectorType;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.Equipment;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.ConnectorTypeRepository;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentRepository;
 import com.tidsec.sarc_bakend.shared.audit.AuditTrail;

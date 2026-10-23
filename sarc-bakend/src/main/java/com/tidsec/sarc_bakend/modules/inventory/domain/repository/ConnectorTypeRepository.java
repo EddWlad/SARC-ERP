@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ConnectorType;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.connectortype.ConnectorType;
 
 /** Puerto del catalogo de tipos de conector. */
 public interface ConnectorTypeRepository {

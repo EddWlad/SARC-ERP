@@ -3,11 +3,11 @@ package com.tidsec.sarc_bakend.modules.inventory.application.result;
 import java.time.Instant;
 import java.util.Map;
 
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ChargingNetwork;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.EquipmentBrand;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.InfrastructureType;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.UsageStatus;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.EquipmentBrand;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.UsageStatus;
 import com.tidsec.sarc_bakend.shared.domain.AdministrativeStatus;
+import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
+import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 
 /**
  * Indicadores del inventario (PRD 11.1): totales y distribuciones. Todas las categorias aparecen,

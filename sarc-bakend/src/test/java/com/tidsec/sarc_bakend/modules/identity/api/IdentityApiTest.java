@@ -50,11 +50,11 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import com.tidsec.sarc_bakend.TestcontainersConfiguration;
+import com.tidsec.sarc_bakend.modules.identity.application.service.LoginService;
 import com.tidsec.sarc_bakend.modules.identity.domain.model.Email;
 import com.tidsec.sarc_bakend.modules.identity.domain.model.Role;
 import com.tidsec.sarc_bakend.modules.identity.domain.model.UserAccount;
 import com.tidsec.sarc_bakend.modules.identity.domain.repository.UserRepository;
-import com.tidsec.sarc_bakend.modules.identity.application.service.LoginService;
 
 @SpringBootTest(properties = {
 		"sarc.security.bcrypt-strength=4",

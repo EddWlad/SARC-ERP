@@ -2,9 +2,9 @@ package com.tidsec.sarc_bakend.modules.inventory.domain.policy;
 
 import java.util.regex.Pattern;
 
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ChargingNetwork;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.InfrastructureType;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.UsageStatus;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.UsageStatus;
+import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
+import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 
 /**

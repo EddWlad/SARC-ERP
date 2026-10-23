@@ -9,9 +9,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import com.tidsec.sarc_bakend.modules.inventory.application.command.UpdateEquipmentCommand;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.EquipmentBrand;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.EquipmentDetails;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.UsageStatus;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.EquipmentBrand;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.EquipmentDetails;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.UsageStatus;
 
 /** Reemplaza los datos editables del equipo (red y tipo no cambian). {@code version} la leyo el cliente. */
 public record UpdateEquipmentRequest(

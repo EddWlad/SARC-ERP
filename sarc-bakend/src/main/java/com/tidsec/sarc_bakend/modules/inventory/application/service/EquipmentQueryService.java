@@ -13,14 +13,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.tidsec.sarc_bakend.modules.inventory.application.result.EquipmentView;
 import com.tidsec.sarc_bakend.modules.inventory.application.result.InventorySummary;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ChargingNetwork;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.EquipmentBrand;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.InfrastructureType;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.UsageStatus;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.EquipmentBrand;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.UsageStatus;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentCount;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentRepository;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentSearchCriteria;
 import com.tidsec.sarc_bakend.shared.domain.AdministrativeStatus;
+import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
+import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 import com.tidsec.sarc_bakend.shared.error.NotFoundException;
 import com.tidsec.sarc_bakend.shared.pagination.PageQuery;
 import com.tidsec.sarc_bakend.shared.pagination.PageResult;

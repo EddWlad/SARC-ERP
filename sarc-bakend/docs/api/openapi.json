@@ -189,6 +189,46 @@
         }
       }
     },
+    "/api/v1/energy/imports/{id}/rows/decision" : {
+      "put" : {
+        "tags" : [ "energy-import-controller" ],
+        "operationId" : "decide",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RowDecisionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ImportRowResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users" : {
       "get" : {
         "tags" : [ "user-controller" ],
@@ -524,6 +564,253 @@
         }
       }
     },
+    "/api/v1/energy/sessions/link-pending" : {
+      "post" : {
+        "tags" : [ "energy-session-controller" ],
+        "operationId" : "linkPending",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PendingLinkResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/energy/imports" : {
+      "get" : {
+        "tags" : [ "energy-import-controller" ],
+        "operationId" : "history",
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "energy-import-controller" ],
+        "operationId" : "upload",
+        "parameters" : [ {
+          "name" : "source",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "ENERLINK", "WALLBOX" ]
+          }
+        }, {
+          "name" : "scope",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "file" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/energy/imports/{id}/retry" : {
+      "post" : {
+        "tags" : [ "energy-import-controller" ],
+        "operationId" : "retry",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/energy/imports/{id}/discard" : {
+      "post" : {
+        "tags" : [ "energy-import-controller" ],
+        "operationId" : "discard",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/energy/imports/{id}/confirm" : {
+      "post" : {
+        "tags" : [ "energy-import-controller" ],
+        "operationId" : "confirm",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/energy/imports/paste" : {
+      "post" : {
+        "tags" : [ "energy-import-controller" ],
+        "operationId" : "paste",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PasteImportRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/connector-types" : {
       "get" : {
         "tags" : [ "connector-type-controller" ],
@@ -687,6 +974,43 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/EquipmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/energy/sessions/{id}/test" : {
+      "patch" : {
+        "tags" : [ "energy-session-controller" ],
+        "operationId" : "markTest",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MarkTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionResponse"
                 }
               }
             }
@@ -915,6 +1239,337 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ExternalIdentityResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/energy/summary" : {
+      "get" : {
+        "tags" : [ "consumption-controller" ],
+        "operationId" : "summary_1",
+        "parameters" : [ {
+          "name" : "from",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          }
+        }, {
+          "name" : "type",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          }
+        }, {
+          "name" : "source",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "ENERLINK", "WALLBOX" ]
+          }
+        }, {
+          "name" : "equipmentId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConsumptionSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/energy/sessions" : {
+      "get" : {
+        "tags" : [ "energy-session-controller" ],
+        "operationId" : "search",
+        "parameters" : [ {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          }
+        }, {
+          "name" : "type",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          }
+        }, {
+          "name" : "source",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "ENERLINK", "WALLBOX" ]
+          }
+        }, {
+          "name" : "equipmentId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "state",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "VALIDATED", "PENDING_LINK", "TEST" ]
+          }
+        }, {
+          "name" : "text",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultSessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/energy/report" : {
+      "get" : {
+        "tags" : [ "consumption-controller" ],
+        "operationId" : "report_1",
+        "parameters" : [ {
+          "name" : "format",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "PDF", "XLSX" ]
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          }
+        }, {
+          "name" : "type",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          }
+        }, {
+          "name" : "source",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "ENERLINK", "WALLBOX" ]
+          }
+        }, {
+          "name" : "equipmentId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/energy/imports/{id}" : {
+      "get" : {
+        "tags" : [ "energy-import-controller" ],
+        "operationId" : "get_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/energy/imports/{id}/rows" : {
+      "get" : {
+        "tags" : [ "energy-import-controller" ],
+        "operationId" : "rows",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "classification",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "INVALID", "DUPLICATE", "PENDING_LINK" ]
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 50,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultImportRowResponse"
                 }
               }
             }
@@ -1272,6 +1927,113 @@
         },
         "required" : [ "exceptions", "intervals", "mode", "version" ]
       },
+      "RowDecisionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "rowIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 1000,
+            "minItems" : 0
+          },
+          "test" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "approved" : {
+            "type" : [ "boolean", "null" ]
+          }
+        },
+        "required" : [ "rowIds" ]
+      },
+      "ImportRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "rowNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "externalSessionId" : {
+            "type" : [ "string", "null" ]
+          },
+          "startedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "endedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "energyKwh" : {
+            "type" : [ "number", "null" ]
+          },
+          "site" : {
+            "type" : [ "string", "null" ]
+          },
+          "charger" : {
+            "type" : [ "string", "null" ]
+          },
+          "serial" : {
+            "type" : [ "string", "null" ]
+          },
+          "connector" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipmentId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "network" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          },
+          "classification" : {
+            "type" : "string",
+            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "INVALID", "DUPLICATE", "PENDING_LINK" ]
+          },
+          "issues" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Issue"
+            }
+          },
+          "nonPreferredSource" : {
+            "type" : "boolean"
+          },
+          "requiresApproval" : {
+            "type" : "boolean"
+          },
+          "test" : {
+            "type" : "boolean"
+          },
+          "approved" : {
+            "type" : "boolean"
+          },
+          "outcome" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "INSERTED", "CORRECTED", "UNCHANGED", "SKIPPED" ]
+          }
+        },
+        "required" : [ "approved", "classification", "id", "issues", "nonPreferredSource", "requiresApproval", "rowNumber", "test" ]
+      },
+      "Issue" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "message" ]
+      },
       "CreateUserRequest" : {
         "type" : "object",
         "properties" : {
@@ -1508,6 +2270,120 @@
         },
         "required" : [ "externalId", "platform" ]
       },
+      "PendingLinkResponse" : {
+        "type" : "object",
+        "properties" : {
+          "linked" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "stillPending" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "linked", "stillPending" ]
+      },
+      "ImportBatchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "ENERLINK", "WALLBOX" ]
+          },
+          "scope" : {
+            "type" : "string"
+          },
+          "origin" : {
+            "type" : "string",
+            "enum" : [ "FILE", "PASTE" ]
+          },
+          "fileName" : {
+            "type" : "string"
+          },
+          "checksum" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "PARSING", "READY", "CONFIRMING", "COMPLETED", "FAILED", "DISCARDED" ]
+          },
+          "failureCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "failureMessage" : {
+            "type" : [ "string", "null" ]
+          },
+          "totalRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "newRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "identicalRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "modifiedRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "invalidRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "duplicateRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pendingLinkRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "appliedRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "confirmedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "appliedRows", "checksum", "createdAt", "duplicateRows", "fileName", "id", "identicalRows", "invalidRows", "modifiedRows", "newRows", "origin", "pendingLinkRows", "scope", "source", "status", "totalRows", "version" ]
+      },
+      "PasteImportRequest" : {
+        "type" : "object",
+        "properties" : {
+          "source" : {
+            "type" : "string",
+            "enum" : [ "ENERLINK", "WALLBOX" ]
+          },
+          "scope" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          },
+          "text" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "source", "text" ]
+      },
       "CreateConnectorTypeRequest" : {
         "type" : "object",
         "properties" : {
@@ -1643,6 +2519,107 @@
           }
         },
         "required" : [ "status", "version" ]
+      },
+      "MarkTestRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "test" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "test", "version" ]
+      },
+      "EquipmentRefResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "assignedCode" : {
+            "type" : "string"
+          },
+          "network" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          }
+        },
+        "required" : [ "assignedCode", "id", "name", "network", "type" ]
+      },
+      "SessionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "ENERLINK", "WALLBOX" ]
+          },
+          "externalSessionId" : {
+            "type" : "string"
+          },
+          "startedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "endedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "energyKwh" : {
+            "type" : "number"
+          },
+          "state" : {
+            "type" : "string",
+            "enum" : [ "VALIDATED", "PENDING_LINK", "TEST" ]
+          },
+          "equipment" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/EquipmentRefResponse"
+          },
+          "site" : {
+            "type" : [ "string", "null" ]
+          },
+          "charger" : {
+            "type" : [ "string", "null" ]
+          },
+          "serial" : {
+            "type" : [ "string", "null" ]
+          },
+          "connector" : {
+            "type" : [ "string", "null" ]
+          },
+          "revision" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "importBatchId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "endedAt", "energyKwh", "externalSessionId", "id", "importBatchId", "revision", "source", "startDate", "startedAt", "state", "version" ]
       },
       "UpdateConnectorTypeRequest" : {
         "type" : "object",
@@ -1813,6 +2790,183 @@
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/EquipmentSummaryResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "ConsumptionSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "from" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "to" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "official" : {
+            "$ref" : "#/components/schemas/Totals"
+          },
+          "averageKwhPerSession" : {
+            "type" : "number"
+          },
+          "top" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Ranked"
+            }
+          },
+          "daily" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Day"
+            }
+          },
+          "pendingLink" : {
+            "$ref" : "#/components/schemas/Totals"
+          },
+          "test" : {
+            "$ref" : "#/components/schemas/Totals"
+          },
+          "generatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "averageKwhPerSession", "daily", "from", "generatedAt", "official", "pendingLink", "test", "to", "top" ]
+      },
+      "Day" : {
+        "type" : "object",
+        "properties" : {
+          "date" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "sessions" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "energyKwh" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "date", "energyKwh", "sessions" ]
+      },
+      "Ranked" : {
+        "type" : "object",
+        "properties" : {
+          "equipment" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/EquipmentRefResponse"
+          },
+          "sessions" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "energyKwh" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "energyKwh", "sessions" ]
+      },
+      "Totals" : {
+        "type" : "object",
+        "properties" : {
+          "sessions" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "energyKwh" : {
+            "type" : "number"
+          },
+          "equipment" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "energyKwh", "equipment", "sessions" ]
+      },
+      "PageResultSessionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SessionResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "PageResultImportBatchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ImportBatchResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "PageResultImportRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ImportRowResponse"
             }
           },
           "page" : {

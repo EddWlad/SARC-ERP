@@ -6,8 +6,8 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ExternalIdentity;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ExternalPlatform;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.externalidentity.ExternalIdentity;
+import com.tidsec.sarc_bakend.shared.domain.ExternalPlatform;
 
 interface ExternalIdentityJpaRepository extends JpaRepository<ExternalIdentity, UUID> {
 
@@ -15,4 +15,6 @@ interface ExternalIdentityJpaRepository extends JpaRepository<ExternalIdentity, 
 
 	Optional<ExternalIdentity> findByPlatformAndScopeAndExternalId(ExternalPlatform platform, String scope,
 			String externalId);
+
+	List<ExternalIdentity> findByPlatformAndVerifiedTrue(ExternalPlatform platform);
 }

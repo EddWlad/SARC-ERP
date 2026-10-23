@@ -11,11 +11,12 @@ import com.tidsec.sarc_bakend.modules.inventory.application.port.InventoryReport
 import com.tidsec.sarc_bakend.modules.inventory.application.result.EquipmentView;
 import com.tidsec.sarc_bakend.modules.inventory.application.result.InventoryReport;
 import com.tidsec.sarc_bakend.modules.inventory.application.result.InventorySummary;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.InfrastructureType;
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.UsageStatus;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.UsageStatus;
 import com.tidsec.sarc_bakend.shared.domain.AdministrativeStatus;
+import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 import com.tidsec.sarc_bakend.shared.report.CorporateBranding;
 import com.tidsec.sarc_bakend.shared.report.CorporatePdf;
+import com.tidsec.sarc_bakend.shared.report.DomainLabels;
 import com.tidsec.sarc_bakend.shared.report.Kpi;
 import com.tidsec.sarc_bakend.shared.report.ReportFormat;
 
@@ -73,7 +74,7 @@ class InventoryPdfRenderer implements InventoryReportRenderer {
 	private static List<List<String>> distribution(InventorySummary summary) {
 		return Stream.of(
 				rows("Red", summary.byNetwork(), Enum::name),
-				rows("Tipo", summary.byType(), InventoryLabels::of),
+				rows("Tipo", summary.byType(), DomainLabels::of),
 				rows("Marca", summary.byBrand(), InventoryLabels::of))
 				.flatMap(List::stream).toList();
 	}
@@ -86,7 +87,7 @@ class InventoryPdfRenderer implements InventoryReportRenderer {
 
 	private static List<String> row(EquipmentView equipment) {
 		return List.of(equipment.name(), equipment.assignedCode(), equipment.network().name(),
-				InventoryLabels.of(equipment.type()), InventoryLabels.of(equipment.brand()),
+				DomainLabels.of(equipment.type()), InventoryLabels.of(equipment.brand()),
 				InventoryLabels.of(equipment.adminStatus()), InventoryLabels.of(equipment.usageStatus()),
 				InventoryLabels.connectorCodes(equipment.connectors()), equipment.location() == null ? "" : equipment.location());
 	}

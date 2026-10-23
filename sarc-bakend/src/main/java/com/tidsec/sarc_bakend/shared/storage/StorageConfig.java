@@ -31,6 +31,11 @@ class StorageConfig {
 			}
 
 			@Override
+			public String storeDocument(String folder, String filename, byte[] content) {
+				throw notConfigured();
+			}
+
+			@Override
 			public void delete(String reference) {
 				throw notConfigured();
 			}

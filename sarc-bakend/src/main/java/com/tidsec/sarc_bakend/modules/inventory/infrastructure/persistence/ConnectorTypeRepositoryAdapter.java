@@ -8,7 +8,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
-import com.tidsec.sarc_bakend.modules.inventory.domain.model.ConnectorType;
+import com.tidsec.sarc_bakend.modules.inventory.domain.model.connectortype.ConnectorType;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.ConnectorTypeRepository;
 
 @Component

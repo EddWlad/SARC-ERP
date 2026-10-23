@@ -29,3 +29,6 @@ desktop.ini
 
 # Proyecto de referencia local (contiene credenciales); nunca versionar
 documents/modelo de backend/
+
+# Exportaciones reales de Enerlink/Wallbox (datos de clientes: RFID, sitios); solo para pruebas locales
+documents/informes_de_enerlink_wallbox/
