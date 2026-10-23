@@ -37,6 +37,11 @@ export const routes: Routes = [
           import('./features/home/presentation/home-page/home-page').then((m) => m.HomePage),
       },
       {
+        path: 'inventario',
+        loadChildren: () =>
+          import('./features/inventory/inventory.routes').then((m) => m.INVENTORY_ROUTES),
+      },
+      {
         path: 'usuarios',
         title: 'Usuarios | SARC',
         canActivate: [roleGuard('ADMINISTRADOR')],

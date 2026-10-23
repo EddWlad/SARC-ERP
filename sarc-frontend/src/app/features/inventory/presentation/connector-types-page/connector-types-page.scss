@@ -1,0 +1,15 @@
+@use '../../../../shared/ui/list-page';
+@use '../../../../shared/ui/badges';
+
+:host {
+  display: block;
+}
+
+.back {
+  margin: 0 0 var(--sarc-space-3) calc(-1 * var(--sarc-space-3));
+}
+
+.row-actions {
+  text-align: end;
+  white-space: nowrap;
+}

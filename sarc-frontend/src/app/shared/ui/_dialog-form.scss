@@ -1,0 +1,21 @@
+// Piezas comunes de los dialogos con formulario: alerta de error del backend y nota aclaratoria.
+
+.form-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sarc-space-2);
+  padding: var(--sarc-space-3);
+  border-radius: var(--sarc-radius-sm);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+
+  p {
+    margin: 0;
+  }
+}
+
+.note {
+  margin: 0;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-medium);
+}

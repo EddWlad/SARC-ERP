@@ -12,6 +12,8 @@ export interface Problem {
   readonly detail: string;
   readonly traceId?: string;
   readonly fieldErrors: readonly FieldError[];
+  /** Datos propios del error, p. ej. `equipmentId` del equipo que ya usa un identificador. */
+  readonly properties: Readonly<Record<string, unknown>>;
 }
 
 interface ProblemBody {
@@ -20,6 +22,18 @@ interface ProblemBody {
   readonly traceId?: string;
   readonly fieldErrors?: readonly FieldError[];
 }
+
+/** Campos estandar de RFC 9457 y del backend; el resto son propiedades del error. */
+const STANDARD_KEYS = new Set([
+  'type',
+  'title',
+  'status',
+  'detail',
+  'instance',
+  'code',
+  'traceId',
+  'fieldErrors',
+]);
 
 const DEFAULT_DETAILS: Readonly<Record<number, string>> = {
   0: 'No se pudo conectar con el servidor. Revise su conexión.',
@@ -36,6 +50,7 @@ export function toProblem(error: unknown): Problem {
       code: 'UNEXPECTED',
       detail: 'Ocurrió un error inesperado.',
       fieldErrors: [],
+      properties: {},
     };
   }
   const body = isProblemBody(error.error) ? error.error : {};
@@ -45,7 +60,22 @@ export function toProblem(error: unknown): Problem {
     detail: body.detail ?? DEFAULT_DETAILS[error.status] ?? 'La operación no se pudo completar.',
     traceId: body.traceId,
     fieldErrors: body.fieldErrors ?? [],
+    properties: Object.fromEntries(Object.entries(body).filter(([key]) => !STANDARD_KEYS.has(key))),
   };
+}
+
+/** Igual que `toProblem`, para peticiones de archivos (`responseType: 'blob'`): el error llega como Blob. */
+export async function toProblemFromBlob(error: unknown): Promise<Problem> {
+  if (error instanceof HttpErrorResponse && error.error instanceof Blob) {
+    let body: unknown = null;
+    try {
+      body = JSON.parse(await error.error.text());
+    } catch {
+      // Cuerpo que no es JSON: se usa el mensaje por defecto del estado HTTP.
+    }
+    return toProblem(new HttpErrorResponse({ status: error.status, error: body }));
+  }
+  return toProblem(error);
 }
 
 function isProblemBody(value: unknown): value is ProblemBody {

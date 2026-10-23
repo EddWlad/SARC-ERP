@@ -166,6 +166,19 @@ class InventoryApiTest {
 	}
 
 	@Test
+	void editingTheSerialToOneInUseIsAReadableConflict() throws Exception {
+		String taken = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", station("EST-1")));
+		String id = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", station("EST-2")));
+
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id, """
+				{"version":0,"brand":"BENNY","name":"E","serial":"EST-1","connectorTypeIds":["%s"]}
+				""".formatted(CCS2))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("EQUIPMENT_IDENTIFIER_IN_USE"))
+				.andExpect(jsonPath("$.equipmentId").value(taken));
+	}
+
+	@Test
 	void identifiersOfTwoDifferentEquipmentAreNeverMerged() throws Exception {
 		send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-001", "123456", "UID-1"));
 		send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-002", "223456", "UID-2"));

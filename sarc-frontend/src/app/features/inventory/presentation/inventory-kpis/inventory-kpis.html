@@ -1,0 +1,58 @@
+<section class="kpis" aria-label="Indicadores del inventario">
+  <ul class="headline">
+    @for (kpi of headline(); track kpi.label) {
+      <li class="tile">
+        <span class="value">{{ format(kpi.value) }}</span>
+        <span class="label">{{ kpi.label }}</span>
+      </li>
+    }
+  </ul>
+
+  <div class="groups">
+    <section class="group" aria-labelledby="kpi-usage">
+      <h2 id="kpi-usage">Estado de uso de los puntos</h2>
+      <ul>
+        @for (kpi of usage(); track kpi.label) {
+          <li class="row" [title]="kpi.hint">
+            <span>{{ kpi.label }}</span>
+            <strong>{{ format(kpi.value) }}</strong>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="group" aria-labelledby="kpi-network">
+      <h2 id="kpi-network">Equipos por red</h2>
+      <ul>
+        @for (kpi of networks(); track kpi.label) {
+          <li class="row">
+            <span>{{ kpi.label }}</span>
+            <strong>{{ format(kpi.value) }}</strong>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="group" aria-labelledby="kpi-connectors">
+      <h2 id="kpi-connectors">Conectores activos por tipo</h2>
+      @if (connectors().length === 0) {
+        <p class="empty">Sin conectores en este alcance.</p>
+      } @else {
+        <ul>
+          @for (kpi of connectors(); track kpi.label) {
+            <li class="row">
+              <span>{{ kpi.label }}</span>
+              <strong>{{ format(kpi.value) }}</strong>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+
+  @if (summary().deletedEquipment > 0) {
+    <p class="note">
+      {{ format(summary().deletedEquipment) }} equipo(s) eliminado(s) no se cuentan en los totales.
+    </p>
+  }
+</section>

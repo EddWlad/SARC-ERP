@@ -1,0 +1,208 @@
+<header class="page-header">
+  <div>
+    <h1>Inventario</h1>
+    <p>Puntos de carga y electrolineras de las redes KIA, JAC y CONECTZ.</p>
+  </div>
+  <div class="header-actions">
+    <button
+      matButton="outlined"
+      type="button"
+      [disabled]="facade.downloading() !== undefined"
+      (click)="download('PDF')"
+    >
+      <svg lucideFileText [size]="18"></svg>
+      {{ facade.downloading() === 'PDF' ? 'Generando...' : 'Reporte PDF' }}
+    </button>
+    <button
+      matButton="outlined"
+      type="button"
+      [disabled]="facade.downloading() !== undefined"
+      (click)="download('XLSX')"
+    >
+      <svg lucideFileSpreadsheet [size]="18"></svg>
+      {{ facade.downloading() === 'XLSX' ? 'Generando...' : 'Excel' }}
+    </button>
+    @if (canEdit) {
+      <a matButton="tonal" routerLink="/inventario/tipos-de-conector">
+        <svg lucideCable [size]="18"></svg>
+        Tipos de conector
+      </a>
+      <button matButton="filled" type="button" (click)="create()">
+        <svg lucidePlus [size]="18"></svg>
+        Nuevo equipo
+      </button>
+    }
+  </div>
+</header>
+
+@if (facade.summary(); as summary) {
+  <sarc-inventory-kpis [summary]="summary" />
+}
+
+<section class="filters" aria-label="Filtros">
+  <mat-form-field appearance="outline" class="search" subscriptSizing="dynamic">
+    <mat-label>Buscar por nombre, código o serie</mat-label>
+    <svg lucideSearch matPrefix [size]="18" class="prefix-icon"></svg>
+    <input matInput type="search" [value]="facade.filters().text" (input)="onSearch($event)" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Red</mat-label>
+    <mat-select
+      [value]="facade.filters().network"
+      (selectionChange)="onFilter({ network: $event.value })"
+    >
+      <mat-option value="">Todas</mat-option>
+      @for (network of networks; track network) {
+        <mat-option [value]="network">{{ networkLabels[network] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Tipo</mat-label>
+    <mat-select
+      [value]="facade.filters().type"
+      (selectionChange)="onFilter({ type: $event.value })"
+    >
+      <mat-option value="">Todos</mat-option>
+      @for (type of types; track type) {
+        <mat-option [value]="type">{{ typeLabels[type] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Marca</mat-label>
+    <mat-select
+      [value]="facade.filters().brand"
+      (selectionChange)="onFilter({ brand: $event.value })"
+    >
+      <mat-option value="">Todas</mat-option>
+      @for (brand of brands; track brand) {
+        <mat-option [value]="brand">{{ brandLabels[brand] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Estado</mat-label>
+    <mat-select
+      [value]="facade.filters().status"
+      (selectionChange)="onFilter({ status: $event.value })"
+    >
+      <mat-option value="">Vigentes</mat-option>
+      @for (status of statuses; track status) {
+        <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Estado de uso</mat-label>
+    <mat-select
+      [value]="facade.filters().usageStatus"
+      (selectionChange)="onFilter({ usageStatus: $event.value })"
+    >
+      <mat-option value="">Todos</mat-option>
+      @for (usage of usageStatuses; track usage) {
+        <mat-option [value]="usage">{{ usageLabels[usage] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  @if (facade.hasFilters()) {
+    <button matButton type="button" class="clear" (click)="facade.clearFilters()">
+      <svg lucideFilterX [size]="18"></svg>
+      Limpiar filtros
+    </button>
+  }
+</section>
+
+<section class="results" aria-label="Listado de equipos" [attr.aria-busy]="facade.loading()">
+  @if (facade.loading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando equipos" />
+  }
+
+  @if (facade.failed()) {
+    <div class="state" role="alert">
+      <p>No se pudo cargar el inventario.</p>
+      <button matButton="tonal" type="button" (click)="facade.reload()">Reintentar</button>
+    </div>
+  } @else if (!facade.loading() && facade.equipment().length === 0) {
+    <div class="state">
+      <p>No hay equipos que coincidan con los filtros.</p>
+    </div>
+  } @else if (isHandset()) {
+    <ul class="cards">
+      @for (item of facade.equipment(); track item.id) {
+        <li class="card">
+          <a class="equipment-link" [routerLink]="['/inventario', item.id]">
+            <strong>{{ item.name }}</strong>
+            <span class="muted block">{{ item.assignedCode }}</span>
+          </a>
+          <span class="muted"
+            >{{ networkLabels[item.network] }} · {{ typeLabels[item.type] }} ·
+            {{ brandLabels[item.brand] }}</span
+          >
+          <sarc-equipment-badges
+            [adminStatus]="item.adminStatus"
+            [usageStatus]="item.usageStatus"
+          />
+        </li>
+      }
+    </ul>
+  } @else {
+    <table mat-table [dataSource]="facade.equipment()" class="table">
+      <ng-container matColumnDef="equipment">
+        <th mat-header-cell *matHeaderCellDef>Equipo</th>
+        <td mat-cell *matCellDef="let item">
+          <a class="equipment-link" [routerLink]="['/inventario', item.id]">
+            <strong>{{ item.name }}</strong>
+            <span class="muted block">Código {{ item.assignedCode }}</span>
+          </a>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="network">
+        <th mat-header-cell *matHeaderCellDef>Red</th>
+        <td mat-cell *matCellDef="let item">{{ networkOf(item) }}</td>
+      </ng-container>
+      <ng-container matColumnDef="type">
+        <th mat-header-cell *matHeaderCellDef>Tipo y marca</th>
+        <td mat-cell *matCellDef="let item">
+          {{ typeOf(item) }}
+          <span class="muted block">{{ brandOf(item) }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <td mat-cell *matCellDef="let item">
+          <sarc-equipment-badges
+            [adminStatus]="item.adminStatus"
+            [usageStatus]="item.usageStatus"
+          />
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="connectors">
+        <th mat-header-cell *matHeaderCellDef>Conectores</th>
+        <td mat-cell *matCellDef="let item">{{ item.connectorTypeCodes.join(', ') }}</td>
+      </ng-container>
+      <ng-container matColumnDef="location">
+        <th mat-header-cell *matHeaderCellDef>Ubicación</th>
+        <td mat-cell *matCellDef="let item" class="location">{{ item.location ?? '—' }}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    </table>
+  }
+
+  <mat-paginator
+    [length]="facade.totalElements()"
+    [pageIndex]="facade.pageIndex()"
+    [pageSize]="facade.pageSize()"
+    [pageSizeOptions]="pageSizeOptions"
+    (page)="onPage($event)"
+    aria-label="Paginación de equipos"
+  />
+</section>

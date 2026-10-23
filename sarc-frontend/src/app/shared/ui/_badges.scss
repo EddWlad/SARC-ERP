@@ -1,0 +1,32 @@
+// Etiquetas de estado (pildoras). Variantes por significado, siempre con pares
+// contenedor / on-contenedor de Material para mantener el contraste en tema claro y oscuro.
+
+.badge {
+  display: inline-block;
+  padding: 2px var(--sarc-space-2);
+  border-radius: 999px;
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+  font: var(--mat-sys-label-small);
+  white-space: nowrap;
+}
+
+.badge-off {
+  background: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.badge-info {
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}
+
+.badge-accent {
+  background: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+}
+
+.badge-warn {
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}

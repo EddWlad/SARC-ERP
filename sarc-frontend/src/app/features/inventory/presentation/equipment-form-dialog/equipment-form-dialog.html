@@ -1,0 +1,200 @@
+<h2 mat-dialog-title>{{ title() }}</h2>
+
+<form novalidate (submit)="onSubmit($event)">
+  <mat-dialog-content>
+    @if (problem(); as error) {
+      <div class="form-alert" role="alert">
+        <svg lucideTriangleAlert [size]="20"></svg>
+        <div>
+          <p>{{ error.detail }}</p>
+          @if (conflictingId(); as id) {
+            <button matButton type="button" class="alert-action" (click)="openConflicting(id)">
+              {{ error.code === 'EQUIPMENT_DELETED_EXISTS' ? 'Ir a recuperarlo' : 'Ver el equipo' }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    @if (replaces; as old) {
+      <p class="note">
+        Reemplaza a <strong>{{ old.name }}</strong> ({{ old.assignedCode }}). Es un equipo nuevo con
+        su propio histórico; no se usa para corregir la serie del anterior.
+      </p>
+    }
+
+    <fieldset class="grid">
+      <legend class="sarc-visually-hidden">Clasificación</legend>
+      <mat-form-field appearance="outline">
+        <mat-label>Red</mat-label>
+        <mat-select [formField]="equipmentForm.network">
+          @for (network of networks; track network) {
+            <mat-option [value]="network">{{ networkLabels[network] }}</mat-option>
+          }
+        </mat-select>
+        @for (error of equipmentForm.network().errors(); track error.kind) {
+          <mat-error>{{ error.message }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Tipo</mat-label>
+        <mat-select [formField]="equipmentForm.type">
+          @for (type of types; track type) {
+            <mat-option [value]="type">{{ typeLabels[type] }}</mat-option>
+          }
+        </mat-select>
+        @if (editing) {
+          <mat-hint>La red y el tipo no cambian.</mat-hint>
+        }
+        @for (error of equipmentForm.type().errors(); track error.kind) {
+          <mat-error>{{ error.message }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Marca</mat-label>
+        <mat-select [formField]="equipmentForm.brand">
+          @for (brand of brands; track brand) {
+            <mat-option [value]="brand">{{ brandLabels[brand] }}</mat-option>
+          }
+        </mat-select>
+        @for (error of equipmentForm.brand().errors(); track error.kind) {
+          <mat-error>{{ error.message }}</mat-error>
+        }
+      </mat-form-field>
+
+      @if (!equipmentForm.usageStatus().hidden()) {
+        <mat-form-field appearance="outline">
+          <mat-label>Estado de uso</mat-label>
+          <mat-select [formField]="equipmentForm.usageStatus">
+            @for (status of usageStatuses; track status) {
+              <mat-option [value]="status">
+                {{ usageLabels[status] }} · {{ usageHints[status] }}
+              </mat-option>
+            }
+          </mat-select>
+          @for (error of equipmentForm.usageStatus().errors(); track error.kind) {
+            <mat-error>{{ error.message }}</mat-error>
+          }
+        </mat-form-field>
+      }
+    </fieldset>
+
+    <fieldset class="grid">
+      <legend class="sarc-visually-hidden">Identificación</legend>
+      <mat-form-field appearance="outline" class="wide">
+        <mat-label>Nombre</mat-label>
+        <input matInput autocomplete="off" [formField]="equipmentForm.name" />
+        @for (error of equipmentForm.name().errors(); track error.kind) {
+          <mat-error>{{ error.message }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Serie</mat-label>
+        <input matInput autocomplete="off" [formField]="equipmentForm.serial" />
+        @if (editing) {
+          <mat-hint>Corregirla conserva el mismo equipo.</mat-hint>
+        }
+        @for (error of equipmentForm.serial().errors(); track error.kind) {
+          <mat-error>{{ error.message }}</mat-error>
+        }
+      </mat-form-field>
+
+      @if (!equipmentForm.assignedCode().hidden()) {
+        <mat-form-field appearance="outline">
+          <mat-label>Código asignado</mat-label>
+          <input
+            matInput
+            inputmode="numeric"
+            autocomplete="off"
+            [formField]="equipmentForm.assignedCode"
+          />
+          <mat-hint>Código KIA de 6 dígitos.</mat-hint>
+          @for (error of equipmentForm.assignedCode().errors(); track error.kind) {
+            <mat-error>{{ error.message }}</mat-error>
+          }
+        </mat-form-field>
+      } @else {
+        <p class="field-note">El código asignado es la serie.</p>
+      }
+
+      <mat-form-field appearance="outline">
+        <mat-label>UID/PUK</mat-label>
+        <input matInput autocomplete="off" [formField]="equipmentForm.uidPuk" />
+        <mat-hint>{{ point() ? 'Obligatorio en puntos de carga.' : 'Opcional.' }}</mat-hint>
+        @for (error of equipmentForm.uidPuk().errors(); track error.kind) {
+          <mat-error>{{ error.message }}</mat-error>
+        }
+      </mat-form-field>
+    </fieldset>
+
+    <fieldset class="grid">
+      <legend class="sarc-visually-hidden">Conectores</legend>
+      @if (!equipmentForm.pointConnector().hidden()) {
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo de conector</mat-label>
+          <mat-select [formField]="equipmentForm.pointConnector">
+            @for (option of connectorOptions(); track option.id) {
+              <mat-option [value]="option.id">{{ option.code }} · {{ option.name }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>Un punto de carga tiene un conector.</mat-hint>
+          @for (error of equipmentForm.pointConnector().errors(); track error.kind) {
+            <mat-error>{{ error.message }}</mat-error>
+          }
+        </mat-form-field>
+      }
+      @if (!equipmentForm.stationConnectors().hidden()) {
+        <mat-form-field appearance="outline" class="wide">
+          <mat-label>Tipos de conector</mat-label>
+          <mat-select multiple [formField]="equipmentForm.stationConnectors">
+            @for (option of connectorOptions(); track option.id) {
+              <mat-option [value]="option.id">{{ option.code }} · {{ option.name }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>De 1 a 3 tipos distintos, uno por conector físico.</mat-hint>
+          @for (error of equipmentForm.stationConnectors().errors(); track error.kind) {
+            <mat-error>{{ error.message }}</mat-error>
+          }
+        </mat-form-field>
+      }
+    </fieldset>
+
+    <fieldset class="grid">
+      <legend class="sarc-visually-hidden">Ubicación y conexión</legend>
+      <mat-form-field appearance="outline" class="wide">
+        <mat-label>Ubicación</mat-label>
+        <input matInput autocomplete="off" [formField]="equipmentForm.location" />
+        @for (error of equipmentForm.location().errors(); track error.kind) {
+          <mat-error>{{ error.message }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Enlace de Google Maps</mat-label>
+        <input matInput type="url" autocomplete="off" [formField]="equipmentForm.mapsUrl" />
+        @for (error of equipmentForm.mapsUrl().errors(); track error.kind) {
+          <mat-error>{{ error.message }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>URL OCPP</mat-label>
+        <input matInput type="url" autocomplete="off" [formField]="equipmentForm.ocppUrl" />
+        <mat-hint>Dato restringido: solo lo ven administradores y analistas.</mat-hint>
+        @for (error of equipmentForm.ocppUrl().errors(); track error.kind) {
+          <mat-error>{{ error.message }}</mat-error>
+        }
+      </mat-form-field>
+    </fieldset>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button matButton type="button" mat-dialog-close [disabled]="busy()">Cancelar</button>
+    <button matButton="filled" type="submit" [disabled]="busy()">
+      {{ busy() ? 'Guardando...' : editing ? 'Guardar cambios' : 'Registrar equipo' }}
+    </button>
+  </mat-dialog-actions>
+</form>

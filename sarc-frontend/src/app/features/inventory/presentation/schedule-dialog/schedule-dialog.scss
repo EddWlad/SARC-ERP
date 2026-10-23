@@ -1,0 +1,59 @@
+@use '../../../../shared/ui/dialog-form';
+
+.form-alert {
+  margin-bottom: var(--sarc-space-3);
+}
+
+.mode {
+  width: min(320px, 100%);
+}
+
+section {
+  margin-top: var(--sarc-space-3);
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sarc-space-2);
+
+  h3 {
+    margin: 0;
+    font: var(--mat-sys-title-small);
+  }
+}
+
+.note {
+  margin-bottom: var(--sarc-space-3);
+}
+
+.inline-error {
+  margin: 0 0 var(--sarc-space-2);
+  color: var(--mat-sys-error);
+  font: var(--mat-sys-body-small);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.3fr) repeat(2, minmax(110px, 1fr)) auto;
+  align-items: start;
+  gap: var(--sarc-space-2);
+  margin-bottom: var(--sarc-space-3);
+}
+
+.exception {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) auto;
+}
+
+.note-field {
+  min-width: 180px;
+}
+
+@media (max-width: 599.98px) {
+  .row,
+  .exception {
+    grid-template-columns: 1fr;
+  }
+}

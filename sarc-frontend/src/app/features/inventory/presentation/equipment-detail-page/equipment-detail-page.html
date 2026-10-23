@@ -1,0 +1,182 @@
+<a matButton routerLink="/inventario" class="back">
+  <svg lucideArrowLeft [size]="18"></svg>
+  Inventario
+</a>
+
+@if (facade.loading() && !facade.equipment()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Cargando equipo" />
+}
+
+@if (facade.notFound()) {
+  <div class="state" role="alert">
+    <p>El equipo no existe.</p>
+  </div>
+} @else if (facade.failed()) {
+  <div class="state" role="alert">
+    <p>No se pudo cargar el equipo.</p>
+    <button matButton="tonal" type="button" (click)="facade.reload()">Reintentar</button>
+  </div>
+} @else if (facade.equipment(); as equipment) {
+  <header class="page-header">
+    <div>
+      <h1>{{ equipment.name }}</h1>
+      <p class="subtitle">
+        Código <strong>{{ equipment.assignedCode }}</strong> ·
+        {{ networkLabels[equipment.network] }} · {{ typeLabels[equipment.type] }}
+      </p>
+      <sarc-equipment-badges
+        [adminStatus]="equipment.adminStatus"
+        [usageStatus]="equipment.usageStatus"
+      />
+    </div>
+    @if (canEdit) {
+      <div class="header-actions">
+        @if (equipment.adminStatus !== 'DELETED') {
+          <button matButton="filled" type="button" (click)="edit(equipment)">
+            <svg lucidePencil [size]="18"></svg>
+            Editar
+          </button>
+          <button matButton="tonal" type="button" (click)="editSchedule(equipment)">
+            <svg lucideCalendarClock [size]="18"></svg>
+            Horario
+          </button>
+        }
+        @if (equipment.adminStatus !== 'ACTIVE') {
+          <button matButton="tonal" type="button" (click)="registerReplacement(equipment)">
+            <svg lucideReplace [size]="18"></svg>
+            Registrar reemplazo
+          </button>
+        }
+        <button matButton="outlined" type="button" [matMenuTriggerFor]="statusMenu">
+          Estado
+          <svg lucideChevronDown [size]="18"></svg>
+        </button>
+        <mat-menu #statusMenu="matMenu" xPosition="before">
+          @for (action of statusActions(); track action.label) {
+            <button mat-menu-item type="button" (click)="changeStatus(equipment, action)">
+              {{ action.label }}
+            </button>
+          }
+        </mat-menu>
+      </div>
+    }
+  </header>
+
+  @if (equipment.adminStatus === 'DELETED') {
+    <div class="banner" role="status">
+      <p>
+        Equipo eliminado (baja lógica). No cuenta en el inventario vigente; su histórico se
+        conserva.
+      </p>
+      @if (canEdit) {
+        <button matButton="filled" type="button" (click)="changeStatus(equipment, restore)">
+          Recuperar
+        </button>
+      }
+    </div>
+  }
+
+  <div class="layout">
+    <section class="panel data" aria-labelledby="equipment-data">
+      <h2 id="equipment-data">Datos del equipo</h2>
+      <dl>
+        <dt>Red</dt>
+        <dd>{{ networkLabels[equipment.network] }}</dd>
+        <dt>Tipo</dt>
+        <dd>{{ typeLabels[equipment.type] }}</dd>
+        <dt>Marca</dt>
+        <dd>{{ brandLabels[equipment.brand] }}</dd>
+        <dt>Serie</dt>
+        <dd class="mono">{{ equipment.serial }}</dd>
+        <dt>Código asignado</dt>
+        <dd class="mono">{{ equipment.assignedCode }}</dd>
+        <dt>UID/PUK</dt>
+        <dd>
+          @if (equipment.restrictedDataVisible) {
+            <span class="mono">{{ equipment.uidPuk ?? '—' }}</span>
+          } @else {
+            <span class="restricted">
+              <svg lucideEyeOff [size]="16" aria-hidden="true"></svg>
+              Restringido
+            </span>
+          }
+        </dd>
+        <dt>Ubicación</dt>
+        <dd>
+          {{ equipment.location ?? '—' }}
+          @if (equipment.mapsUrl) {
+            <a class="link" [href]="equipment.mapsUrl" target="_blank" rel="noopener noreferrer">
+              Ver en el mapa
+              <svg lucideExternalLink [size]="14" aria-hidden="true"></svg>
+              <span class="sarc-visually-hidden">(se abre en otra pestaña)</span>
+            </a>
+          }
+        </dd>
+        <dt>URL OCPP</dt>
+        <dd>
+          @if (equipment.restrictedDataVisible) {
+            <span class="mono break">{{ equipment.ocppUrl ?? '—' }}</span>
+          } @else {
+            <span class="restricted">
+              <svg lucideEyeOff [size]="16" aria-hidden="true"></svg>
+              Restringido
+            </span>
+          }
+        </dd>
+        @if (equipment.replacesEquipmentId; as replacedId) {
+          <dt>Reemplaza a</dt>
+          <dd>
+            <a class="link" [routerLink]="['/inventario', replacedId]">Ver equipo anterior</a>
+          </dd>
+        }
+        <dt>Registrado</dt>
+        <dd>{{ equipment.createdAt | date: 'medium' }}</dd>
+        <dt>Última modificación</dt>
+        <dd>{{ equipment.updatedAt | date: 'medium' }}</dd>
+      </dl>
+    </section>
+
+    <section class="panel image" aria-labelledby="equipment-image">
+      <h2 id="equipment-image">Imagen</h2>
+      <sarc-equipment-image
+        [url]="equipment.imageUrl"
+        [name]="equipment.name"
+        [editable]="canEdit && equipment.adminStatus !== 'DELETED'"
+        [busy]="imageBusy()"
+        (upload)="uploadImage($event)"
+        (remove)="removeImage()"
+      />
+    </section>
+
+    <section class="panel" aria-labelledby="equipment-connectors">
+      <h2 id="equipment-connectors">Conectores</h2>
+      <ol class="connectors">
+        @for (connector of equipment.connectors; track connector.id) {
+          <li>
+            <span class="ordinal">{{ connector.ordinal }}</span>
+            <div>
+              <strong>{{ connector.connectorTypeCode }}</strong>
+              <span class="muted">{{ connector.connectorTypeName }}</span>
+            </div>
+          </li>
+        }
+      </ol>
+    </section>
+
+    <section class="panel" aria-labelledby="equipment-schedule">
+      <h2 id="equipment-schedule">Horario</h2>
+      <sarc-equipment-schedule [schedule]="equipment.schedule" />
+    </section>
+
+    <section class="panel wide" aria-labelledby="equipment-identities">
+      <h2 id="equipment-identities">Identidades externas</h2>
+      <sarc-external-identities
+        [identities]="facade.identities()"
+        [editable]="canEdit && equipment.adminStatus !== 'DELETED'"
+        (add)="addIdentity()"
+        (verify)="verifyIdentity($event)"
+        (remove)="removeIdentity($event)"
+      />
+    </section>
+  </div>
+}

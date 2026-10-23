@@ -15,33 +15,12 @@ import { User, USER_STATUS_LABELS } from '../../domain/user';
     }
   `,
   styles: `
+    @use '../../../../shared/ui/badges';
+
     :host {
       display: inline-flex;
       flex-wrap: wrap;
       gap: var(--sarc-space-1);
-    }
-
-    .badge {
-      padding: 2px var(--sarc-space-2);
-      border-radius: 999px;
-      background: var(--mat-sys-primary-container);
-      color: var(--mat-sys-on-primary-container);
-      font: var(--mat-sys-label-small);
-    }
-
-    .badge-off {
-      background: var(--mat-sys-surface-container-highest);
-      color: var(--mat-sys-on-surface-variant);
-    }
-
-    .badge-info {
-      background: var(--mat-sys-secondary-container);
-      color: var(--mat-sys-on-secondary-container);
-    }
-
-    .badge-warn {
-      background: var(--mat-sys-error-container);
-      color: var(--mat-sys-on-error-container);
     }
   `,
 })

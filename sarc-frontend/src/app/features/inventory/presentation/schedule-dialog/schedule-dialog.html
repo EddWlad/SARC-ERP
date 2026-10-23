@@ -1,0 +1,143 @@
+<h2 mat-dialog-title>Horario de atención</h2>
+
+<form novalidate (submit)="onSubmit($event)">
+  <mat-dialog-content>
+    @if (errorMessage(); as message) {
+      <div class="form-alert" role="alert">
+        <svg lucideTriangleAlert [size]="20"></svg>
+        <p>{{ message }}</p>
+      </div>
+    }
+
+    <mat-form-field appearance="outline" class="mode">
+      <mat-label>Modo</mat-label>
+      <mat-select [formField]="scheduleForm.mode">
+        @for (mode of modes; track mode) {
+          <mat-option [value]="mode">{{ modeLabels[mode] }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    @if (weekly()) {
+      <section aria-labelledby="schedule-intervals">
+        <div class="section-head">
+          <h3 id="schedule-intervals">Intervalos semanales</h3>
+          <button matButton type="button" (click)="addInterval()">
+            <svg lucidePlus [size]="18"></svg>
+            Agregar intervalo
+          </button>
+        </div>
+        <p class="note">
+          Varios intervalos por día están permitidos. Si el cierre es anterior a la apertura, el
+          intervalo termina al día siguiente.
+        </p>
+        @for (error of scheduleForm.intervals().errors(); track error.kind) {
+          <p class="inline-error" role="alert">{{ error.message }}</p>
+        }
+        @for (interval of scheduleForm.intervals; track $index; let index = $index) {
+          <div class="row">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Día</mat-label>
+              <mat-select [formField]="interval.day">
+                @for (day of days; track day) {
+                  <mat-option [value]="day">{{ dayLabels[day] }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Abre</mat-label>
+              <input matInput type="time" [formField]="interval.opensAt" />
+              @for (error of interval.opensAt().errors(); track error.kind) {
+                <mat-error>{{ error.message }}</mat-error>
+              }
+            </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Cierra</mat-label>
+              <input matInput type="time" [formField]="interval.closesAt" />
+              @for (error of interval.closesAt().errors(); track error.kind) {
+                <mat-error>{{ error.message }}</mat-error>
+              }
+            </mat-form-field>
+            <button
+              matIconButton
+              type="button"
+              [attr.aria-label]="'Quitar intervalo ' + (index + 1)"
+              (click)="removeInterval(index)"
+            >
+              <svg lucideTrash2 [size]="18"></svg>
+            </button>
+          </div>
+        }
+      </section>
+    }
+
+    <section aria-labelledby="schedule-exceptions">
+      <div class="section-head">
+        <h3 id="schedule-exceptions">Excepciones por fecha</h3>
+        <button matButton type="button" (click)="addException()">
+          <svg lucidePlus [size]="18"></svg>
+          Agregar excepción
+        </button>
+      </div>
+      <p class="note">Prevalecen sobre el horario habitual (feriados, mantenimientos).</p>
+      @for (exception of scheduleForm.exceptions; track $index; let index = $index) {
+        <div class="row exception">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Fecha</mat-label>
+            <input matInput type="date" [formField]="exception.date" />
+            @for (error of exception.date().errors(); track error.kind) {
+              <mat-error>{{ error.message }}</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Atención</mat-label>
+            <mat-select [formField]="exception.kind">
+              <mat-option value="CLOSED">Cerrado</mat-option>
+              <mat-option value="HOURS">Horario especial</mat-option>
+            </mat-select>
+          </mat-form-field>
+          @if (exception.kind().value() === 'HOURS') {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Abre</mat-label>
+              <input matInput type="time" [formField]="exception.opensAt" />
+              @for (error of exception.opensAt().errors(); track error.kind) {
+                <mat-error>{{ error.message }}</mat-error>
+              }
+            </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Cierra</mat-label>
+              <input matInput type="time" [formField]="exception.closesAt" />
+              @for (error of exception.closesAt().errors(); track error.kind) {
+                <mat-error>{{ error.message }}</mat-error>
+              }
+            </mat-form-field>
+          }
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="note-field">
+            <mat-label>Nota</mat-label>
+            <input matInput autocomplete="off" [formField]="exception.note" />
+            @for (error of exception.note().errors(); track error.kind) {
+              <mat-error>{{ error.message }}</mat-error>
+            }
+          </mat-form-field>
+          <button
+            matIconButton
+            type="button"
+            [attr.aria-label]="'Quitar excepción ' + (index + 1)"
+            (click)="removeException(index)"
+          >
+            <svg lucideTrash2 [size]="18"></svg>
+          </button>
+        </div>
+      } @empty {
+        <p class="note">Sin excepciones.</p>
+      }
+    </section>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button matButton type="button" mat-dialog-close [disabled]="busy()">Cancelar</button>
+    <button matButton="filled" type="submit" [disabled]="busy()">
+      {{ busy() ? 'Guardando...' : 'Guardar horario' }}
+    </button>
+  </mat-dialog-actions>
+</form>

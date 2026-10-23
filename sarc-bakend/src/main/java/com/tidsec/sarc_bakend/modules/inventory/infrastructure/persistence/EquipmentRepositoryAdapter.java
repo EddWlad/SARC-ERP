@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.FlushModeType;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Tuple;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -61,18 +62,24 @@ class EquipmentRepositoryAdapter implements EquipmentRepository {
 		return jpa.findById(id);
 	}
 
+	/**
+	 * Sin vaciado previo (COMMIT): al editar, el equipo ya tiene los identificadores nuevos en memoria y
+	 * el vaciado automatico los escribiria antes de la consulta, chocando con la restriccion UNIQUE en
+	 * vez de devolver el conflicto legible. El propio equipo lo descarta quien llama.
+	 */
 	@Override
 	public List<Equipment> findHoldersOf(String serial, String assignedCode, String uidPuk) {
-		Specification<Equipment> holders = (root, query, cb) -> {
-			List<Predicate> matches = new ArrayList<>();
-			matches.add(cb.equal(root.get("serial"), serial));
-			matches.add(cb.equal(root.get("assignedCode"), assignedCode));
-			if (uidPuk != null) {
-				matches.add(cb.equal(root.get("uidPuk"), uidPuk));
-			}
-			return cb.or(matches.toArray(Predicate[]::new));
-		};
-		return jpa.findAll(holders);
+		CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+		CriteriaQuery<Equipment> query = cb.createQuery(Equipment.class);
+		Root<Equipment> root = query.from(Equipment.class);
+		List<Predicate> matches = new ArrayList<>();
+		matches.add(cb.equal(root.get("serial"), serial));
+		matches.add(cb.equal(root.get("assignedCode"), assignedCode));
+		if (uidPuk != null) {
+			matches.add(cb.equal(root.get("uidPuk"), uidPuk));
+		}
+		query.where(cb.or(matches.toArray(Predicate[]::new)));
+		return entityManager.createQuery(query).setFlushMode(FlushModeType.COMMIT).getResultList();
 	}
 
 	@Override
