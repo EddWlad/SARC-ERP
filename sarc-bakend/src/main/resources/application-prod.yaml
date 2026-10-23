@@ -1,0 +1,17 @@
+spring:
+  docker:
+    compose:
+      enabled: false
+  datasource:
+    url: ${SARC_DB_URL}
+    username: ${SARC_DB_USER}
+    password: ${SARC_DB_PASSWORD}
+
+server:
+  forward-headers-strategy: native
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

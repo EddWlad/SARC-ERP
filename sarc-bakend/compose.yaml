@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: 'postgres:18'
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sarc
+      POSTGRES_USER: sarc_app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - pg_sarc:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U sarc_app -d sarc']
+      interval: 10s
+      timeout: 5s
+      retries: 8
+
+volumes:
+  pg_sarc:

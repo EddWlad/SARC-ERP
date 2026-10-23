@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: sarc-bakend
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+        default_batch_fetch_size: 50
+  flyway:
+    locations: classpath:db/migration
+  session:
+    timeout: 60m
+    jdbc:
+      initialize-schema: never
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+springdoc:
+  swagger-ui:
+    enabled: true
+
+sarc:
+  security:
+    bcrypt-strength: 12
+    max-failed-login-attempts: 5
+    lockout-duration: 15m
+  # Admin inicial: solo se crea si no existe ningun usuario. Definir ambas variables.
+  bootstrap-admin:
+    email: ${SARC_BOOTSTRAP_ADMIN_EMAIL:}
+    password: ${SARC_BOOTSTRAP_ADMIN_PASSWORD:}
+    full-name: ${SARC_BOOTSTRAP_ADMIN_NAME:Administrador}

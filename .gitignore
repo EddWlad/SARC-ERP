@@ -1,0 +1,28 @@
+# Secretos locales (cada modulo tiene su .env.example)
+.env
+.env.*
+!.env.example
+
+# Build
+target/
+build/
+node_modules/
+dist/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Herramientas locales
+.claude/settings.local.json

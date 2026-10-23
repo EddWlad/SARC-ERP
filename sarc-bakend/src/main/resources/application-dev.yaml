@@ -1,0 +1,4 @@
+# Desarrollo local: las credenciales viven en .env (fuera de Git), el mismo archivo que usa compose.yaml.
+spring:
+  config:
+    import: optional:file:.env[.properties]
