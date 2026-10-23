@@ -1,6 +1,10 @@
 spring:
   application:
     name: sarc-bakend
+  profiles:
+    # Sin perfil explicito (IDE, mvn spring-boot:run) se usa dev. Produccion arranca con
+    # SPRING_PROFILES_ACTIVE=prod.
+    default: dev
   jpa:
     open-in-view: false
     hibernate:
