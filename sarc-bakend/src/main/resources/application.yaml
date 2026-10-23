@@ -16,6 +16,10 @@ spring:
         default_batch_fetch_size: 50
   flyway:
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
   session:
     timeout: 60m
     jdbc:
@@ -46,6 +50,15 @@ springdoc:
     enabled: true
 
 sarc:
+  storage:
+    # Imagenes privadas en Cloudinary (TRD 02.1). Vacio = subida deshabilitada (503).
+    cloudinary:
+      cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+      api-key: ${CLOUDINARY_API_KEY:}
+      api-secret: ${CLOUDINARY_API_SECRET:}
+      root-folder: sarc
+  reports:
+    time-zone: America/Guayaquil
   security:
     bcrypt-strength: 12
     max-failed-login-attempts: 5

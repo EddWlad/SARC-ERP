@@ -17,6 +17,9 @@
 		<java.version>25</java.version>
 		<springdoc.version>3.1.1</springdoc.version>
 		<archunit.version>1.4.1</archunit.version>
+		<cloudinary.version>2.5.0</cloudinary.version>
+		<openpdf.version>3.0.5</openpdf.version>
+		<poi.version>6.0.0</poi.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -55,6 +58,29 @@
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>${springdoc.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.cloudinary</groupId>
+			<artifactId>cloudinary-http5</artifactId>
+			<version>${cloudinary.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.librepdf</groupId>
+			<artifactId>openpdf</artifactId>
+			<version>${openpdf.version}</version>
+			<exclusions>
+				<!-- Solo sirve para leer PDF con flujos Brotli (no se usa: solo generamos). Su presencia hace
+				     que httpclient5 pida respuestas Brotli a Cloudinary sin cargar el nativo y la subida falle. -->
+				<exclusion>
+					<groupId>com.aayushatharva.brotli4j</groupId>
+					<artifactId>brotli4j</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>${poi.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>

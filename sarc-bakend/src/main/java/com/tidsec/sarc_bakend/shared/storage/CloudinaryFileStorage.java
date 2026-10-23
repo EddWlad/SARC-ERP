@@ -1,0 +1,73 @@
+package com.tidsec.sarc_bakend.shared.storage;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import com.tidsec.sarc_bakend.shared.error.ServiceUnavailableException;
+
+/**
+ * Cloudinary con entrega "authenticated": los archivos no son publicos y solo se ven con una
+ * URL firmada por el backend.
+ */
+class CloudinaryFileStorage implements FileStorage {
+
+	private static final Logger log = LoggerFactory.getLogger(CloudinaryFileStorage.class);
+	private static final String DELIVERY_TYPE = "authenticated";
+
+	private final Cloudinary cloudinary;
+	private final String rootFolder;
+
+	CloudinaryFileStorage(StorageProperties properties) {
+		this.cloudinary = new Cloudinary(ObjectUtils.asMap(
+				"cloud_name", properties.cloudName(),
+				"api_key", properties.apiKey(),
+				"api_secret", properties.apiSecret(),
+				"secure", true));
+		this.rootFolder = properties.rootFolder();
+	}
+
+	@Override
+	public String store(String folder, byte[] content) {
+		try {
+			Map<?, ?> result = cloudinary.uploader().upload(content, ObjectUtils.asMap(
+					"type", DELIVERY_TYPE,
+					"resource_type", "image",
+					"folder", rootFolder + "/" + folder,
+					"unique_filename", true,
+					"overwrite", false));
+			return (String) result.get("public_id");
+		}
+		catch (IOException | RuntimeException ex) {
+			log.error("No se pudo subir el archivo a Cloudinary", ex);
+			throw unavailable();
+		}
+	}
+
+	@Override
+	public void delete(String reference) {
+		try {
+			cloudinary.uploader().destroy(reference, ObjectUtils.asMap("type", DELIVERY_TYPE, "resource_type", "image"));
+		}
+		catch (IOException | RuntimeException ex) {
+			log.error("No se pudo eliminar el archivo {} de Cloudinary", reference, ex);
+			throw unavailable();
+		}
+	}
+
+	@Override
+	public Optional<String> accessUrl(String reference) {
+		return Optional.of(cloudinary.url().type(DELIVERY_TYPE).resourceType("image").secure(true).signed(true)
+				.generate(reference));
+	}
+
+	private static ServiceUnavailableException unavailable() {
+		return new ServiceUnavailableException("STORAGE_UNAVAILABLE",
+				"El almacenamiento de archivos no esta disponible; intente mas tarde");
+	}
+}

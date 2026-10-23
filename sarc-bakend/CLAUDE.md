@@ -11,12 +11,13 @@ Spring Boot 4 / Java 25 / PostgreSQL 18. Especificacion funcional: `../documents
 ## Estructura
 
 ```
-shared/            kernel compartido: error, audit, security, persistence, pagination, time, web
+shared/            kernel compartido: error, audit, security, persistence, pagination, time, web,
+                   domain (tipos comunes), storage (archivos), report (PDF/Excel corporativos)
 modules/<modulo>/
   api/             controller/  request/  response/
   application/     service/  command/  result/  port/
   domain/          model/  policy/  repository/
-  infrastructure/  persistence/  security/  config/  bootstrap/
+  infrastructure/  persistence/  security/  config/  bootstrap/  report/
 ```
 
 Dependencias: `api -> application -> domain <- infrastructure`.

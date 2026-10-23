@@ -1,0 +1,453 @@
+package com.tidsec.sarc_bakend.modules.inventory.api;
+
+import static com.tidsec.sarc_bakend.support.WebSessions.login;
+import static com.tidsec.sarc_bakend.support.WebSessions.xsrf;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.io.ByteArrayInputStream;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import jakarta.servlet.http.Cookie;
+
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
+
+import com.jayway.jsonpath.JsonPath;
+import com.tidsec.sarc_bakend.TestcontainersConfiguration;
+import com.tidsec.sarc_bakend.modules.identity.domain.model.Email;
+import com.tidsec.sarc_bakend.modules.identity.domain.model.Role;
+import com.tidsec.sarc_bakend.modules.identity.domain.model.UserAccount;
+import com.tidsec.sarc_bakend.modules.identity.domain.repository.UserRepository;
+import com.tidsec.sarc_bakend.shared.storage.FileStorage;
+
+@SpringBootTest(properties = "sarc.security.bcrypt-strength=4")
+@AutoConfigureMockMvc
+@Import(TestcontainersConfiguration.class)
+class InventoryApiTest {
+
+	private static final String PASSWORD = "clave-de-prueba-123";
+	/** Tipos de conector sembrados por la migracion V004. */
+	private static final String TYPE2 = "00000000-0000-0000-0000-000000000c01";
+	private static final String CCS2 = "00000000-0000-0000-0000-000000000c02";
+	private static final String CHADEMO = "00000000-0000-0000-0000-000000000c03";
+	private static final byte[] PNG = { (byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0 };
+
+	@Autowired MockMvc mvc;
+	@Autowired UserRepository users;
+	@Autowired PasswordEncoder encoder;
+	@Autowired JdbcTemplate jdbc;
+	@MockitoBean FileStorage fileStorage;
+
+	private Cookie analyst;
+	private Cookie manager;
+
+	@BeforeEach
+	void setUp() throws Exception {
+		jdbc.execute("TRUNCATE spring_session, spring_session_attributes, audit_event, auth_user_role, auth_user, "
+				+ "asset_external_identity, asset_schedule_interval, asset_schedule_exception, asset_connector, "
+				+ "asset_equipment CASCADE");
+		jdbc.update("DELETE FROM asset_connector_type WHERE id::text NOT LIKE '00000000-0000-0000-0000-000000000c%'");
+		seedUser("analista@eos.com", Role.ANALISTA);
+		seedUser("gerente@eos.com", Role.GERENTE);
+		analyst = login(mvc, "analista@eos.com", PASSWORD);
+		manager = login(mvc, "gerente@eos.com", PASSWORD);
+	}
+
+	// ---- reglas de alta por red y tipo
+
+	@Test
+	void registersAKiaPointWithItsSixDigitCode() throws Exception {
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-001", "123456", "UID-1"))
+				.andExpect(status().isCreated())
+				.andExpect(header().exists("Location"))
+				.andExpect(jsonPath("$.assignedCode").value("123456"))
+				.andExpect(jsonPath("$.serial").value("KIA-001"))
+				.andExpect(jsonPath("$.uidPuk").value("UID-1"))
+				.andExpect(jsonPath("$.usageStatus").value("FREE"))
+				.andExpect(jsonPath("$.adminStatus").value("ACTIVE"))
+				.andExpect(jsonPath("$.connectors.length()").value(1))
+				.andExpect(jsonPath("$.connectors[0].connectorTypeCode").value("TYPE2"))
+				.andExpect(jsonPath("$.schedule.mode").value("NOT_DEFINED"))
+				.andExpect(jsonPath("$.restrictedDataVisible").value(true))
+				.andExpect(jsonPath("$.version").value(0));
+	}
+
+	@Test
+	void rejectsKiaCodesStartingWithZeroAndPointsWithTwoConnectors() throws Exception {
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-001", "012345", "UID-1"))
+				.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code").value("INVALID_ASSIGNED_CODE"));
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", """
+				{"network":"KIA","type":"CHARGING_POINT","brand":"WALLBOX","name":"P","serial":"KIA-002",
+				 "assignedCode":"223456","uidPuk":"UID-2","usageStatus":"FREE","connectorTypeIds":["%s","%s"]}
+				""".formatted(TYPE2, CCS2))
+				.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code").value("INVALID_CONNECTOR_COUNT"));
+	}
+
+	@Test
+	void jacPointUsesItsSerialAsCodeAndRequiresUidPuk() throws Exception {
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", jacPoint("jac-77", null))
+				.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code").value("UID_PUK_REQUIRED"));
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", jacPoint("jac-77", "UID-77"))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.assignedCode").value("JAC-77"));
+	}
+
+	@Test
+	void stationAcceptsUpToThreeConnectorsWithoutUidPukOrUsageStatus() throws Exception {
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", station("EST-1"))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.assignedCode").value("EST-1"))
+				.andExpect(jsonPath("$.uidPuk").doesNotExist())
+				.andExpect(jsonPath("$.usageStatus").doesNotExist())
+				.andExpect(jsonPath("$.connectors.length()").value(3));
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", """
+				{"network":"CONECTZ","type":"CHARGING_STATION","brand":"BENNY","name":"E","serial":"EST-2",
+				 "usageStatus":"FREE","connectorTypeIds":["%s"]}
+				""".formatted(CCS2))
+				.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code").value("USAGE_STATUS_NOT_APPLICABLE"));
+	}
+
+	// ---- unicidad global, baja logica y recuperacion
+
+	@Test
+	void duplicatedIdentifiersConflictAndDeletedOnesOfferRecovery() throws Exception {
+		String id = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-001", "123456", "UID-1")));
+
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-002", "123456", "UID-2"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("EQUIPMENT_IDENTIFIER_IN_USE"))
+				.andExpect(jsonPath("$.equipmentId").value(id));
+
+		send(analyst, HttpMethod.PATCH, "/api/v1/equipment/" + id + "/status", "{\"version\":0,\"status\":\"DELETED\"}")
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.adminStatus").value("DELETED"));
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("kia-001", "999999", "UID-9"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("EQUIPMENT_DELETED_EXISTS"))
+				.andExpect(jsonPath("$.equipmentId").value(id));
+
+		send(analyst, HttpMethod.PATCH, "/api/v1/equipment/" + id + "/status", "{\"version\":1,\"status\":\"ACTIVE\"}")
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value(id))
+				.andExpect(jsonPath("$.adminStatus").value("ACTIVE"));
+	}
+
+	@Test
+	void identifiersOfTwoDifferentEquipmentAreNeverMerged() throws Exception {
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-001", "123456", "UID-1"));
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-002", "223456", "UID-2"));
+
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-001", "223456", "UID-3"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("IDENTIFIERS_BELONG_TO_DIFFERENT_EQUIPMENT"))
+				.andExpect(jsonPath("$.equipmentIds.length()").value(2));
+	}
+
+	@Test
+	void listingHidesDeletedEquipmentUnlessAskedAndFilters() throws Exception {
+		String kia = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-001", "123456", "UID-1")));
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", station("EST-1"));
+		send(analyst, HttpMethod.PATCH, "/api/v1/equipment/" + kia + "/status", "{\"version\":0,\"status\":\"DELETED\"}");
+
+		mvc.perform(get("/api/v1/equipment").cookie(manager))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.totalElements").value(1))
+				.andExpect(jsonPath("$.content[0].serial").value("EST-1"))
+				.andExpect(jsonPath("$.content[0].connectorTypeCodes.length()").value(3));
+		mvc.perform(get("/api/v1/equipment").cookie(manager).param("status", "DELETED"))
+				.andExpect(jsonPath("$.totalElements").value(1))
+				.andExpect(jsonPath("$.content[0].id").value(kia));
+		mvc.perform(get("/api/v1/equipment").cookie(manager).param("network", "JAC").param("text", "est"))
+				.andExpect(jsonPath("$.totalElements").value(1));
+	}
+
+	// ---- permisos y proyeccion por rol
+
+	@Test
+	void managerSeesInventoryWithoutRestrictedDataAndCannotEdit() throws Exception {
+		String id = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", """
+				{"network":"KIA","type":"CHARGING_POINT","brand":"WALLBOX","name":"Punto","serial":"KIA-001",
+				 "assignedCode":"123456","uidPuk":"UID-1","ocppUrl":"wss://ocpp.example/KIA-001",
+				 "usageStatus":"BLOCKED","connectorTypeIds":["%s"]}
+				""".formatted(TYPE2)));
+
+		mvc.perform(get("/api/v1/equipment/" + id).cookie(manager))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.uidPuk").doesNotExist())
+				.andExpect(jsonPath("$.ocppUrl").doesNotExist())
+				.andExpect(jsonPath("$.restrictedDataVisible").value(false));
+		mvc.perform(get("/api/v1/equipment/" + id).cookie(analyst))
+				.andExpect(jsonPath("$.ocppUrl").value("wss://ocpp.example/KIA-001"));
+		send(manager, HttpMethod.POST, "/api/v1/equipment", station("EST-9"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+	}
+
+	// ---- edicion, conectores y horario
+
+	@Test
+	void updateCorrectsSerialKeepsIdentityAndRetiresExtraConnectors() throws Exception {
+		String id = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", station("EST-1")));
+		String update = """
+				{"version":%d,"brand":"BENNY","name":"Electrolinera Norte","serial":"EST-1B",
+				 "connectorTypeIds":["%s","%s"]}
+				""";
+
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id, update.formatted(5, CHADEMO, CCS2))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("CONCURRENT_MODIFICATION"));
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id, update.formatted(0, CHADEMO, CCS2))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value(id))
+				.andExpect(jsonPath("$.serial").value("EST-1B"))
+				.andExpect(jsonPath("$.assignedCode").value("EST-1B"))
+				.andExpect(jsonPath("$.connectors.length()").value(2))
+				.andExpect(jsonPath("$.connectors[0].connectorTypeCode").value("CHADEMO"));
+
+		assertThat(jdbc.queryForObject("select count(*) from asset_connector where equipment_id = ?::uuid "
+				+ "and not active", Long.class, id)).isEqualTo(1);
+		assertThat(auditActions(id)).containsExactly("EQUIPMENT_REGISTERED", "EQUIPMENT_SERIAL_CORRECTED");
+	}
+
+	@Test
+	void weeklyScheduleWithOvernightIntervalAndExceptions() throws Exception {
+		String id = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", station("EST-1")));
+
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id + "/schedule", """
+				{"version":0,"mode":"WEEKLY",
+				 "intervals":[{"day":"FRIDAY","opensAt":"20:00","closesAt":"02:00"},
+				              {"day":"SATURDAY","opensAt":"01:00","closesAt":"08:00"}],
+				 "exceptions":[]}
+				""")
+				.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code").value("SCHEDULE_INTERVALS_OVERLAP"));
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id + "/schedule", """
+				{"version":0,"mode":"WEEKLY",
+				 "intervals":[{"day":"MONDAY","opensAt":"08:00","closesAt":"18:00"},
+				              {"day":"FRIDAY","opensAt":"20:00","closesAt":"02:00"}],
+				 "exceptions":[{"date":"2026-12-25","closed":true,"note":"Navidad"},
+				               {"date":"2026-12-31","closed":false,"opensAt":"08:00","closesAt":"12:00"}]}
+				""")
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.schedule.mode").value("WEEKLY"))
+				.andExpect(jsonPath("$.schedule.intervals.length()").value(2))
+				.andExpect(jsonPath("$.schedule.intervals[1].overnight").value(true))
+				.andExpect(jsonPath("$.schedule.exceptions[0].closed").value(true))
+				.andExpect(jsonPath("$.schedule.exceptions[1].opensAt").value("08:00:00"));
+	}
+
+	// ---- catalogo de conectores
+
+	@Test
+	void connectorTypeCatalogIsExtensibleAndInactiveTypesAreNotAssignable() throws Exception {
+		mvc.perform(get("/api/v1/connector-types").cookie(manager))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(6));
+		String created = send(analyst, HttpMethod.POST, "/api/v1/connector-types", "{\"code\":\"nacs\",\"name\":\"NACS\"}")
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.code").value("NACS"))
+				.andReturn().getResponse().getContentAsString();
+		String typeId = JsonPath.read(created, "$.id");
+		send(analyst, HttpMethod.POST, "/api/v1/connector-types", "{\"code\":\"NACS\",\"name\":\"Otro\"}")
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("CONNECTOR_TYPE_CODE_EXISTS"));
+		send(analyst, HttpMethod.PATCH, "/api/v1/connector-types/" + typeId, "{\"version\":0,\"status\":\"INACTIVE\"}")
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("INACTIVE"));
+
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", """
+				{"network":"JAC","type":"CHARGING_STATION","brand":"BENNY","name":"E","serial":"EST-5",
+				 "connectorTypeIds":["%s"]}
+				""".formatted(typeId))
+				.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code").value("CONNECTOR_TYPE_INACTIVE"));
+	}
+
+	// ---- identidades externas
+
+	@Test
+	void externalIdentitiesResolveVerifyAndNeverPointToTwoEquipment() throws Exception {
+		String first = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", station("EST-1")));
+		String second = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", station("EST-2")));
+		String identity = """
+				{"platform":"ENERLINK","scope":"cuenta-1","externalId":"ENL-55","alias":"Estacion norte"}
+				""";
+
+		String created = send(analyst, HttpMethod.POST, "/api/v1/equipment/" + first + "/external-identities", identity)
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.verified").value(false))
+				.andReturn().getResponse().getContentAsString();
+		String identityId = JsonPath.read(created, "$.id");
+		send(analyst, HttpMethod.POST, "/api/v1/equipment/" + second + "/external-identities", identity)
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("EXTERNAL_IDENTITY_IN_USE"))
+				.andExpect(jsonPath("$.equipmentId").value(first));
+
+		mvc.perform(get("/api/v1/external-identities/resolve").cookie(manager)
+				.param("platform", "ENERLINK").param("scope", "cuenta-1").param("externalId", " ENL-55 "))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.equipmentId").value(first));
+
+		send(analyst, HttpMethod.POST, "/api/v1/external-identities/" + identityId + "/verify", "{\"version\":0}")
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.verified").value(true))
+				.andExpect(jsonPath("$.verifiedAt").exists());
+		mvc.perform(delete("/api/v1/external-identities/" + identityId).with(xsrf()).cookie(analyst))
+				.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code").value("EXTERNAL_IDENTITY_VERIFIED"));
+	}
+
+	// ---- imagen
+
+	@Test
+	void imagesAreValidatedStoredPrivatelyAndReplaced() throws Exception {
+		String id = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", station("EST-1")));
+		when(fileStorage.store(eq("equipment/" + id), any())).thenReturn("sarc/equipment/" + id + "/foto");
+		when(fileStorage.accessUrl(anyString())).thenReturn(Optional.of("https://res.example/signed/foto"));
+
+		mvc.perform(multipart(HttpMethod.PUT, "/api/v1/equipment/" + id + "/image")
+				.file(new MockMultipartFile("file", "foto.pdf", "image/png", "%PDF-1.7".getBytes()))
+				.param("version", "0").with(xsrf()).cookie(analyst))
+				.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code").value("INVALID_IMAGE"));
+		mvc.perform(multipart(HttpMethod.PUT, "/api/v1/equipment/" + id + "/image")
+				.file(new MockMultipartFile("file", "foto.png", "image/png", PNG))
+				.param("version", "0").with(xsrf()).cookie(analyst))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.imageUrl").value("https://res.example/signed/foto"));
+
+		mvc.perform(delete("/api/v1/equipment/" + id + "/image").param("version", "1").with(xsrf()).cookie(analyst))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.imageUrl").doesNotExist());
+		verify(fileStorage).delete("sarc/equipment/" + id + "/foto");
+	}
+
+	// ---- tablero y reportes
+
+	@Test
+	void summaryCountsEveryCategoryAndExcludesDeletedEquipment() throws Exception {
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-001", "123456", "UID-1"));
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", jacPoint("JAC-1", "UID-2"));
+		String station = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", station("EST-1")));
+		send(analyst, HttpMethod.PATCH, "/api/v1/equipment/" + station + "/status",
+				"{\"version\":0,\"status\":\"DELETED\"}");
+
+		mvc.perform(get("/api/v1/inventory/summary").cookie(manager))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.totalEquipment").value(2))
+				.andExpect(jsonPath("$.deletedEquipment").value(1))
+				.andExpect(jsonPath("$.byType.CHARGING_POINT").value(2))
+				.andExpect(jsonPath("$.byType.CHARGING_STATION").value(0))
+				.andExpect(jsonPath("$.byNetwork.KIA").value(1))
+				.andExpect(jsonPath("$.byNetwork.CONECTZ").value(0))
+				.andExpect(jsonPath("$.pointsByUsageStatus.FREE").value(2))
+				.andExpect(jsonPath("$.activeConnectorsByType.TYPE2").value(2));
+	}
+
+	@Test
+	void pdfAndExcelReportsAreDownloadedWithoutRestrictedDataAndAudited() throws Exception {
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-001", "123456", "UID-SECRETO"));
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", station("EST-1"));
+
+		MvcResult pdf = mvc.perform(get("/api/v1/inventory/report").cookie(manager).param("format", "PDF"))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Content-Type", "application/pdf"))
+				.andExpect(header().string("Content-Disposition", startsWith("attachment;")))
+				.andReturn();
+		assertThat(new String(pdf.getResponse().getContentAsByteArray(), 0, 5)).isEqualTo("%PDF-");
+
+		MvcResult xlsx = mvc.perform(get("/api/v1/inventory/report").cookie(manager).param("format", "XLSX")
+				.param("network", "KIA"))
+				.andExpect(status().isOk())
+				.andReturn();
+		try (XSSFWorkbook workbook = new XSSFWorkbook(
+				new ByteArrayInputStream(xlsx.getResponse().getContentAsByteArray()))) {
+			assertThat(workbook.getSheet("Resumen")).isNotNull();
+			var detail = workbook.getSheet("Equipos");
+			assertThat(detail.getLastRowNum()).isEqualTo(5);
+			assertThat(detail.getRow(5).getCell(2).getStringCellValue()).isEqualTo("KIA-001");
+			workbook.forEach(sheet -> sheet.forEach(row -> row.forEach(cell -> assertThat(cell.toString())
+					.doesNotContain("UID-SECRETO"))));
+		}
+		assertThat(jdbc.queryForObject("select count(*) from audit_event where action = 'INVENTORY_REPORT_GENERATED'",
+				Long.class)).isEqualTo(2);
+	}
+
+	// ---- helpers
+
+	private void seedUser(String email, Role role) {
+		UserAccount user = UserAccount.create(new Email(email), "Usuario " + email, Set.of(role),
+				encoder.encode(PASSWORD));
+		user.changePassword(encoder.encode(PASSWORD));
+		users.save(user);
+	}
+
+	private ResultActions send(Cookie session, HttpMethod method, String path, String json) throws Exception {
+		return mvc.perform(request(method, path)
+				.with(xsrf()).cookie(session).contentType(MediaType.APPLICATION_JSON).content(json));
+	}
+
+	private static String createdId(ResultActions result) throws Exception {
+		return JsonPath.read(result.andExpect(status().isCreated()).andReturn().getResponse().getContentAsString(),
+				"$.id");
+	}
+
+	private List<String> auditActions(String equipmentId) {
+		return jdbc.queryForList("select action from audit_event where entity_type = 'EQUIPMENT' "
+				+ "and entity_id = ?::uuid order by occurred_at", String.class, equipmentId);
+	}
+
+	private static String kiaPoint(String serial, String code, String uidPuk) {
+		return """
+				{"network":"KIA","type":"CHARGING_POINT","brand":"WALLBOX","name":"Punto %s","serial":"%s",
+				 "assignedCode":"%s","uidPuk":"%s","usageStatus":"FREE","connectorTypeIds":["%s"]}
+				""".formatted(serial, serial, code, uidPuk, TYPE2);
+	}
+
+	private static String jacPoint(String serial, String uidPuk) {
+		return """
+				{"network":"JAC","type":"CHARGING_POINT","brand":"BENNY","name":"Punto %s","serial":"%s",
+				 %s"usageStatus":"FREE","connectorTypeIds":["%s"]}
+				""".formatted(serial, serial, uidPuk == null ? "" : "\"uidPuk\":\"" + uidPuk + "\",", TYPE2);
+	}
+
+	private static String station(String serial) {
+		return """
+				{"network":"JAC","type":"CHARGING_STATION","brand":"BENNY","name":"Electrolinera %s","serial":"%s",
+				 "location":"Quito","connectorTypeIds":["%s","%s","%s"]}
+				""".formatted(serial, serial, CCS2, TYPE2, CHADEMO);
+	}
+}

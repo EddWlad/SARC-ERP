@@ -4,6 +4,94 @@ export type ClientOptions = {
     baseUrl: `${string}://${string}` | (string & {});
 };
 
+export type UpdateEquipmentRequest = {
+    version: number;
+    brand: 'BENNY' | 'WALLBOX';
+    name: string;
+    serial: string;
+    assignedCode?: string;
+    uidPuk?: string;
+    location?: string;
+    mapsUrl?: string;
+    ocppUrl?: string;
+    usageStatus?: 'FREE' | 'BLOCKED' | 'DISCONNECTED';
+    connectorTypeIds: Array<string>;
+};
+
+export type ConnectorResponse = {
+    id: string;
+    ordinal: number;
+    connectorTypeId: string;
+    connectorTypeCode: string;
+    connectorTypeName: string;
+};
+
+export type EquipmentResponse = {
+    id: string;
+    network: 'KIA' | 'JAC' | 'CONECTZ';
+    type: 'CHARGING_POINT' | 'CHARGING_STATION';
+    brand: 'BENNY' | 'WALLBOX';
+    name: string;
+    serial: string;
+    assignedCode: string;
+    uidPuk?: string | null;
+    location?: string | null;
+    mapsUrl?: string | null;
+    ocppUrl?: string | null;
+    imageUrl?: string | null;
+    adminStatus: 'DELETED' | 'ACTIVE' | 'INACTIVE';
+    usageStatus?: 'FREE' | 'BLOCKED' | 'DISCONNECTED';
+    replacesEquipmentId?: string | null;
+    connectors: Array<ConnectorResponse>;
+    schedule: ScheduleResponse;
+    restrictedDataVisible: boolean;
+    createdAt: string;
+    updatedAt: string;
+    version: number;
+};
+
+export type ExceptionResponse = {
+    date: string;
+    closed: boolean;
+    opensAt?: string | null;
+    closesAt?: string | null;
+    note?: string | null;
+};
+
+export type IntervalResponse = {
+    day: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+    opensAt: string;
+    closesAt: string;
+    overnight: boolean;
+};
+
+export type ScheduleResponse = {
+    mode: 'NOT_DEFINED' | 'ALWAYS_OPEN' | 'WEEKLY';
+    intervals: Array<IntervalResponse>;
+    exceptions: Array<ExceptionResponse>;
+};
+
+export type ExceptionRequest = {
+    date: string;
+    closed?: boolean;
+    opensAt?: string;
+    closesAt?: string;
+    note?: string;
+};
+
+export type IntervalRequest = {
+    day: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+    opensAt: string;
+    closesAt: string;
+};
+
+export type ScheduleRequest = {
+    version: number;
+    mode: 'NOT_DEFINED' | 'ALWAYS_OPEN' | 'WEEKLY';
+    intervals: Array<IntervalRequest>;
+    exceptions: Array<ExceptionRequest>;
+};
+
 export type CreateUserRequest = {
     email: string;
     fullName: string;
@@ -32,6 +120,58 @@ export type TemporaryPasswordResponse = {
     temporaryPassword: string;
 };
 
+export type VersionRequest = {
+    version: number;
+};
+
+export type ExternalIdentityResponse = {
+    id: string;
+    equipmentId: string;
+    platform: 'WALLBOX' | 'ENERLINK' | 'OCPP';
+    scope: string;
+    externalId: string;
+    alias?: string | null;
+    verified: boolean;
+    verifiedAt?: string | null;
+    version: number;
+};
+
+export type CreateEquipmentRequest = {
+    network: 'KIA' | 'JAC' | 'CONECTZ';
+    type: 'CHARGING_POINT' | 'CHARGING_STATION';
+    brand: 'BENNY' | 'WALLBOX';
+    name: string;
+    serial: string;
+    assignedCode?: string;
+    uidPuk?: string;
+    location?: string;
+    mapsUrl?: string;
+    ocppUrl?: string;
+    usageStatus?: 'FREE' | 'BLOCKED' | 'DISCONNECTED';
+    connectorTypeIds: Array<string>;
+    replacesEquipmentId?: string;
+};
+
+export type ExternalIdentityRequest = {
+    platform: 'WALLBOX' | 'ENERLINK' | 'OCPP';
+    scope?: string;
+    externalId: string;
+    alias?: string;
+};
+
+export type CreateConnectorTypeRequest = {
+    code: string;
+    name: string;
+};
+
+export type ConnectorTypeResponse = {
+    id: string;
+    code: string;
+    name: string;
+    status: 'DELETED' | 'ACTIVE' | 'INACTIVE';
+    version: number;
+};
+
 export type ChangePasswordRequest = {
     currentPassword: string;
     newPassword: string;
@@ -57,6 +197,17 @@ export type UpdateUserRequest = {
     status?: 'ACTIVE' | 'INACTIVE';
 };
 
+export type ChangeStatusRequest = {
+    version: number;
+    status: 'DELETED' | 'ACTIVE' | 'INACTIVE';
+};
+
+export type UpdateConnectorTypeRequest = {
+    version: number;
+    name?: string;
+    status?: 'DELETED' | 'ACTIVE' | 'INACTIVE';
+};
+
 export type PageResultUserResponse = {
     content: Array<UserResponse>;
     page: number;
@@ -64,6 +215,150 @@ export type PageResultUserResponse = {
     totalElements: number;
     totalPages: number;
 };
+
+export type InventorySummaryResponse = {
+    totalEquipment: number;
+    deletedEquipment: number;
+    byType: {
+        [key: string]: number;
+    };
+    byNetwork: {
+        [key: string]: number;
+    };
+    byBrand: {
+        [key: string]: number;
+    };
+    byAdminStatus: {
+        [key: string]: number;
+    };
+    pointsByUsageStatus: {
+        [key: string]: number;
+    };
+    activeConnectorsByType: {
+        [key: string]: number;
+    };
+    generatedAt: string;
+};
+
+export type EquipmentSummaryResponse = {
+    id: string;
+    name: string;
+    assignedCode: string;
+    serial: string;
+    network: 'KIA' | 'JAC' | 'CONECTZ';
+    type: 'CHARGING_POINT' | 'CHARGING_STATION';
+    brand: 'BENNY' | 'WALLBOX';
+    adminStatus: 'DELETED' | 'ACTIVE' | 'INACTIVE';
+    usageStatus?: 'FREE' | 'BLOCKED' | 'DISCONNECTED';
+    location?: string | null;
+    connectorTypeCodes: Array<string>;
+    imageUrl?: string | null;
+    version: number;
+};
+
+export type PageResultEquipmentSummaryResponse = {
+    content: Array<EquipmentSummaryResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type GetData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/equipment/{id}';
+};
+
+export type GetResponses = {
+    /**
+     * OK
+     */
+    200: EquipmentResponse;
+};
+
+export type GetResponse = GetResponses[keyof GetResponses];
+
+export type UpdateData = {
+    body: UpdateEquipmentRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/equipment/{id}';
+};
+
+export type UpdateResponses = {
+    /**
+     * OK
+     */
+    200: EquipmentResponse;
+};
+
+export type UpdateResponse = UpdateResponses[keyof UpdateResponses];
+
+export type DefineScheduleData = {
+    body: ScheduleRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/equipment/{id}/schedule';
+};
+
+export type DefineScheduleResponses = {
+    /**
+     * OK
+     */
+    200: EquipmentResponse;
+};
+
+export type DefineScheduleResponse = DefineScheduleResponses[keyof DefineScheduleResponses];
+
+export type RemoveImageData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query: {
+        version: number;
+    };
+    url: '/api/v1/equipment/{id}/image';
+};
+
+export type RemoveImageResponses = {
+    /**
+     * OK
+     */
+    200: EquipmentResponse;
+};
+
+export type RemoveImageResponse = RemoveImageResponses[keyof RemoveImageResponses];
+
+export type AttachImageData = {
+    body?: {
+        file: Blob | File;
+    };
+    path: {
+        id: string;
+    };
+    query: {
+        version: number;
+    };
+    url: '/api/v1/equipment/{id}/image';
+};
+
+export type AttachImageResponses = {
+    /**
+     * OK
+     */
+    200: EquipmentResponse;
+};
+
+export type AttachImageResponse = AttachImageResponses[keyof AttachImageResponses];
 
 export type ListData = {
     body?: never;
@@ -121,6 +416,133 @@ export type ResetPasswordResponses = {
 
 export type ResetPasswordResponse = ResetPasswordResponses[keyof ResetPasswordResponses];
 
+export type VerifyData = {
+    body: VersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/external-identities/{id}/verify';
+};
+
+export type VerifyResponses = {
+    /**
+     * OK
+     */
+    200: ExternalIdentityResponse;
+};
+
+export type VerifyResponse = VerifyResponses[keyof VerifyResponses];
+
+export type List1Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        text?: string;
+        network?: 'KIA' | 'JAC' | 'CONECTZ';
+        type?: 'CHARGING_POINT' | 'CHARGING_STATION';
+        brand?: 'BENNY' | 'WALLBOX';
+        status?: 'DELETED' | 'ACTIVE' | 'INACTIVE';
+        usageStatus?: 'FREE' | 'BLOCKED' | 'DISCONNECTED';
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/equipment';
+};
+
+export type List1Responses = {
+    /**
+     * OK
+     */
+    200: PageResultEquipmentSummaryResponse;
+};
+
+export type List1Response = List1Responses[keyof List1Responses];
+
+export type Create1Data = {
+    body: CreateEquipmentRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/equipment';
+};
+
+export type Create1Responses = {
+    /**
+     * OK
+     */
+    200: EquipmentResponse;
+};
+
+export type Create1Response = Create1Responses[keyof Create1Responses];
+
+export type ExternalIdentitiesData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/equipment/{id}/external-identities';
+};
+
+export type ExternalIdentitiesResponses = {
+    /**
+     * OK
+     */
+    200: Array<ExternalIdentityResponse>;
+};
+
+export type ExternalIdentitiesResponse = ExternalIdentitiesResponses[keyof ExternalIdentitiesResponses];
+
+export type AddExternalIdentityData = {
+    body: ExternalIdentityRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/equipment/{id}/external-identities';
+};
+
+export type AddExternalIdentityResponses = {
+    /**
+     * OK
+     */
+    200: ExternalIdentityResponse;
+};
+
+export type AddExternalIdentityResponse = AddExternalIdentityResponses[keyof AddExternalIdentityResponses];
+
+export type List2Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/connector-types';
+};
+
+export type List2Responses = {
+    /**
+     * OK
+     */
+    200: Array<ConnectorTypeResponse>;
+};
+
+export type List2Response = List2Responses[keyof List2Responses];
+
+export type Create2Data = {
+    body: CreateConnectorTypeRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/connector-types';
+};
+
+export type Create2Responses = {
+    /**
+     * OK
+     */
+    200: ConnectorTypeResponse;
+};
+
+export type Create2Response = Create2Responses[keyof Create2Responses];
+
 export type ChangePasswordData = {
     body: ChangePasswordRequest;
     path?: never;
@@ -153,7 +575,7 @@ export type LoginResponses = {
 
 export type LoginResponse = LoginResponses[keyof LoginResponses];
 
-export type UpdateData = {
+export type Update1Data = {
     body: UpdateUserRequest;
     path: {
         id: string;
@@ -162,14 +584,117 @@ export type UpdateData = {
     url: '/api/v1/users/{id}';
 };
 
-export type UpdateResponses = {
+export type Update1Responses = {
     /**
      * OK
      */
     200: UserResponse;
 };
 
-export type UpdateResponse = UpdateResponses[keyof UpdateResponses];
+export type Update1Response = Update1Responses[keyof Update1Responses];
+
+export type ChangeStatusData = {
+    body: ChangeStatusRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/equipment/{id}/status';
+};
+
+export type ChangeStatusResponses = {
+    /**
+     * OK
+     */
+    200: EquipmentResponse;
+};
+
+export type ChangeStatusResponse = ChangeStatusResponses[keyof ChangeStatusResponses];
+
+export type Update2Data = {
+    body: UpdateConnectorTypeRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/connector-types/{id}';
+};
+
+export type Update2Responses = {
+    /**
+     * OK
+     */
+    200: ConnectorTypeResponse;
+};
+
+export type Update2Response = Update2Responses[keyof Update2Responses];
+
+export type SummaryData = {
+    body?: never;
+    path?: never;
+    query?: {
+        text?: string;
+        network?: 'KIA' | 'JAC' | 'CONECTZ';
+        type?: 'CHARGING_POINT' | 'CHARGING_STATION';
+        brand?: 'BENNY' | 'WALLBOX';
+        status?: 'DELETED' | 'ACTIVE' | 'INACTIVE';
+        usageStatus?: 'FREE' | 'BLOCKED' | 'DISCONNECTED';
+    };
+    url: '/api/v1/inventory/summary';
+};
+
+export type SummaryResponses = {
+    /**
+     * OK
+     */
+    200: InventorySummaryResponse;
+};
+
+export type SummaryResponse = SummaryResponses[keyof SummaryResponses];
+
+export type ReportData = {
+    body?: never;
+    path?: never;
+    query: {
+        format: 'PDF' | 'XLSX';
+        text?: string;
+        network?: 'KIA' | 'JAC' | 'CONECTZ';
+        type?: 'CHARGING_POINT' | 'CHARGING_STATION';
+        brand?: 'BENNY' | 'WALLBOX';
+        status?: 'DELETED' | 'ACTIVE' | 'INACTIVE';
+        usageStatus?: 'FREE' | 'BLOCKED' | 'DISCONNECTED';
+    };
+    url: '/api/v1/inventory/report';
+};
+
+export type ReportResponses = {
+    /**
+     * OK
+     */
+    200: string;
+};
+
+export type ReportResponse = ReportResponses[keyof ReportResponses];
+
+export type ResolveData = {
+    body?: never;
+    path?: never;
+    query: {
+        platform: 'WALLBOX' | 'ENERLINK' | 'OCPP';
+        scope?: string;
+        externalId: string;
+    };
+    url: '/api/v1/external-identities/resolve';
+};
+
+export type ResolveResponses = {
+    /**
+     * OK
+     */
+    200: ExternalIdentityResponse;
+};
+
+export type ResolveResponse = ResolveResponses[keyof ResolveResponses];
 
 export type MeData = {
     body?: never;
@@ -186,3 +711,21 @@ export type MeResponses = {
 };
 
 export type MeResponse = MeResponses[keyof MeResponses];
+
+export type RemoveData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/external-identities/{id}';
+};
+
+export type RemoveResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type RemoveResponse = RemoveResponses[keyof RemoveResponses];

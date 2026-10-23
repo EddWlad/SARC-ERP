@@ -15,6 +15,8 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import com.tidsec.sarc_bakend.shared.error.ConflictException;
+
 /** Identidad UUID, autoria y bloqueo optimista comunes a las entidades editables. */
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
@@ -70,5 +72,16 @@ public abstract class BaseAuditableEntity {
 
 	public Long getVersion() {
 		return version;
+	}
+
+	/**
+	 * Bloqueo optimista explicito: el cliente envia la version que leyo y, si otro usuario guardo
+	 * despues, se rechaza en vez de sobrescribir sus cambios.
+	 */
+	public void requireVersion(long expected) {
+		if (version == null || version != expected) {
+			throw new ConflictException("CONCURRENT_MODIFICATION",
+					"El registro fue modificado por otro usuario; recargue e intente de nuevo");
+		}
 	}
 }

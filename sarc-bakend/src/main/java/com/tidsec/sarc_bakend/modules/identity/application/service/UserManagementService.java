@@ -68,10 +68,7 @@ public class UserManagementService {
 
 	public UserAccount update(UpdateUserCommand command) {
 		UserAccount user = load(command.id());
-		if (!Long.valueOf(command.version()).equals(user.getVersion())) {
-			throw new ConflictException("CONCURRENT_MODIFICATION",
-					"El usuario fue modificado por otro administrador; recargue e intente de nuevo");
-		}
+		user.requireVersion(command.version());
 		if (command.fullName() != null) {
 			user.rename(command.fullName());
 		}

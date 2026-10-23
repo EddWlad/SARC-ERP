@@ -6,6 +6,189 @@
     "version" : "v1"
   },
   "paths" : {
+    "/api/v1/equipment/{id}" : {
+      "get" : {
+        "tags" : [ "equipment-controller" ],
+        "operationId" : "get",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EquipmentResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "equipment-controller" ],
+        "operationId" : "update",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateEquipmentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EquipmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipment/{id}/schedule" : {
+      "put" : {
+        "tags" : [ "equipment-controller" ],
+        "operationId" : "defineSchedule",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ScheduleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EquipmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipment/{id}/image" : {
+      "put" : {
+        "tags" : [ "equipment-controller" ],
+        "operationId" : "attachImage",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "version",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "file" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EquipmentResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "equipment-controller" ],
+        "operationId" : "removeImage",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "version",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EquipmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users" : {
       "get" : {
         "tags" : [ "user-controller" ],
@@ -124,6 +307,270 @@
         }
       }
     },
+    "/api/v1/external-identities/{id}/verify" : {
+      "post" : {
+        "tags" : [ "external-identity-controller" ],
+        "operationId" : "verify",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExternalIdentityResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipment" : {
+      "get" : {
+        "tags" : [ "equipment-controller" ],
+        "operationId" : "list_1",
+        "parameters" : [ {
+          "name" : "text",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          }
+        }, {
+          "name" : "type",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          }
+        }, {
+          "name" : "brand",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "BENNY", "WALLBOX" ]
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "DELETED", "ACTIVE", "INACTIVE" ]
+          }
+        }, {
+          "name" : "usageStatus",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "FREE", "BLOCKED", "DISCONNECTED" ]
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultEquipmentSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "equipment-controller" ],
+        "operationId" : "create_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateEquipmentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EquipmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipment/{id}/external-identities" : {
+      "get" : {
+        "tags" : [ "equipment-controller" ],
+        "operationId" : "externalIdentities",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ExternalIdentityResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "equipment-controller" ],
+        "operationId" : "addExternalIdentity",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ExternalIdentityRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExternalIdentityResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/connector-types" : {
+      "get" : {
+        "tags" : [ "connector-type-controller" ],
+        "operationId" : "list_2",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ConnectorTypeResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "connector-type-controller" ],
+        "operationId" : "create_2",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateConnectorTypeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConnectorTypeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/password/change" : {
       "post" : {
         "tags" : [ "auth-controller" ],
@@ -176,7 +623,7 @@
     "/api/v1/users/{id}" : {
       "patch" : {
         "tags" : [ "user-controller" ],
-        "operationId" : "update",
+        "operationId" : "update_1",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -210,6 +657,271 @@
         }
       }
     },
+    "/api/v1/equipment/{id}/status" : {
+      "patch" : {
+        "tags" : [ "equipment-controller" ],
+        "operationId" : "changeStatus",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeStatusRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EquipmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/connector-types/{id}" : {
+      "patch" : {
+        "tags" : [ "connector-type-controller" ],
+        "operationId" : "update_2",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateConnectorTypeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConnectorTypeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/inventory/summary" : {
+      "get" : {
+        "tags" : [ "inventory-controller" ],
+        "operationId" : "summary",
+        "parameters" : [ {
+          "name" : "text",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          }
+        }, {
+          "name" : "type",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          }
+        }, {
+          "name" : "brand",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "BENNY", "WALLBOX" ]
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "DELETED", "ACTIVE", "INACTIVE" ]
+          }
+        }, {
+          "name" : "usageStatus",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "FREE", "BLOCKED", "DISCONNECTED" ]
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/InventorySummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/inventory/report" : {
+      "get" : {
+        "tags" : [ "inventory-controller" ],
+        "operationId" : "report",
+        "parameters" : [ {
+          "name" : "format",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "PDF", "XLSX" ]
+          }
+        }, {
+          "name" : "text",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          }
+        }, {
+          "name" : "type",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          }
+        }, {
+          "name" : "brand",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "BENNY", "WALLBOX" ]
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "DELETED", "ACTIVE", "INACTIVE" ]
+          }
+        }, {
+          "name" : "usageStatus",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "FREE", "BLOCKED", "DISCONNECTED" ]
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-identities/resolve" : {
+      "get" : {
+        "tags" : [ "external-identity-controller" ],
+        "operationId" : "resolve",
+        "parameters" : [ {
+          "name" : "platform",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "WALLBOX", "ENERLINK", "OCPP" ]
+          }
+        }, {
+          "name" : "scope",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        }, {
+          "name" : "externalId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 150,
+            "minLength" : 0
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExternalIdentityResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/me" : {
       "get" : {
         "tags" : [ "auth-controller" ],
@@ -227,10 +939,339 @@
           }
         }
       }
+    },
+    "/api/v1/external-identities/{id}" : {
+      "delete" : {
+        "tags" : [ "external-identity-controller" ],
+        "operationId" : "remove",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
     }
   },
   "components" : {
     "schemas" : {
+      "UpdateEquipmentRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "brand" : {
+            "type" : "string",
+            "enum" : [ "BENNY", "WALLBOX" ]
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 150,
+            "minLength" : 0
+          },
+          "serial" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "assignedCode" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "uidPuk" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "location" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "mapsUrl" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "ocppUrl" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "usageStatus" : {
+            "type" : "string",
+            "enum" : [ "FREE", "BLOCKED", "DISCONNECTED" ]
+          },
+          "connectorTypeIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 3,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "brand", "connectorTypeIds", "name", "serial", "version" ]
+      },
+      "ConnectorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "ordinal" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "connectorTypeId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "connectorTypeCode" : {
+            "type" : "string"
+          },
+          "connectorTypeName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "connectorTypeCode", "connectorTypeId", "connectorTypeName", "id", "ordinal" ]
+      },
+      "EquipmentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "network" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          },
+          "brand" : {
+            "type" : "string",
+            "enum" : [ "BENNY", "WALLBOX" ]
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "serial" : {
+            "type" : "string"
+          },
+          "assignedCode" : {
+            "type" : "string"
+          },
+          "uidPuk" : {
+            "type" : [ "string", "null" ]
+          },
+          "location" : {
+            "type" : [ "string", "null" ]
+          },
+          "mapsUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "ocppUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "imageUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "adminStatus" : {
+            "type" : "string",
+            "enum" : [ "DELETED", "ACTIVE", "INACTIVE" ]
+          },
+          "usageStatus" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "FREE", "BLOCKED", "DISCONNECTED" ]
+          },
+          "replacesEquipmentId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "connectors" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ConnectorResponse"
+            }
+          },
+          "schedule" : {
+            "$ref" : "#/components/schemas/ScheduleResponse"
+          },
+          "restrictedDataVisible" : {
+            "type" : "boolean"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "adminStatus", "assignedCode", "brand", "connectors", "createdAt", "id", "name", "network", "restrictedDataVisible", "schedule", "serial", "type", "updatedAt", "version" ]
+      },
+      "ExceptionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "date" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "closed" : {
+            "type" : "boolean"
+          },
+          "opensAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "time-local"
+          },
+          "closesAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "time-local"
+          },
+          "note" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "closed", "date" ]
+      },
+      "IntervalResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ]
+          },
+          "opensAt" : {
+            "type" : "string",
+            "format" : "time-local"
+          },
+          "closesAt" : {
+            "type" : "string",
+            "format" : "time-local"
+          },
+          "overnight" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "closesAt", "day", "opensAt", "overnight" ]
+      },
+      "ScheduleResponse" : {
+        "type" : "object",
+        "properties" : {
+          "mode" : {
+            "type" : "string",
+            "enum" : [ "NOT_DEFINED", "ALWAYS_OPEN", "WEEKLY" ]
+          },
+          "intervals" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IntervalResponse"
+            }
+          },
+          "exceptions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExceptionResponse"
+            }
+          }
+        },
+        "required" : [ "exceptions", "intervals", "mode" ]
+      },
+      "ExceptionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "date" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "closed" : {
+            "type" : "boolean"
+          },
+          "opensAt" : {
+            "type" : "string",
+            "format" : "time-local"
+          },
+          "closesAt" : {
+            "type" : "string",
+            "format" : "time-local"
+          },
+          "note" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "date" ]
+      },
+      "IntervalRequest" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ]
+          },
+          "opensAt" : {
+            "type" : "string",
+            "format" : "time-local"
+          },
+          "closesAt" : {
+            "type" : "string",
+            "format" : "time-local"
+          }
+        },
+        "required" : [ "closesAt", "day", "opensAt" ]
+      },
+      "ScheduleRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "mode" : {
+            "type" : "string",
+            "enum" : [ "NOT_DEFINED", "ALWAYS_OPEN", "WEEKLY" ]
+          },
+          "intervals" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IntervalRequest"
+            },
+            "maxItems" : 50,
+            "minItems" : 0
+          },
+          "exceptions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExceptionRequest"
+            },
+            "maxItems" : 366,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "exceptions", "intervals", "mode", "version" ]
+      },
       "CreateUserRequest" : {
         "type" : "object",
         "properties" : {
@@ -324,6 +1365,189 @@
         },
         "required" : [ "temporaryPassword" ]
       },
+      "VersionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "version" ]
+      },
+      "ExternalIdentityResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "platform" : {
+            "type" : "string",
+            "enum" : [ "WALLBOX", "ENERLINK", "OCPP" ]
+          },
+          "scope" : {
+            "type" : "string"
+          },
+          "externalId" : {
+            "type" : "string"
+          },
+          "alias" : {
+            "type" : [ "string", "null" ]
+          },
+          "verified" : {
+            "type" : "boolean"
+          },
+          "verifiedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "equipmentId", "externalId", "id", "platform", "scope", "verified", "version" ]
+      },
+      "CreateEquipmentRequest" : {
+        "type" : "object",
+        "properties" : {
+          "network" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          },
+          "brand" : {
+            "type" : "string",
+            "enum" : [ "BENNY", "WALLBOX" ]
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 150,
+            "minLength" : 0
+          },
+          "serial" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "assignedCode" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "uidPuk" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "location" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "mapsUrl" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "ocppUrl" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "usageStatus" : {
+            "type" : "string",
+            "enum" : [ "FREE", "BLOCKED", "DISCONNECTED" ]
+          },
+          "connectorTypeIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 3,
+            "minItems" : 0
+          },
+          "replacesEquipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "brand", "connectorTypeIds", "name", "network", "serial", "type" ]
+      },
+      "ExternalIdentityRequest" : {
+        "type" : "object",
+        "properties" : {
+          "platform" : {
+            "type" : "string",
+            "enum" : [ "WALLBOX", "ENERLINK", "OCPP" ]
+          },
+          "scope" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          },
+          "externalId" : {
+            "type" : "string",
+            "maxLength" : 150,
+            "minLength" : 0
+          },
+          "alias" : {
+            "type" : "string",
+            "maxLength" : 150,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "externalId", "platform" ]
+      },
+      "CreateConnectorTypeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string",
+            "maxLength" : 30,
+            "minLength" : 0
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "code", "name" ]
+      },
+      "ConnectorTypeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "DELETED", "ACTIVE", "INACTIVE" ]
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "code", "id", "name", "status", "version" ]
+      },
       "ChangePasswordRequest" : {
         "type" : "object",
         "properties" : {
@@ -406,6 +1630,39 @@
         },
         "required" : [ "version" ]
       },
+      "ChangeStatusRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "DELETED", "ACTIVE", "INACTIVE" ]
+          }
+        },
+        "required" : [ "status", "version" ]
+      },
+      "UpdateConnectorTypeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 1
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "DELETED", "ACTIVE", "INACTIVE" ]
+          }
+        },
+        "required" : [ "version" ]
+      },
       "PageResultUserResponse" : {
         "type" : "object",
         "properties" : {
@@ -413,6 +1670,149 @@
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/UserResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "InventorySummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "totalEquipment" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "deletedEquipment" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "byType" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          },
+          "byNetwork" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          },
+          "byBrand" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          },
+          "byAdminStatus" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          },
+          "pointsByUsageStatus" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          },
+          "activeConnectorsByType" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          },
+          "generatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "activeConnectorsByType", "byAdminStatus", "byBrand", "byNetwork", "byType", "deletedEquipment", "generatedAt", "pointsByUsageStatus", "totalEquipment" ]
+      },
+      "EquipmentSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "assignedCode" : {
+            "type" : "string"
+          },
+          "serial" : {
+            "type" : "string"
+          },
+          "network" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          },
+          "brand" : {
+            "type" : "string",
+            "enum" : [ "BENNY", "WALLBOX" ]
+          },
+          "adminStatus" : {
+            "type" : "string",
+            "enum" : [ "DELETED", "ACTIVE", "INACTIVE" ]
+          },
+          "usageStatus" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "FREE", "BLOCKED", "DISCONNECTED" ]
+          },
+          "location" : {
+            "type" : [ "string", "null" ]
+          },
+          "connectorTypeCodes" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "imageUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "adminStatus", "assignedCode", "brand", "connectorTypeCodes", "id", "name", "network", "serial", "type", "version" ]
+      },
+      "PageResultEquipmentSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EquipmentSummaryResponse"
             }
           },
           "page" : {

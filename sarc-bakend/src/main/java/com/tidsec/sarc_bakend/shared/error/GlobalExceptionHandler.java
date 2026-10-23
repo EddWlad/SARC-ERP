@@ -36,8 +36,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 			case NotFoundException _ -> HttpStatus.NOT_FOUND;
 			case ConflictException _ -> HttpStatus.CONFLICT;
 			case BusinessRuleException _ -> HttpStatus.UNPROCESSABLE_CONTENT;
+			case ServiceUnavailableException _ -> HttpStatus.SERVICE_UNAVAILABLE;
 		};
-		return problem(status, ex.code(), ex.getMessage(), request);
+		ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, ex.getMessage());
+		ex.properties().forEach(problem::setProperty);
+		problem.setProperty("code", ex.code());
+		return createResponseEntity(problem, new HttpHeaders(), status, request);
 	}
 
 	@ExceptionHandler(AuthenticationException.class)

@@ -9,6 +9,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static com.tidsec.sarc_bakend.support.WebSessions.SESSION_COOKIE;
+import static com.tidsec.sarc_bakend.support.WebSessions.XSRF_TOKEN;
+import static com.tidsec.sarc_bakend.support.WebSessions.cookieFrom;
+import static com.tidsec.sarc_bakend.support.WebSessions.credentials;
+import static com.tidsec.sarc_bakend.support.WebSessions.login;
+import static com.tidsec.sarc_bakend.support.WebSessions.loginRequest;
+import static com.tidsec.sarc_bakend.support.WebSessions.xsrf;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +48,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import com.tidsec.sarc_bakend.TestcontainersConfiguration;
 import com.tidsec.sarc_bakend.modules.identity.domain.model.Email;
@@ -60,8 +66,6 @@ import com.tidsec.sarc_bakend.modules.identity.application.service.LoginService;
 class IdentityApiTest {
 
 	private static final String PASSWORD = "clave-de-prueba-123";
-	private static final String SESSION_COOKIE = "SARC_SESSION";
-	private static final String XSRF_TOKEN = "token-de-prueba";
 
 	@Autowired MockMvc mvc;
 	@Autowired UserRepository users;
@@ -81,7 +85,7 @@ class IdentityApiTest {
 	void loginCreatesSessionAndMeReturnsTheUser() throws Exception {
 		UserAccount admin = seedUser("admin@eos.com", Role.ADMINISTRADOR);
 
-		Cookie session = login("Admin@EOS.com", PASSWORD);
+		Cookie session = login(mvc, "Admin@EOS.com", PASSWORD);
 
 		mvc.perform(get("/api/v1/auth/me").cookie(session))
 				.andExpect(status().isOk())
@@ -160,10 +164,10 @@ class IdentityApiTest {
 	void loginAttemptsDoNotChangeTheAccountVersionSoAdminEditsKeepWorking() throws Exception {
 		seedUser("admin@eos.com", Role.ADMINISTRADOR);
 		UserAccount target = seedUser("ana@eos.com", Role.ANALISTA);
-		Cookie adminSession = login("admin@eos.com", PASSWORD);
+		Cookie adminSession = login(mvc, "admin@eos.com", PASSWORD);
 
 		mvc.perform(loginRequest("ana@eos.com", "otra-clave-equivocada")).andExpect(status().isUnauthorized());
-		login("ana@eos.com", PASSWORD);
+		login(mvc, "ana@eos.com", PASSWORD);
 
 		mvc.perform(patchUser(adminSession, target.getId(), "{\"version\":%d,\"fullName\":\"Ana B\"}".formatted(target.getVersion())))
 				.andExpect(status().isOk());
@@ -214,7 +218,7 @@ class IdentityApiTest {
 	@Test
 	void logoutEndsTheSession() throws Exception {
 		seedUser("admin@eos.com", Role.ADMINISTRADOR);
-		Cookie session = login("admin@eos.com", PASSWORD);
+		Cookie session = login(mvc, "admin@eos.com", PASSWORD);
 
 		mvc.perform(post("/api/v1/auth/logout").with(xsrf()).cookie(session)).andExpect(status().isNoContent());
 
@@ -226,7 +230,7 @@ class IdentityApiTest {
 	@Test
 	void nonAdministratorCannotUseUserManagement() throws Exception {
 		seedUser("gerente@eos.com", Role.GERENTE);
-		Cookie session = login("gerente@eos.com", PASSWORD);
+		Cookie session = login(mvc, "gerente@eos.com", PASSWORD);
 
 		mvc.perform(get("/api/v1/users").cookie(session))
 				.andExpect(status().isForbidden())
@@ -239,7 +243,7 @@ class IdentityApiTest {
 	@Test
 	void userWithSeveralRolesGetsTheUnionOfPermissions() throws Exception {
 		seedUser("mixto@eos.com", Role.ANALISTA, Role.ADMINISTRADOR);
-		Cookie session = login("mixto@eos.com", PASSWORD);
+		Cookie session = login(mvc, "mixto@eos.com", PASSWORD);
 
 		mvc.perform(get("/api/v1/users").cookie(session)).andExpect(status().isOk());
 	}
@@ -249,7 +253,7 @@ class IdentityApiTest {
 	@Test
 	void adminCreatesUserWhoMustChangeTheTemporaryPasswordBeforeAnythingElse() throws Exception {
 		seedUser("admin@eos.com", Role.ADMINISTRADOR);
-		Cookie adminSession = login("admin@eos.com", PASSWORD);
+		Cookie adminSession = login(mvc, "admin@eos.com", PASSWORD);
 
 		MvcResult created = mvc.perform(post("/api/v1/users").with(xsrf()).cookie(adminSession)
 				.contentType(MediaType.APPLICATION_JSON).content(createUserJson("Nueva@EOS.com", "Nueva Persona", "ANALISTA")))
@@ -261,7 +265,7 @@ class IdentityApiTest {
 				.andReturn();
 		String temporary = jsonString(created, "$.temporaryPassword");
 
-		Cookie session = login("nueva@eos.com", temporary);
+		Cookie session = login(mvc, "nueva@eos.com", temporary);
 		mvc.perform(get("/api/v1/auth/me").cookie(session))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.mustChangePassword").value(true));
@@ -274,7 +278,7 @@ class IdentityApiTest {
 				.andExpect(status().isNoContent());
 
 		mvc.perform(get("/api/v1/auth/me").cookie(session)).andExpect(status().isUnauthorized());
-		Cookie fresh = login("nueva@eos.com", chosen);
+		Cookie fresh = login(mvc, "nueva@eos.com", chosen);
 		mvc.perform(get("/api/v1/auth/me").cookie(fresh))
 				.andExpect(jsonPath("$.mustChangePassword").value(false));
 	}
@@ -282,7 +286,7 @@ class IdentityApiTest {
 	@Test
 	void duplicatedEmailIsAConflict() throws Exception {
 		seedUser("admin@eos.com", Role.ADMINISTRADOR);
-		Cookie adminSession = login("admin@eos.com", PASSWORD);
+		Cookie adminSession = login(mvc, "admin@eos.com", PASSWORD);
 
 		mvc.perform(post("/api/v1/users").with(xsrf()).cookie(adminSession).contentType(MediaType.APPLICATION_JSON)
 				.content(createUserJson("ADMIN@eos.com", "Otro", "ANALISTA")))
@@ -293,7 +297,7 @@ class IdentityApiTest {
 	@Test
 	void invalidBodyReturnsFieldErrors() throws Exception {
 		seedUser("admin@eos.com", Role.ADMINISTRADOR);
-		Cookie adminSession = login("admin@eos.com", PASSWORD);
+		Cookie adminSession = login(mvc, "admin@eos.com", PASSWORD);
 
 		mvc.perform(post("/api/v1/users").with(xsrf()).cookie(adminSession).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"\",\"fullName\":\"X\",\"roles\":[]}"))
@@ -306,7 +310,7 @@ class IdentityApiTest {
 	@Test
 	void nullRolesAndOversizedFiltersAreRejectedAsBadRequests() throws Exception {
 		seedUser("admin@eos.com", Role.ADMINISTRADOR);
-		Cookie adminSession = login("admin@eos.com", PASSWORD);
+		Cookie adminSession = login(mvc, "admin@eos.com", PASSWORD);
 
 		mvc.perform(post("/api/v1/users").with(xsrf()).cookie(adminSession).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"x@eos.com\",\"fullName\":\"X\",\"roles\":[null]}"))
@@ -321,7 +325,7 @@ class IdentityApiTest {
 		seedUser("admin@eos.com", Role.ADMINISTRADOR);
 		seedUser("ana@eos.com", Role.ANALISTA);
 		seedUser("beto@eos.com", Role.ANALISTA);
-		Cookie adminSession = login("admin@eos.com", PASSWORD);
+		Cookie adminSession = login(mvc, "admin@eos.com", PASSWORD);
 
 		mvc.perform(get("/api/v1/users").cookie(adminSession).param("role", "ANALISTA").param("size", "1"))
 				.andExpect(status().isOk())
@@ -341,7 +345,7 @@ class IdentityApiTest {
 		for (int i = 0; i < 6; i++) {
 			seedUser("usuario" + i + "@eos.com", Role.ANALISTA, Role.SUPERVISOR);
 		}
-		Cookie adminSession = login("admin@eos.com", PASSWORD);
+		Cookie adminSession = login(mvc, "admin@eos.com", PASSWORD);
 		Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
 		statistics.clear();
 
@@ -356,7 +360,7 @@ class IdentityApiTest {
 	void updateWithStaleVersionIsRejected() throws Exception {
 		seedUser("admin@eos.com", Role.ADMINISTRADOR);
 		UserAccount target = seedUser("ana@eos.com", Role.ANALISTA);
-		Cookie adminSession = login("admin@eos.com", PASSWORD);
+		Cookie adminSession = login(mvc, "admin@eos.com", PASSWORD);
 
 		mvc.perform(patchUser(adminSession, target.getId(), "{\"version\":99,\"fullName\":\"Ana B\"}"))
 				.andExpect(status().isConflict())
@@ -371,8 +375,8 @@ class IdentityApiTest {
 	void deactivatingUserRevokesTheirSessionAndBlocksNewLogins() throws Exception {
 		seedUser("admin@eos.com", Role.ADMINISTRADOR);
 		UserAccount target = seedUser("ana@eos.com", Role.ANALISTA);
-		Cookie adminSession = login("admin@eos.com", PASSWORD);
-		Cookie anaSession = login("ana@eos.com", PASSWORD);
+		Cookie adminSession = login(mvc, "admin@eos.com", PASSWORD);
+		Cookie anaSession = login(mvc, "ana@eos.com", PASSWORD);
 		mvc.perform(get("/api/v1/auth/me").cookie(anaSession)).andExpect(status().isOk());
 
 		mvc.perform(patchUser(adminSession, target.getId(),
@@ -393,22 +397,22 @@ class IdentityApiTest {
 	void changingRolesRevokesSessionsSoNewPermissionsApplyOnNextLogin() throws Exception {
 		seedUser("admin@eos.com", Role.ADMINISTRADOR);
 		UserAccount target = seedUser("ana@eos.com", Role.ANALISTA);
-		Cookie adminSession = login("admin@eos.com", PASSWORD);
-		Cookie anaSession = login("ana@eos.com", PASSWORD);
+		Cookie adminSession = login(mvc, "admin@eos.com", PASSWORD);
+		Cookie anaSession = login(mvc, "ana@eos.com", PASSWORD);
 
 		mvc.perform(patchUser(adminSession, target.getId(),
 				"{\"version\":%d,\"roles\":[\"GERENTE\"]}".formatted(target.getVersion())))
 				.andExpect(status().isOk());
 
 		mvc.perform(get("/api/v1/auth/me").cookie(anaSession)).andExpect(status().isUnauthorized());
-		Cookie fresh = login("ana@eos.com", PASSWORD);
+		Cookie fresh = login(mvc, "ana@eos.com", PASSWORD);
 		mvc.perform(get("/api/v1/auth/me").cookie(fresh)).andExpect(jsonPath("$.roles[0]").value("GERENTE"));
 	}
 
 	@Test
 	void administratorCannotDeactivateThemselves() throws Exception {
 		UserAccount admin = seedUser("admin@eos.com", Role.ADMINISTRADOR);
-		Cookie adminSession = login("admin@eos.com", PASSWORD);
+		Cookie adminSession = login(mvc, "admin@eos.com", PASSWORD);
 
 		mvc.perform(patchUser(adminSession, admin.getId(),
 				"{\"version\":%d,\"status\":\"INACTIVE\"}".formatted(admin.getVersion())))
@@ -420,8 +424,8 @@ class IdentityApiTest {
 	void resetPasswordIssuesTemporaryKeyAndKillsExistingSessions() throws Exception {
 		seedUser("admin@eos.com", Role.ADMINISTRADOR);
 		UserAccount target = seedUser("ana@eos.com", Role.ANALISTA);
-		Cookie adminSession = login("admin@eos.com", PASSWORD);
-		Cookie anaSession = login("ana@eos.com", PASSWORD);
+		Cookie adminSession = login(mvc, "admin@eos.com", PASSWORD);
+		Cookie anaSession = login(mvc, "ana@eos.com", PASSWORD);
 
 		MvcResult reset = mvc.perform(post("/api/v1/users/{id}/reset-password", target.getId()).with(xsrf())
 				.cookie(adminSession))
@@ -430,7 +434,7 @@ class IdentityApiTest {
 
 		mvc.perform(get("/api/v1/auth/me").cookie(anaSession)).andExpect(status().isUnauthorized());
 		mvc.perform(loginRequest("ana@eos.com", PASSWORD)).andExpect(status().isUnauthorized());
-		Cookie fresh = login("ana@eos.com", jsonString(reset, "$.temporaryPassword"));
+		Cookie fresh = login(mvc, "ana@eos.com", jsonString(reset, "$.temporaryPassword"));
 		mvc.perform(get("/api/v1/auth/me").cookie(fresh)).andExpect(jsonPath("$.mustChangePassword").value(true));
 		mvc.perform(post("/api/v1/users/{id}/reset-password", UUID.randomUUID()).with(xsrf()).cookie(adminSession))
 				.andExpect(status().isNotFound())
@@ -440,7 +444,7 @@ class IdentityApiTest {
 	@Test
 	void changePasswordRejectsWrongCurrentAndWeakNewPassword() throws Exception {
 		seedUser("ana@eos.com", Role.ANALISTA);
-		Cookie session = login("ana@eos.com", PASSWORD);
+		Cookie session = login(mvc, "ana@eos.com", PASSWORD);
 
 		mvc.perform(changePassword(session, "no-es-la-actual-123", "nueva-clave-segura-1"))
 				.andExpect(status().isUnprocessableContent())
@@ -462,7 +466,7 @@ class IdentityApiTest {
 		mvc.perform(get("/v3/api-docs")).andExpect(status().isUnauthorized());
 
 		seedUser("admin@eos.com", Role.ADMINISTRADOR);
-		Cookie adminSession = login("admin@eos.com", PASSWORD);
+		Cookie adminSession = login(mvc, "admin@eos.com", PASSWORD);
 		mvc.perform(get("/v3/api-docs").cookie(adminSession)).andExpect(status().isOk());
 	}
 
@@ -472,20 +476,6 @@ class IdentityApiTest {
 		UserAccount user = UserAccount.create(new Email(email), "Usuario " + email, Set.of(roles), encoder.encode(PASSWORD));
 		user.changePassword(encoder.encode(PASSWORD));
 		return users.save(user);
-	}
-
-	private Cookie login(String email, String password) throws Exception {
-		Cookie cookie = cookieFrom(mvc.perform(loginRequest(email, password))
-				.andExpect(status().isOk())
-				.andReturn(), SESSION_COOKIE);
-		assertThat(cookie).isNotNull();
-		return cookie;
-	}
-
-	private MockHttpServletRequestBuilder loginRequest(String email,
-			String password) {
-		return post("/api/v1/auth/login").with(xsrf()).contentType(MediaType.APPLICATION_JSON)
-				.content(credentials(email, password));
 	}
 
 	private MockHttpServletRequestBuilder patchUser(Cookie session,
@@ -498,32 +488,6 @@ class IdentityApiTest {
 			String current, String next) {
 		return post("/api/v1/auth/password/change").with(xsrf()).cookie(session).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"currentPassword\":\"%s\",\"newPassword\":\"%s\"}".formatted(current, next));
-	}
-
-	/**
-	 * CSRF real por cookie, como lo hara la SPA. No se usa csrf() de spring-security-test porque reemplaza el
-	 * repositorio de tokens del filtro durante el resto del contexto y ocultaria la configuracion real.
-	 */
-	private static RequestPostProcessor xsrf() {
-		return request -> {
-			List<Cookie> cookies = new ArrayList<>(request.getCookies() == null ? List.of() : List.of(request.getCookies()));
-			cookies.add(new Cookie("XSRF-TOKEN", XSRF_TOKEN));
-			request.setCookies(cookies.toArray(Cookie[]::new));
-			request.addHeader("X-XSRF-TOKEN", XSRF_TOKEN);
-			return request;
-		};
-	}
-
-	private static Cookie cookieFrom(MvcResult result, String name) {
-		return result.getResponse().getHeaders(HttpHeaders.SET_COOKIE).stream()
-				.filter(header -> header.startsWith(name + "="))
-				.findFirst()
-				.<Cookie>map(MockCookie::parse)
-				.orElse(null);
-	}
-
-	private static String credentials(String email, String password) {
-		return "{\"email\":\"%s\",\"password\":\"%s\"}".formatted(email, password);
 	}
 
 	private static String createUserJson(String email, String fullName, String role) {

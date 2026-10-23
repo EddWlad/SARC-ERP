@@ -26,3 +26,6 @@ desktop.ini
 
 # Herramientas locales
 .claude/settings.local.json
+
+# Proyecto de referencia local (contiene credenciales); nunca versionar
+documents/modelo de backend/
