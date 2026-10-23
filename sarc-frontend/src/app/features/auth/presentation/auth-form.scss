@@ -1,0 +1,38 @@
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sarc-space-2);
+}
+
+.form-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sarc-space-2);
+  margin-bottom: var(--sarc-space-3);
+  padding: var(--sarc-space-3);
+  border-radius: var(--sarc-radius-sm);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  font: var(--mat-sys-body-medium);
+}
+
+.form-note {
+  margin: 0 0 var(--sarc-space-3);
+  padding: var(--sarc-space-3);
+  border-radius: var(--sarc-radius-sm);
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+  font: var(--mat-sys-body-medium);
+}
+
+.submit {
+  height: 48px;
+  margin-top: var(--sarc-space-2);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sarc-space-2);
+  margin-top: var(--sarc-space-3);
+}

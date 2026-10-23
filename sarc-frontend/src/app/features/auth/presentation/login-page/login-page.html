@@ -1,0 +1,49 @@
+<sarc-auth-card heading="Ingresar" subtitle="Use su correo y contraseña corporativos.">
+  <form class="auth-form" novalidate (submit)="onSubmit($event)">
+    @if (errorMessage(); as message) {
+      <div class="form-alert" role="alert">
+        <svg lucideTriangleAlert [size]="20"></svg>
+        <span>{{ message }}</span>
+      </div>
+    }
+
+    <mat-form-field appearance="outline">
+      <mat-label>Correo electrónico</mat-label>
+      <input matInput type="email" autocomplete="username" [formField]="loginForm.email" />
+      @for (error of loginForm.email().errors(); track error.kind) {
+        <mat-error>{{ error.message }}</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Contraseña</mat-label>
+      <input
+        matInput
+        autocomplete="current-password"
+        [type]="hidePassword() ? 'password' : 'text'"
+        [formField]="loginForm.password"
+      />
+      <button
+        matIconButton
+        matSuffix
+        type="button"
+        [attr.aria-label]="hidePassword() ? 'Mostrar contraseña' : 'Ocultar contraseña'"
+        [attr.aria-pressed]="!hidePassword()"
+        (click)="hidePassword.update((hidden) => !hidden)"
+      >
+        @if (hidePassword()) {
+          <svg lucideEye [size]="20"></svg>
+        } @else {
+          <svg lucideEyeOff [size]="20"></svg>
+        }
+      </button>
+      @for (error of loginForm.password().errors(); track error.kind) {
+        <mat-error>{{ error.message }}</mat-error>
+      }
+    </mat-form-field>
+
+    <button matButton="filled" type="submit" class="submit" [disabled]="busy()">
+      {{ busy() ? 'Ingresando...' : 'Ingresar' }}
+    </button>
+  </form>
+</sarc-auth-card>

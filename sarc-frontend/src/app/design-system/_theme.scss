@@ -1,0 +1,33 @@
+@use '@angular/material' as mat;
+
+// Tema Material 3 con `theme-type: color-scheme`: los colores se resuelven con light-dark(),
+// asi el modo claro/oscuro se cambia solo con la propiedad `color-scheme` del <html>.
+// Paleta neutra provisional: al tener la marca de EOS Tech / Autoeastern se cambia aqui.
+@mixin apply() {
+  html {
+    color-scheme: light dark;
+
+    @include mat.theme(
+      (
+        color: (
+          primary: mat.$azure-palette,
+          tertiary: mat.$blue-palette,
+          theme-type: color-scheme,
+        ),
+        typography: (
+          plain-family: var(--sarc-font-family),
+          brand-family: var(--sarc-font-family),
+        ),
+        density: 0,
+      )
+    );
+  }
+
+  html.theme-light {
+    color-scheme: light;
+  }
+
+  html.theme-dark {
+    color-scheme: dark;
+  }
+}

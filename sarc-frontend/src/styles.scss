@@ -1,0 +1,7 @@
+@use './app/design-system/tokens';
+@use './app/design-system/theme';
+@use './app/design-system/base';
+
+@include tokens.apply();
+@include theme.apply();
+@include base.apply();

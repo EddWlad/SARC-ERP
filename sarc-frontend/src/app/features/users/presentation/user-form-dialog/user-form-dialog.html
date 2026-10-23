@@ -1,0 +1,67 @@
+<h2 mat-dialog-title>{{ editing ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
+
+<form novalidate (submit)="onSubmit($event)">
+  <mat-dialog-content class="fields">
+    @if (errorMessage(); as message) {
+      <div class="form-alert" role="alert">
+        <svg lucideTriangleAlert [size]="20"></svg>
+        <span>{{ message }}</span>
+      </div>
+    }
+
+    <mat-form-field appearance="outline">
+      <mat-label>Correo electrónico</mat-label>
+      <input matInput type="email" autocomplete="off" [formField]="userForm.email" />
+      @if (editing) {
+        <mat-hint>El correo no se puede cambiar.</mat-hint>
+      }
+      @for (error of userForm.email().errors(); track error.kind) {
+        <mat-error>{{ error.message }}</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Nombre completo</mat-label>
+      <input matInput autocomplete="off" [formField]="userForm.fullName" />
+      @for (error of userForm.fullName().errors(); track error.kind) {
+        <mat-error>{{ error.message }}</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Roles</mat-label>
+      <mat-select multiple [formField]="userForm.roles">
+        @for (role of roles; track role) {
+          <mat-option [value]="role">{{ roleLabels[role] }}</mat-option>
+        }
+      </mat-select>
+      <mat-hint>Un usuario puede tener varios roles.</mat-hint>
+      @for (error of userForm.roles().errors(); track error.kind) {
+        <mat-error>{{ error.message }}</mat-error>
+      }
+    </mat-form-field>
+
+    @if (editing) {
+      <mat-form-field appearance="outline">
+        <mat-label>Estado</mat-label>
+        <mat-select [formField]="userForm.status">
+          @for (status of statuses; track status) {
+            <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
+          }
+        </mat-select>
+        <mat-hint>Un usuario inactivo pierde el acceso; su historial se conserva.</mat-hint>
+      </mat-form-field>
+    } @else {
+      <p class="note">
+        Se generará una contraseña temporal que el usuario deberá cambiar al ingresar.
+      </p>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button matButton type="button" mat-dialog-close [disabled]="busy()">Cancelar</button>
+    <button matButton="filled" type="submit" [disabled]="busy()">
+      {{ busy() ? 'Guardando...' : editing ? 'Guardar cambios' : 'Crear usuario' }}
+    </button>
+  </mat-dialog-actions>
+</form>

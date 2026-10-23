@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (Maven verify)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sarc-bakend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      # Incluye pruebas unitarias, ArchUnit, integracion con Testcontainers (PostgreSQL 18)
+      # y la verificacion del contrato docs/api/openapi.json.
+      - run: ./mvnw -B verify
+
+  frontend:
+    name: Frontend (lint, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sarc-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: sarc-frontend/package-lock.json
+      - run: npm ci
+      - name: Tipos generados al dia con el contrato OpenAPI
+        run: |
+          npm run api:types
+          git diff --exit-code -- src/app/core/api/generated
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test -- --watch=false
+      - run: npm run build

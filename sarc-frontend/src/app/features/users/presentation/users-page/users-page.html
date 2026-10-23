@@ -1,0 +1,123 @@
+<header class="page-header">
+  <div>
+    <h1>Usuarios</h1>
+    <p>Cuentas de acceso, roles y estado.</p>
+  </div>
+  <button matButton="filled" type="button" (click)="create()">
+    <svg lucideUserPlus [size]="18"></svg>
+    Nuevo usuario
+  </button>
+</header>
+
+<section class="filters" aria-label="Filtros">
+  <mat-form-field appearance="outline" class="search" subscriptSizing="dynamic">
+    <mat-label>Buscar por nombre o correo</mat-label>
+    <svg lucideSearch matPrefix [size]="18" class="prefix-icon"></svg>
+    <input matInput type="search" [value]="facade.filters().text" (input)="onSearch($event)" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Rol</mat-label>
+    <mat-select [value]="facade.filters().role" (selectionChange)="onRoleFilter($event.value)">
+      <mat-option value="">Todos</mat-option>
+      @for (role of roles; track role) {
+        <mat-option [value]="role">{{ roleLabels[role] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Estado</mat-label>
+    <mat-select [value]="facade.filters().status" (selectionChange)="onStatusFilter($event.value)">
+      <mat-option value="">Todos</mat-option>
+      @for (status of statuses; track status) {
+        <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</section>
+
+<section class="results" aria-label="Listado de usuarios" [attr.aria-busy]="facade.loading()">
+  @if (facade.loading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando usuarios" />
+  }
+
+  @if (facade.failed()) {
+    <div class="state" role="alert">
+      <p>No se pudo cargar el listado.</p>
+      <button matButton="tonal" type="button" (click)="facade.reload()">Reintentar</button>
+    </div>
+  } @else if (!facade.loading() && facade.users().length === 0) {
+    <div class="state">
+      <p>No hay usuarios que coincidan con los filtros.</p>
+    </div>
+  } @else if (isHandset()) {
+    <ul class="cards">
+      @for (user of facade.users(); track user.id) {
+        <li class="card">
+          <div class="card-head">
+            <div>
+              <strong>{{ user.fullName }}</strong>
+              <span class="muted">{{ user.email }}</span>
+            </div>
+            <sarc-user-actions-menu
+              [user]="user"
+              (edit)="edit($event)"
+              (resetPassword)="resetPassword($event)"
+            />
+          </div>
+          <span class="muted">{{ roleNames(user) }}</span>
+          <sarc-user-badges [user]="user" />
+        </li>
+      }
+    </ul>
+  } @else {
+    <table mat-table [dataSource]="facade.users()" class="table">
+      <ng-container matColumnDef="user">
+        <th mat-header-cell *matHeaderCellDef>Usuario</th>
+        <td mat-cell *matCellDef="let user">
+          <strong>{{ user.fullName }}</strong>
+          <span class="muted block">{{ user.email }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="roles">
+        <th mat-header-cell *matHeaderCellDef>Roles</th>
+        <td mat-cell *matCellDef="let user">{{ roleNames(user) }}</td>
+      </ng-container>
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <td mat-cell *matCellDef="let user">
+          <sarc-user-badges [user]="user" />
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="createdAt">
+        <th mat-header-cell *matHeaderCellDef>Creado</th>
+        <td mat-cell *matCellDef="let user">{{ user.createdAt | date: 'mediumDate' }}</td>
+      </ng-container>
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>
+          <span class="sarc-visually-hidden">Acciones</span>
+        </th>
+        <td mat-cell *matCellDef="let user" class="actions-cell">
+          <sarc-user-actions-menu
+            [user]="user"
+            (edit)="edit($event)"
+            (resetPassword)="resetPassword($event)"
+          />
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    </table>
+  }
+
+  <mat-paginator
+    [length]="facade.totalElements()"
+    [pageIndex]="facade.pageIndex()"
+    [pageSize]="facade.pageSize()"
+    [pageSizeOptions]="pageSizeOptions"
+    (page)="onPage($event)"
+    aria-label="Paginación de usuarios"
+  />
+</section>

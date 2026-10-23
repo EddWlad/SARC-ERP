@@ -1,0 +1,104 @@
+<a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+<mat-sidenav-container class="shell">
+  <mat-sidenav
+    class="sidebar"
+    [mode]="isHandset() ? 'over' : 'side'"
+    [opened]="!isHandset() || menuOpen()"
+    (closedStart)="menuOpen.set(false)"
+  >
+    <div class="brand">
+      <svg lucideZap class="brand-icon"></svg>
+      <span class="brand-name">SARC</span>
+    </div>
+
+    <nav aria-label="Menú principal">
+      <ul class="nav-list">
+        @for (item of navItems(); track item.path) {
+          <li>
+            <a
+              class="nav-link"
+              [routerLink]="item.path"
+              routerLinkActive="active"
+              ariaCurrentWhenActive="page"
+              (click)="closeMenuOnHandset()"
+            >
+              <svg [lucideIcon]="item.icon" [size]="20"></svg>
+              <span>{{ item.label }}</span>
+            </a>
+          </li>
+        }
+      </ul>
+    </nav>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="content-area">
+    <mat-toolbar class="topbar">
+      @if (isHandset()) {
+        <button matIconButton type="button" aria-label="Abrir menú" (click)="menuOpen.set(true)">
+          <svg lucideMenu></svg>
+        </button>
+      }
+      <span class="topbar-title">Sistema Administrativo de Reportes de Carga</span>
+      <span class="spacer"></span>
+
+      <button matIconButton type="button" [matMenuTriggerFor]="themeMenu" aria-label="Cambiar tema">
+        @switch (themeMode()) {
+          @case ('light') {
+            <svg lucideSun></svg>
+          }
+          @case ('dark') {
+            <svg lucideMoon></svg>
+          }
+          @default {
+            <svg lucideMonitor></svg>
+          }
+        }
+      </button>
+      <mat-menu #themeMenu="matMenu">
+        @for (option of themeOptions; track option.mode) {
+          <button
+            mat-menu-item
+            type="button"
+            role="menuitemradio"
+            [attr.aria-checked]="themeMode() === option.mode"
+            (click)="setTheme(option.mode)"
+          >
+            {{ option.label }}
+          </button>
+        }
+      </mat-menu>
+
+      <button
+        matIconButton
+        type="button"
+        [matMenuTriggerFor]="userMenu"
+        aria-label="Menú de usuario"
+      >
+        <svg lucideCircleUser></svg>
+      </button>
+      <mat-menu #userMenu="matMenu" xPosition="before">
+        @if (user(); as current) {
+          <div class="user-card">
+            <strong>{{ current.fullName }}</strong>
+            <span>{{ current.email }}</span>
+            <span class="user-roles">{{ roleNames() }}</span>
+          </div>
+        }
+        <mat-divider />
+        <a mat-menu-item [routerLink]="changePasswordPath">
+          <svg lucideKeyRound [size]="18"></svg>
+          <span>Cambiar contraseña</span>
+        </a>
+        <button mat-menu-item type="button" (click)="logout()">
+          <svg lucideLogOut [size]="18"></svg>
+          <span>Cerrar sesión</span>
+        </button>
+      </mat-menu>
+    </mat-toolbar>
+
+    <main id="contenido" class="page" tabindex="-1">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>
