@@ -15,18 +15,22 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 
-import com.tidsec.sarc_bakend.modules.identity.domain.policy.LoginPolicy;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 import com.tidsec.sarc_bakend.shared.persistence.BaseAuditableEntity;
 
 /**
  * Cuenta de acceso con sus roles. Concentra las reglas de RF-001: multirol, baja logica,
- * contrasena temporal con cambio obligatorio y bloqueo temporal por intentos fallidos.
+ * contrasena temporal con cambio obligatorio y bloqueo temporal. Los intentos fallidos se
+ * registran con operaciones atomicas de UserRepository, para que el trafico de ingreso no
+ * cambie la version ni la auditoria de la cuenta.
  * Solo usa anotaciones de la especificacion JPA; no depende de Spring.
  */
 @Entity
 @Table(name = "auth_user")
 public class UserAccount extends BaseAuditableEntity {
+
+	/** Tipo de entidad con el que se registran sus hechos en la auditoria. */
+	public static final String AUDIT_ENTITY_TYPE = "USER";
 
 	@Column(nullable = false, updatable = false, length = 254)
 	private String email;
@@ -105,22 +109,6 @@ public class UserAccount extends BaseAuditableEntity {
 		return roles.contains(role);
 	}
 
-	public void registerFailedLogin(Instant now, LoginPolicy policy) {
-		if (isLocked(now)) {
-			return;
-		}
-		failedLoginAttempts++;
-		if (failedLoginAttempts >= policy.maxFailedAttempts()) {
-			lockedUntil = now.plus(policy.lockoutDuration());
-			failedLoginAttempts = 0;
-		}
-	}
-
-	public void registerSuccessfulLogin() {
-		failedLoginAttempts = 0;
-		lockedUntil = null;
-	}
-
 	/** El propio usuario define su clave: deja de ser temporal. */
 	public void changePassword(String newPasswordHash) {
 		applyPassword(newPasswordHash, false);
@@ -134,7 +122,8 @@ public class UserAccount extends BaseAuditableEntity {
 	private void applyPassword(String hash, boolean temporary) {
 		this.passwordHash = hash;
 		this.mustChangePassword = temporary;
-		registerSuccessfulLogin();
+		this.failedLoginAttempts = 0;
+		this.lockedUntil = null;
 	}
 
 	private static String requireFullName(String fullName) {

@@ -35,8 +35,6 @@ import com.tidsec.sarc_bakend.shared.security.CurrentActor;
 @PreAuthorize("hasRole('ADMINISTRADOR')")
 public class UserManagementService {
 
-	static final String ENTITY_TYPE = "USER";
-
 	private final UserRepository users;
 	private final PasswordEncoder passwordEncoder;
 	private final TemporaryPasswordGenerator passwordGenerator;
@@ -63,7 +61,7 @@ public class UserManagementService {
 		String temporaryPassword = passwordGenerator.generate();
 		UserAccount user = users.save(UserAccount.create(email, command.fullName(), command.roles(),
 				passwordEncoder.encode(temporaryPassword)));
-		audit.record("USER_CREATED", ENTITY_TYPE, user.getId(),
+		audit.record("USER_CREATED", UserAccount.AUDIT_ENTITY_TYPE, user.getId(),
 				Map.of("email", user.getEmail(), "roles", describe(user.getRoles())));
 		return new CreatedUser(user, temporaryPassword);
 	}
@@ -98,7 +96,7 @@ public class UserManagementService {
 		String temporaryPassword = passwordGenerator.generate();
 		user.resetPassword(passwordEncoder.encode(temporaryPassword));
 		users.save(user);
-		audit.record("PASSWORD_RESET", ENTITY_TYPE, user.getId(), Map.of());
+		audit.record("PASSWORD_RESET", UserAccount.AUDIT_ENTITY_TYPE, user.getId(), Map.of());
 		sessions.invalidateAll(user.getId());
 		return temporaryPassword;
 	}
@@ -115,7 +113,7 @@ public class UserManagementService {
 		}
 		String previous = describe(user.getRoles());
 		user.replaceRoles(newRoles);
-		audit.record("USER_ROLES_CHANGED", ENTITY_TYPE, user.getId(),
+		audit.record("USER_ROLES_CHANGED", UserAccount.AUDIT_ENTITY_TYPE, user.getId(),
 				Map.of("from", previous, "to", describe(user.getRoles())));
 	}
 
@@ -125,11 +123,11 @@ public class UserManagementService {
 				throw new BusinessRuleException("CANNOT_DEACTIVATE_SELF", "No puede desactivar su propia cuenta");
 			}
 			user.deactivate();
-			audit.record("USER_DEACTIVATED", ENTITY_TYPE, user.getId(), Map.of());
+			audit.record("USER_DEACTIVATED", UserAccount.AUDIT_ENTITY_TYPE, user.getId(), Map.of());
 		}
 		else {
 			user.activate();
-			audit.record("USER_REACTIVATED", ENTITY_TYPE, user.getId(), Map.of());
+			audit.record("USER_REACTIVATED", UserAccount.AUDIT_ENTITY_TYPE, user.getId(), Map.of());
 		}
 	}
 

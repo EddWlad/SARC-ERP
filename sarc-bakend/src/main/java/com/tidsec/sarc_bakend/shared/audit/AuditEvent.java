@@ -12,10 +12,10 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-/** Hecho auditable inmutable: quien hizo que, sobre que entidad y cuando. */
+/** Hecho auditable inmutable: quien hizo que, sobre que entidad y cuando. Solo se escribe. */
 @Entity
 @Table(name = "audit_event")
-public class AuditEvent {
+class AuditEvent {
 
 	@Id
 	private UUID id;
@@ -55,37 +55,5 @@ public class AuditEvent {
 		this.entityId = entityId;
 		this.traceId = traceId;
 		this.details = Map.copyOf(details);
-	}
-
-	public UUID getId() {
-		return id;
-	}
-
-	public Instant getOccurredAt() {
-		return occurredAt;
-	}
-
-	public UUID getActorId() {
-		return actorId;
-	}
-
-	public String getAction() {
-		return action;
-	}
-
-	public String getEntityType() {
-		return entityType;
-	}
-
-	public UUID getEntityId() {
-		return entityId;
-	}
-
-	public String getTraceId() {
-		return traceId;
-	}
-
-	public Map<String, String> getDetails() {
-		return details;
 	}
 }

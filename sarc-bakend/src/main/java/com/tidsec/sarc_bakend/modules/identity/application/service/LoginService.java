@@ -17,7 +17,8 @@ import com.tidsec.sarc_bakend.shared.security.AuthenticatedPrincipal;
 
 /**
  * Autentica credenciales y lleva el conteo de intentos fallidos. El fallo no revierte la transaccion
- * para que el contador y el bloqueo temporal si queden persistidos.
+ * para que el contador y el bloqueo temporal si queden persistidos; el repositorio los actualiza
+ * de forma atomica, asi que intentos en paralelo cuentan todos.
  */
 @Service
 @Transactional(noRollbackFor = AuthenticationException.class)
@@ -41,19 +42,11 @@ public class LoginService {
 		try {
 			Authentication authentication = authenticationManager
 					.authenticate(UsernamePasswordAuthenticationToken.unauthenticated(normalizedEmail, password));
-			AuthenticatedPrincipal principal = (AuthenticatedPrincipal) authentication.getPrincipal();
-			users.findById(principal.id()).ifPresent(user -> {
-				user.registerSuccessfulLogin();
-				users.save(user);
-			});
+			users.clearFailedLogins(((AuthenticatedPrincipal) authentication.getPrincipal()).id());
 			return authentication;
 		}
 		catch (AuthenticationException ex) {
-			Instant now = Instant.now(clock);
-			users.findByEmail(normalizedEmail).ifPresent(user -> {
-				user.registerFailedLogin(now, loginPolicy);
-				users.save(user);
-			});
+			users.registerFailedLogin(normalizedEmail, Instant.now(clock), loginPolicy);
 			throw ex;
 		}
 	}

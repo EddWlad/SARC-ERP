@@ -6,6 +6,7 @@ import java.util.UUID;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,7 +43,7 @@ class UserController {
 
 	@GetMapping
 	PageResult<UserResponse> list(
-			@RequestParam(required = false) String text,
+			@RequestParam(required = false) @Size(max = 100) String text,
 			@RequestParam(required = false) Role role,
 			@RequestParam(required = false) UserStatus status,
 			@RequestParam(defaultValue = "0") @Min(0) int page,

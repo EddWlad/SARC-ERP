@@ -36,7 +36,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 			case NotFoundException _ -> HttpStatus.NOT_FOUND;
 			case ConflictException _ -> HttpStatus.CONFLICT;
 			case BusinessRuleException _ -> HttpStatus.UNPROCESSABLE_CONTENT;
-			default -> HttpStatus.INTERNAL_SERVER_ERROR;
 		};
 		return problem(status, ex.code(), ex.getMessage(), request);
 	}

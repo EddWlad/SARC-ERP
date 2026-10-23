@@ -1,5 +1,6 @@
 package com.tidsec.sarc_bakend.modules.identity.infrastructure.persistence;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import com.tidsec.sarc_bakend.modules.identity.domain.model.Role;
 import com.tidsec.sarc_bakend.modules.identity.domain.model.UserAccount;
+import com.tidsec.sarc_bakend.modules.identity.domain.policy.LoginPolicy;
 import com.tidsec.sarc_bakend.modules.identity.domain.repository.UserRepository;
 import com.tidsec.sarc_bakend.modules.identity.domain.repository.UserSearchCriteria;
 import com.tidsec.sarc_bakend.shared.pagination.PageQuery;
@@ -56,6 +58,16 @@ class UserRepositoryAdapter implements UserRepository {
 	@Override
 	public boolean existsAny() {
 		return jpa.count() > 0;
+	}
+
+	@Override
+	public void registerFailedLogin(String normalizedEmail, Instant now, LoginPolicy policy) {
+		jpa.registerFailedLogin(normalizedEmail, policy.maxFailedAttempts(), policy.lockUntil(now), now);
+	}
+
+	@Override
+	public void clearFailedLogins(UUID userId) {
+		jpa.clearFailedLogins(userId);
 	}
 
 	@Override

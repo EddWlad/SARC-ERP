@@ -8,18 +8,23 @@ import java.time.Instant;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
-import com.tidsec.sarc_bakend.modules.identity.domain.policy.LoginPolicy;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 
 class UserAccountTest {
 
 	private static final Instant NOW = Instant.parse("2026-10-22T10:00:00Z");
-	private static final LoginPolicy POLICY = new LoginPolicy(3, Duration.ofMinutes(15));
 
 	private UserAccount newUser() {
 		return UserAccount.create(new Email("  Ana@Example.COM "), " Ana Perez ",
 				Set.of(Role.ANALISTA, Role.SUPERVISOR), "hash");
+	}
+
+	/** El bloqueo lo escribe el repositorio con una operacion atomica; aqui se simula esa fila. */
+	private static void lockUntil(UserAccount user, Instant until) {
+		ReflectionTestUtils.setField(user, "lockedUntil", until);
+		ReflectionTestUtils.setField(user, "failedLoginAttempts", 2);
 	}
 
 	@Test
@@ -46,52 +51,19 @@ class UserAccountTest {
 	}
 
 	@Test
-	void locksAfterMaxFailedAttemptsAndUnlocksWhenTimePasses() {
+	void lockLastsUntilItsEndInstant() {
 		UserAccount user = newUser();
-
-		user.registerFailedLogin(NOW, POLICY);
-		user.registerFailedLogin(NOW, POLICY);
-		assertThat(user.isLocked(NOW)).isFalse();
-		user.registerFailedLogin(NOW, POLICY);
+		lockUntil(user, NOW.plus(Duration.ofMinutes(15)));
 
 		assertThat(user.isLocked(NOW)).isTrue();
-		assertThat(user.getLockedUntil()).isEqualTo(NOW.plus(Duration.ofMinutes(15)));
 		assertThat(user.isLocked(NOW.plus(Duration.ofMinutes(15)))).isFalse();
-	}
-
-	@Test
-	void failuresWhileLockedDoNotExtendTheLock() {
-		UserAccount user = newUser();
-		for (int i = 0; i < 3; i++) {
-			user.registerFailedLogin(NOW, POLICY);
-		}
-		Instant lockedUntil = user.getLockedUntil();
-
-		user.registerFailedLogin(NOW.plusSeconds(60), POLICY);
-
-		assertThat(user.getLockedUntil()).isEqualTo(lockedUntil);
-	}
-
-	@Test
-	void successfulLoginClearsCounterAndLock() {
-		UserAccount user = newUser();
-		user.registerFailedLogin(NOW, POLICY);
-		user.registerFailedLogin(NOW, POLICY);
-
-		user.registerSuccessfulLogin();
-		user.registerFailedLogin(NOW, POLICY);
-		user.registerFailedLogin(NOW, POLICY);
-
-		assertThat(user.isLocked(NOW)).isFalse();
 	}
 
 	@Test
 	void adminResetForcesPasswordChangeAndUnlocks() {
 		UserAccount user = newUser();
 		user.changePassword("own-hash");
-		for (int i = 0; i < 3; i++) {
-			user.registerFailedLogin(NOW, POLICY);
-		}
+		lockUntil(user, NOW.plus(Duration.ofMinutes(15)));
 
 		user.resetPassword("temp-hash");
 
@@ -101,12 +73,14 @@ class UserAccountTest {
 	}
 
 	@Test
-	void ownPasswordChangeClearsTemporaryFlag() {
+	void ownPasswordChangeClearsTemporaryFlagAndLock() {
 		UserAccount user = newUser();
+		lockUntil(user, NOW.plus(Duration.ofMinutes(15)));
 
 		user.changePassword("own-hash");
 
 		assertThat(user.isMustChangePassword()).isFalse();
+		assertThat(user.isLocked(NOW)).isFalse();
 	}
 
 	@Test

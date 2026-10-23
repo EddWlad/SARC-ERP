@@ -53,7 +53,8 @@ class BootstrapAdminInitializer implements ApplicationRunner {
 		PasswordPolicy.requireValid(properties.password());
 		UserAccount admin = users.save(UserAccount.create(new Email(properties.email()), properties.fullName(),
 				Set.of(Role.ADMINISTRADOR), passwordEncoder.encode(properties.password())));
-		audit.record("USER_CREATED", "USER", admin.getId(), Map.of("email", admin.getEmail(), "bootstrap", "true"));
+		audit.record("USER_CREATED", UserAccount.AUDIT_ENTITY_TYPE, admin.getId(),
+				Map.of("email", admin.getEmail(), "bootstrap", "true"));
 		log.info("Administrador inicial creado: {}", admin.getEmail());
 	}
 }

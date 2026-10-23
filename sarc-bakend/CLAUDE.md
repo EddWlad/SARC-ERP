@@ -42,4 +42,5 @@ Dependencias: `api -> application -> domain <- infrastructure`.
 - Todo endpoint nuevo bajo `/api/v1` queda autenticado por defecto; declarar el rol con `@PreAuthorize` en el caso de uso.
 - Cada cambio de datos relevante llama a `AuditTrail.record(...)` dentro de la misma transaccion.
 - Sin codigo muerto ni dependencias sin uso. Cada requisito nuevo trae pruebas.
+- Contrato REST: `docs/api/openapi.json`. Si cambia un endpoint o DTO, `OpenApiContractTest` falla: regenerarlo con `./mvnw test -Dtest=OpenApiContractTest -Dopenapi.update=true` y luego `npm run api:types` en el frontend. Campos de respuesta opcionales: `@Schema(nullable = true)`.
 - Decisiones que se apartan del TRD: `docs/adr/`.

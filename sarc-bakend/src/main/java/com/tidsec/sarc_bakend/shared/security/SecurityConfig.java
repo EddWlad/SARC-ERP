@@ -1,12 +1,13 @@
 package com.tidsec.sarc_bakend.shared.security;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authorization.AuthenticatedAuthorizationManager;
-import org.springframework.security.authorization.AuthorityAuthorizationManager;
 import org.springframework.security.authorization.AuthorityAuthorizationManager;
 import org.springframework.security.authorization.AuthorizationManagers;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -16,11 +17,15 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.CompositeSessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfAuthenticationStrategy;
 import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.session.web.http.CookieSerializer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
@@ -37,12 +42,12 @@ class SecurityConfig {
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityContextRepository securityContextRepository,
-			@Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) {
+			CsrfTokenRepository csrfTokenRepository, @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) {
 		http
 				.securityContext(context -> context.securityContextRepository(securityContextRepository))
 				.requestCache(cache -> cache.disable())
 				.csrf(csrf -> csrf
-						.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+						.csrfTokenRepository(csrfTokenRepository)
 						.csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
 				.addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
 				.authorizeHttpRequests(auth -> auth
@@ -70,9 +75,25 @@ class SecurityConfig {
 		return new HttpSessionSecurityContextRepository();
 	}
 
+	/** Cookie XSRF-TOKEN legible por Angular, que la reenvia como cabecera X-XSRF-TOKEN. */
 	@Bean
-	SessionAuthenticationStrategy sessionAuthenticationStrategy() {
-		return new ChangeSessionIdAuthenticationStrategy();
+	CsrfTokenRepository csrfTokenRepository() {
+		return CookieCsrfTokenRepository.withHttpOnlyFalse();
+	}
+
+	/**
+	 * Al autenticar: nuevo id de sesion (contra fijacion de sesion) y nuevo token CSRF, emitido en
+	 * la misma respuesta para que la SPA pueda seguir enviando peticiones sin recargar.
+	 */
+	@Bean
+	SessionAuthenticationStrategy sessionAuthenticationStrategy(CsrfTokenRepository csrfTokenRepository) {
+		SessionAuthenticationStrategy emitNewCsrfToken = (authentication, request, response) -> {
+			if (request.getAttribute(CsrfToken.class.getName()) instanceof CsrfToken token) {
+				token.getToken();
+			}
+		};
+		return new CompositeSessionAuthenticationStrategy(List.of(new ChangeSessionIdAuthenticationStrategy(),
+				new CsrfAuthenticationStrategy(csrfTokenRepository), emitNewCsrfToken));
 	}
 
 	/** Cookie de sesion: HttpOnly, SameSite=Strict y Secure segun el esquema real de la peticion (TLS en Nginx). */

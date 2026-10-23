@@ -2,7 +2,6 @@ package com.tidsec.sarc_bakend.shared.audit;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -35,10 +34,5 @@ public class AuditTrail {
 	public void record(String action, String entityType, UUID entityId, Map<String, String> details) {
 		repository.save(new AuditEvent(Instant.now(clock), currentActor.id().orElse(null), action, entityType,
 				entityId, MDC.get(RequestTraceFilter.TRACE_ID_KEY), details));
-	}
-
-	@Transactional(readOnly = true)
-	public List<AuditEvent> historyOf(String entityType, UUID entityId) {
-		return repository.findByEntityTypeAndEntityIdOrderByOccurredAtAsc(entityType, entityId);
 	}
 }

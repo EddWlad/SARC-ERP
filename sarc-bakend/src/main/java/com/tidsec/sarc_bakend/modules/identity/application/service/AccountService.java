@@ -55,8 +55,7 @@ public class AccountService {
 		UserAccount user = findAccount(userId);
 		Instant now = Instant.now(clock);
 		if (user.isLocked(now) || !passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
-			user.registerFailedLogin(now, loginPolicy);
-			users.save(user);
+			users.registerFailedLogin(user.getEmail(), now, loginPolicy);
 			throw new BusinessRuleException("CURRENT_PASSWORD_INCORRECT", "La contrasena actual no es correcta");
 		}
 		PasswordPolicy.requireValid(newPassword);
@@ -65,7 +64,7 @@ public class AccountService {
 		}
 		user.changePassword(passwordEncoder.encode(newPassword));
 		users.save(user);
-		audit.record("PASSWORD_CHANGED", UserManagementService.ENTITY_TYPE, user.getId(), Map.of());
+		audit.record("PASSWORD_CHANGED", UserAccount.AUDIT_ENTITY_TYPE, user.getId(), Map.of());
 		sessions.invalidateAll(user.getId());
 	}
 }

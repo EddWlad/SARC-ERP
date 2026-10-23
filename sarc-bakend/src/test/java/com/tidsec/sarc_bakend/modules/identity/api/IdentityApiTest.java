@@ -12,6 +12,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.Set;
 import java.util.UUID;
 
@@ -31,6 +35,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockCookie;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
@@ -43,8 +48,7 @@ import com.tidsec.sarc_bakend.modules.identity.domain.model.Email;
 import com.tidsec.sarc_bakend.modules.identity.domain.model.Role;
 import com.tidsec.sarc_bakend.modules.identity.domain.model.UserAccount;
 import com.tidsec.sarc_bakend.modules.identity.domain.repository.UserRepository;
-import com.tidsec.sarc_bakend.shared.audit.AuditEvent;
-import com.tidsec.sarc_bakend.shared.audit.AuditTrail;
+import com.tidsec.sarc_bakend.modules.identity.application.service.LoginService;
 
 @SpringBootTest(properties = {
 		"sarc.security.bcrypt-strength=4",
@@ -63,7 +67,7 @@ class IdentityApiTest {
 	@Autowired UserRepository users;
 	@Autowired PasswordEncoder encoder;
 	@Autowired JdbcTemplate jdbc;
-	@Autowired AuditTrail auditTrail;
+	@Autowired LoginService loginService;
 	@Autowired EntityManagerFactory entityManagerFactory;
 
 	@BeforeEach
@@ -122,6 +126,62 @@ class IdentityApiTest {
 		mvc.perform(loginRequest("admin@eos.com", PASSWORD))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+	}
+
+	@Test
+	void parallelFailedLoginsAreAllCountedWithoutConflicts() throws Exception {
+		UserAccount user = seedUser("admin@eos.com", Role.ADMINISTRADOR);
+		List<Callable<String>> attempts = new ArrayList<>();
+		for (int i = 0; i < 8; i++) {
+			attempts.add(() -> {
+				try {
+					loginService.login("admin@eos.com", "otra-clave-equivocada");
+					return "LOGGED_IN";
+				}
+				catch (AuthenticationException ex) {
+					return "REJECTED";
+				}
+			});
+		}
+
+		List<String> outcomes = new ArrayList<>();
+		try (ExecutorService pool = Executors.newFixedThreadPool(8)) {
+			for (Future<String> outcome : pool.invokeAll(attempts)) {
+				outcomes.add(outcome.get());
+			}
+		}
+
+		assertThat(outcomes).containsOnly("REJECTED");
+		assertThat(users.findById(user.getId()).orElseThrow().getLockedUntil()).isNotNull();
+		mvc.perform(loginRequest("admin@eos.com", PASSWORD)).andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void loginAttemptsDoNotChangeTheAccountVersionSoAdminEditsKeepWorking() throws Exception {
+		seedUser("admin@eos.com", Role.ADMINISTRADOR);
+		UserAccount target = seedUser("ana@eos.com", Role.ANALISTA);
+		Cookie adminSession = login("admin@eos.com", PASSWORD);
+
+		mvc.perform(loginRequest("ana@eos.com", "otra-clave-equivocada")).andExpect(status().isUnauthorized());
+		login("ana@eos.com", PASSWORD);
+
+		mvc.perform(patchUser(adminSession, target.getId(), "{\"version\":%d,\"fullName\":\"Ana B\"}".formatted(target.getVersion())))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void loginRotatesTheCsrfToken() throws Exception {
+		seedUser("admin@eos.com", Role.ADMINISTRADOR);
+
+		List<String> csrfCookies = mvc.perform(loginRequest("admin@eos.com", PASSWORD))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getHeaders(HttpHeaders.SET_COOKIE).stream()
+				.filter(header -> header.startsWith("XSRF-TOKEN="))
+				.toList();
+
+		assertThat(csrfCookies).isNotEmpty();
+		String lastValue = MockCookie.parse(csrfCookies.getLast()).getValue();
+		assertThat(lastValue).isNotBlank().isNotEqualTo(XSRF_TOKEN);
 	}
 
 	@Test
@@ -244,6 +304,19 @@ class IdentityApiTest {
 	}
 
 	@Test
+	void nullRolesAndOversizedFiltersAreRejectedAsBadRequests() throws Exception {
+		seedUser("admin@eos.com", Role.ADMINISTRADOR);
+		Cookie adminSession = login("admin@eos.com", PASSWORD);
+
+		mvc.perform(post("/api/v1/users").with(xsrf()).cookie(adminSession).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"email\":\"x@eos.com\",\"fullName\":\"X\",\"roles\":[null]}"))
+				.andExpect(status().isBadRequest());
+		mvc.perform(get("/api/v1/users").cookie(adminSession).param("text", "a".repeat(101)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+	}
+
+	@Test
 	void listSupportsFiltersAndPagination() throws Exception {
 		seedUser("admin@eos.com", Role.ADMINISTRADOR);
 		seedUser("ana@eos.com", Role.ANALISTA);
@@ -310,7 +383,9 @@ class IdentityApiTest {
 		mvc.perform(get("/api/v1/auth/me").cookie(anaSession)).andExpect(status().isUnauthorized());
 		mvc.perform(loginRequest("ana@eos.com", PASSWORD)).andExpect(status().isUnauthorized());
 		mvc.perform(get("/api/v1/auth/me").cookie(adminSession)).andExpect(status().isOk());
-		List<String> actions = auditTrail.historyOf("USER", target.getId()).stream().map(AuditEvent::getAction).toList();
+		List<String> actions = jdbc.queryForList(
+				"select action from audit_event where entity_type = 'USER' and entity_id = ? order by occurred_at",
+				String.class, target.getId());
 		assertThat(actions).containsExactly("USER_DEACTIVATED");
 	}
 

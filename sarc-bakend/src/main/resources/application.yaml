@@ -36,6 +36,8 @@ management:
       show-details: never
 
 springdoc:
+  api-docs:
+    version: openapi_3_1
   swagger-ui:
     enabled: true
 
