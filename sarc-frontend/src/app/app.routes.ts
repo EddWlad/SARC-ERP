@@ -42,6 +42,11 @@ export const routes: Routes = [
           import('./features/inventory/inventory.routes').then((m) => m.INVENTORY_ROUTES),
       },
       {
+        path: 'consumo',
+        loadChildren: () =>
+          import('./features/consumption/consumption.routes').then((m) => m.CONSUMPTION_ROUTES),
+      },
+      {
         path: 'usuarios',
         title: 'Usuarios | SARC',
         canActivate: [roleGuard('ADMINISTRADOR')],

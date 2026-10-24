@@ -237,7 +237,12 @@ class ConsumptionApiTest {
 				.andExpect(jsonPath("$.official.energyKwh").value(40.0))
 				.andExpect(jsonPath("$.official.equipment").value(1))
 				.andExpect(jsonPath("$.top[0].equipment.id").value(kiaPoint))
-				.andExpect(jsonPath("$.daily.length()").value(31));
+				.andExpect(jsonPath("$.daily.length()").value(31))
+				.andExpect(jsonPath("$.byNetwork.length()").value(3))
+				.andExpect(jsonPath("$.byNetwork[?(@.network == 'KIA')].energyKwh").value(40.0))
+				.andExpect(jsonPath("$.byNetwork[?(@.network == 'JAC')].energyKwh").value(0))
+				.andExpect(jsonPath("$.bySource[?(@.source == 'WALLBOX')].sessions").value(2))
+				.andExpect(jsonPath("$.byType[?(@.type == 'CHARGING_POINT')].energyKwh").value(40.0));
 
 		byte[] xlsx = mvc.perform(get("/api/v1/energy/report").param("format", "XLSX")
 				.param("from", "2026-10-01").param("to", "2026-11-01").cookie(manager))

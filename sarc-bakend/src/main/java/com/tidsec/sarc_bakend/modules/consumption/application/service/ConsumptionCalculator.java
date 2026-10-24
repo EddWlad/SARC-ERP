@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -17,13 +18,17 @@ import org.springframework.stereotype.Component;
 
 import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionSummary;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.RankedEquipment;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.DailyEnergy;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergySessionRepository;
+import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyTotals;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EquipmentEnergy;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.SessionCriteria;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentDirectory;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentReference;
+import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
+import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 
 /**
@@ -50,11 +55,14 @@ class ConsumptionCalculator {
 	ConsumptionSummary summarize(SessionCriteria criteria) {
 		requirePeriod(criteria);
 		SessionCriteria official = criteria.withState(SessionState.VALIDATED);
-		var totals = sessions.totals(official);
+		EnergyTotals totals = sessions.totals(official);
 		BigDecimal average = totals.sessions() == 0 ? BigDecimal.ZERO
 				: totals.energyKwh().divide(BigDecimal.valueOf(totals.sessions()), 3, RoundingMode.HALF_UP);
 		return new ConsumptionSummary(criteria.from(), criteria.to(), totals, average,
 				ranking(official, TOP_SIZE), fillDays(criteria.from(), criteria.to(), sessions.daily(official)),
+				complete(ChargingNetwork.class, sessions.byNetwork(official)),
+				complete(SessionSource.class, sessions.bySource(official)),
+				complete(InfrastructureType.class, sessions.byType(official)),
 				sessions.totals(criteria.withState(SessionState.PENDING_LINK)),
 				sessions.totals(criteria.withState(SessionState.TEST)), Instant.now(clock));
 	}
@@ -79,6 +87,15 @@ class ConsumptionCalculator {
 		if (ChronoUnit.DAYS.between(criteria.from(), criteria.to()) > MAX_PERIOD_DAYS) {
 			throw new BusinessRuleException("PERIOD_TOO_LONG", "El periodo no puede superar " + MAX_PERIOD_DAYS + " dias");
 		}
+	}
+
+	/** Todas las categorias, en orden de declaracion, con cero las que no tuvieron sesiones. */
+	private static <K extends Enum<K>> Map<K, EnergyTotals> complete(Class<K> type, Map<K, EnergyTotals> found) {
+		Map<K, EnergyTotals> all = new EnumMap<>(type);
+		for (K key : type.getEnumConstants()) {
+			all.put(key, found.getOrDefault(key, EnergyTotals.EMPTY));
+		}
+		return all;
 	}
 
 	private static List<DailyEnergy> fillDays(LocalDate from, LocalDate to, List<DailyEnergy> withActivity) {

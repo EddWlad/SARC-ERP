@@ -1,0 +1,30 @@
+@use '../../../../shared/ui/dialog-form';
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sarc-space-3);
+}
+
+.mode {
+  align-self: flex-start;
+}
+
+.file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sarc-space-2) var(--sarc-space-3);
+}
+
+.file-name {
+  overflow-wrap: anywhere;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--mat-sys-error);
+  font: var(--mat-sys-body-small);
+}

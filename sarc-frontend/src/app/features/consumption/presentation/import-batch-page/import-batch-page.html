@@ -1,0 +1,272 @@
+<a matButton routerLink="/consumo/importaciones" class="back">
+  <svg lucideArrowLeft [size]="18"></svg>
+  Importaciones
+</a>
+
+@if (facade.notFound()) {
+  <div class="state" role="alert"><p>El lote de importación no existe.</p></div>
+} @else if (facade.failed()) {
+  <div class="state" role="alert">
+    <p>No se pudo cargar el lote.</p>
+    <button matButton="tonal" type="button" (click)="facade.reload()">Reintentar</button>
+  </div>
+} @else if (facade.batch(); as batch) {
+  <header class="page-header">
+    <div>
+      <h1>{{ batch.fileName }}</h1>
+      <p class="subtitle">
+        {{ sourceLabels[batch.source] }} · {{ originLabels[batch.origin] }} · cargado
+        {{ batch.createdAt | date: 'short' }}
+      </p>
+      <sarc-import-status-badge [status]="batch.status" />
+    </div>
+    <div class="header-actions">
+      @if (canDiscard()) {
+        <button matButton="outlined" type="button" [disabled]="facade.busy()" (click)="discard()">
+          Descartar
+        </button>
+      }
+      @if (canRetry()) {
+        <button matButton="filled" type="button" [disabled]="facade.busy()" (click)="retry()">
+          Reintentar
+        </button>
+      }
+      @if (facade.reviewable()) {
+        <button matButton="filled" type="button" [disabled]="facade.busy()" (click)="confirm()">
+          Confirmar importación
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (facade.inProgress()) {
+    <div class="banner info" role="status">
+      <p>
+        {{
+          batch.status === 'PARSING'
+            ? 'Interpretando el archivo y clasificando las filas...'
+            : 'Incorporando las sesiones aprobadas...'
+        }}
+      </p>
+      <mat-progress-bar mode="indeterminate" aria-label="Procesando el lote" />
+    </div>
+  }
+
+  @if (batch.status === 'FAILED') {
+    <div class="banner error" role="alert">
+      <svg lucideCircleAlert [size]="20" aria-hidden="true"></svg>
+      <p>{{ batch.failureMessage }}</p>
+    </div>
+  }
+
+  @if (batch.status === 'COMPLETED') {
+    <div class="banner success" role="status">
+      <p>
+        Importación completada: {{ quantities.count(batch.appliedRows) }} sesiones incorporadas o
+        corregidas de {{ quantities.count(batch.totalRows) }} filas.
+      </p>
+    </div>
+  }
+
+  @if (batch.status !== 'PARSING' && batch.totalRows > 0) {
+    <mat-chip-listbox
+      aria-label="Filtrar filas por clasificación"
+      [value]="facade.classification()"
+      (change)="onFilter($event.value)"
+      class="classifications"
+    >
+      <mat-chip-option value="" [selectable]="facade.classification() !== ''">
+        Todas ({{ quantities.count(batch.totalRows) }})
+      </mat-chip-option>
+      @for (classification of filters(); track classification) {
+        <mat-chip-option
+          [value]="classification"
+          [selectable]="facade.classification() !== classification"
+        >
+          {{ classificationLabels[classification] }} ({{ quantities.count(count(classification)) }})
+        </mat-chip-option>
+      }
+    </mat-chip-listbox>
+    @if (facade.classification(); as selected) {
+      <p class="hint">{{ classificationHints[selected] }}</p>
+    }
+
+    @if (facade.reviewable() && pendingApproval().length > 0) {
+      <div class="bulk">
+        <span>{{ pendingApproval().length }} filas visibles esperan aprobación.</span>
+        <button
+          matButton="tonal"
+          type="button"
+          (click)="decide(pendingApproval(), { approved: true })"
+        >
+          Aprobar las visibles
+        </button>
+      </div>
+    }
+
+    <section class="results" aria-label="Filas del lote" [attr.aria-busy]="facade.rowsLoading()">
+      @if (facade.rowsLoading()) {
+        <mat-progress-bar mode="indeterminate" aria-label="Cargando filas" />
+      }
+
+      @if (isHandset()) {
+        <ul class="cards">
+          @for (item of facade.rows(); track item.id) {
+            <li class="card">
+              <div class="card-head">
+                <span>
+                  <strong>Fila {{ item.rowNumber }}</strong>
+                  <span class="muted mono">{{ item.externalSessionId ?? '—' }}</span>
+                </span>
+                <ng-container *ngTemplateOutlet="classification; context: { $implicit: item }" />
+              </div>
+              <ng-container *ngTemplateOutlet="session; context: { $implicit: item }" />
+              <ng-container *ngTemplateOutlet="charger; context: { $implicit: item }" />
+              <ng-container *ngTemplateOutlet="issues; context: { $implicit: item }" />
+              <div class="card-foot">
+                <strong>{{ energyOf(item) }} kWh</strong>
+                <ng-container
+                  *ngTemplateOutlet="
+                    facade.reviewable() ? decision : outcome;
+                    context: { $implicit: item }
+                  "
+                />
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="table-scroll">
+          <table mat-table [dataSource]="facade.rows()" class="table">
+            <ng-container matColumnDef="row">
+              <th mat-header-cell *matHeaderCellDef>Fila</th>
+              <td mat-cell *matCellDef="let row">{{ rowOf(row).rowNumber }}</td>
+            </ng-container>
+            <ng-container matColumnDef="session">
+              <th mat-header-cell *matHeaderCellDef>Sesión</th>
+              <td mat-cell *matCellDef="let row">
+                <span class="mono">{{ rowOf(row).externalSessionId ?? '—' }}</span>
+                <ng-container *ngTemplateOutlet="session; context: { $implicit: row }" />
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="energy">
+              <th mat-header-cell *matHeaderCellDef class="number">kWh</th>
+              <td mat-cell *matCellDef="let row" class="number">{{ energyOf(rowOf(row)) }}</td>
+            </ng-container>
+            <ng-container matColumnDef="equipment">
+              <th mat-header-cell *matHeaderCellDef>Cargador</th>
+              <td mat-cell *matCellDef="let row">
+                <ng-container *ngTemplateOutlet="charger; context: { $implicit: row }" />
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="classification">
+              <th mat-header-cell *matHeaderCellDef>Clasificación</th>
+              <td mat-cell *matCellDef="let row">
+                <ng-container *ngTemplateOutlet="classification; context: { $implicit: row }" />
+                <ng-container *ngTemplateOutlet="issues; context: { $implicit: row }" />
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="decision">
+              <th mat-header-cell *matHeaderCellDef>Decisión</th>
+              <td mat-cell *matCellDef="let row">
+                <ng-container *ngTemplateOutlet="decision; context: { $implicit: row }" />
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="outcome">
+              <th mat-header-cell *matHeaderCellDef>Resultado</th>
+              <td mat-cell *matCellDef="let row">
+                <ng-container *ngTemplateOutlet="outcome; context: { $implicit: row }" />
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="columns()"></tr>
+            <tr mat-row *matRowDef="let row; columns: columns()"></tr>
+          </table>
+        </div>
+      }
+
+      <mat-paginator
+        [length]="facade.rowsTotal()"
+        [pageIndex]="facade.pageIndex()"
+        [pageSize]="facade.pageSize()"
+        [pageSizeOptions]="pageSizeOptions"
+        (page)="onPage($event)"
+        aria-label="Paginación de filas"
+      />
+    </section>
+
+    <!-- Piezas de una fila, compartidas por la tabla y las tarjetas. -->
+    <ng-template #session let-row>
+      @let item = rowOf(row);
+      @if (item.startedAt) {
+        <span class="muted block">
+          {{ item.startedAt | date: 'short' }} – {{ item.endedAt | date: 'shortTime' }}
+        </span>
+      }
+    </ng-template>
+
+    <ng-template #charger let-row>
+      @let item = rowOf(row);
+      <span class="block">
+        {{ item.site ? item.site + ' / ' : '' }}{{ item.charger ?? item.serial ?? '—' }}
+      </span>
+      @if (item.network) {
+        <span class="muted block">Red {{ networkLabels[item.network] }} (inventario)</span>
+      }
+    </ng-template>
+
+    <ng-template #classification let-row>
+      @let item = rowOf(row);
+      <span
+        class="badge"
+        [class.badge-accent]="item.classification === 'NEW'"
+        [class.badge-info]="item.classification === 'MODIFIED'"
+        [class.badge-warn]="
+          item.classification === 'INVALID' || item.classification === 'PENDING_LINK'
+        "
+        [class.badge-off]="
+          item.classification === 'IDENTICAL' || item.classification === 'DUPLICATE'
+        "
+        [title]="classificationHints[item.classification]"
+        >{{ classificationLabels[item.classification] }}</span
+      >
+    </ng-template>
+
+    <ng-template #issues let-row>
+      @for (issue of rowOf(row).issues; track issue.code) {
+        <span class="issue">{{ issue.message }}</span>
+      }
+    </ng-template>
+
+    <ng-template #decision let-row>
+      @let item = rowOf(row);
+      <span class="decision">
+        @if (item.requiresApproval) {
+          <mat-checkbox
+            [checked]="item.approved"
+            (change)="decide([item], { approved: $event.checked })"
+          >
+            Aprobar
+          </mat-checkbox>
+        }
+        @if (canMarkTest(item)) {
+          <mat-checkbox [checked]="item.test" (change)="decide([item], { test: $event.checked })">
+            Prueba
+          </mat-checkbox>
+        }
+      </span>
+    </ng-template>
+
+    <ng-template #outcome let-row>
+      @let item = rowOf(row);
+      <span>
+        {{ item.outcome ? outcomeLabels[item.outcome] : '—' }}
+        @if (item.test) {
+          <span class="muted block">Marcada como prueba</span>
+        }
+      </span>
+    </ng-template>
+  }
+} @else {
+  <mat-progress-bar mode="indeterminate" aria-label="Cargando lote" />
+}

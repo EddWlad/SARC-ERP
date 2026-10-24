@@ -25,9 +25,13 @@ En desarrollo el proxy hace que navegador, cookies de sesion y CSRF sean del mis
 
 ```
 src/app/
-  core/            api/generated (tipos del contrato OpenAPI, no editar), auth, http, notificaciones, tema, i18n
+  core/            api/generated (tipos del contrato OpenAPI, no editar), auth, http, notificaciones, tema,
+                   i18n, archivos (descargas), time (dia local)
   layout/          shell (sidebar + barra superior) y menu de navegacion
-  shared/ui/       componentes genericos (dialogo de confirmacion) y parciales SCSS de listados, dialogos y etiquetas
+  shared/ui/       componentes genericos (dialogo de confirmacion, graficas Chart.js en ui/chart), deteccion
+                   de telefono y parciales SCSS de listados, dialogos, etiquetas y tableros
+  shared/format/   cifras con Intl (conteos, kWh, porcentajes)
+  shared/vocabulary/  vocabulario comun entre modulos (redes, tipos de infraestructura)
   design-system/   tokens, tema Material 3 claro/oscuro y estilos base
   features/<modulo>/
     domain/        tipos y reglas del modulo
@@ -46,3 +50,5 @@ Reglas principales:
 - Los permisos en pantalla (menu, guards) son solo de experiencia de usuario; el backend aplica la autorizacion real.
 - Cada modulo nuevo agrega su entrada en `layout/navigation.ts` y una sola ruta `loadChildren` en `app.routes.ts` hacia su `<modulo>.routes.ts`, para que el bundle inicial (presupuesto 500 kB) no crezca con cada modulo.
 - Evitar pipes de `@angular/common` (`DecimalPipe`, etc.) que aun no use el bundle inicial: esbuild los lleva al chunk compartido inicial. Para cifras usar `Intl.NumberFormat`.
+- El bundle inicial no importa modulos de Material con overlay: `Notifier` carga el snackbar con el primer aviso. Un import estatico de algo que usa overlays desde `core` mete el CDK completo en el arranque.
+- Graficas: `shared/ui/chart` (Chart.js, solo los controladores registrados), una serie por grafica y nunca doble eje; colores de serie con los tokens `--sarc-series-*`. Cifras visibles en la leyenda o en una tabla, no solo en el tooltip.

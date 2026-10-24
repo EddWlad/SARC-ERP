@@ -1,7 +1,5 @@
-import { BreakpointObserver } from '@angular/cdk/layout';
 import { DatePipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -11,7 +9,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { LucideSearch, LucideUserPlus } from '@lucide/angular';
-import { firstValueFrom, map } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
 import { Role, ROLE_LABELS, ROLES } from '../../../../core/auth/role';
 import { toProblem } from '../../../../core/http/problem';
@@ -21,6 +19,7 @@ import {
   ConfirmDialog,
   ConfirmDialogData,
 } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
+import { injectIsHandset } from '../../../../shared/ui/handset';
 import { UsersFacade } from '../../application/users-facade';
 import {
   CreatedUser,
@@ -36,8 +35,6 @@ import {
 import { UserActionsMenu } from '../user-actions-menu/user-actions-menu';
 import { UserBadges } from '../user-badges/user-badges';
 import { UserFormDialog, UserFormDialogData } from '../user-form-dialog/user-form-dialog';
-
-const HANDSET_QUERY = '(max-width: 767.98px)';
 
 @Component({
   selector: 'sarc-users-page',
@@ -64,12 +61,7 @@ export class UsersPage {
   private readonly notifier = inject(Notifier);
 
   protected readonly facade = inject(UsersFacade);
-  protected readonly isHandset = toSignal(
-    inject(BreakpointObserver)
-      .observe(HANDSET_QUERY)
-      .pipe(map((state) => state.matches)),
-    { initialValue: false },
-  );
+  protected readonly isHandset = injectIsHandset();
   protected readonly columns = ['user', 'roles', 'status', 'createdAt', 'actions'];
   protected readonly roles = ROLES;
   protected readonly roleLabels = ROLE_LABELS;

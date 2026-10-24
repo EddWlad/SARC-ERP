@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,6 +23,8 @@ import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergySessio
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyTotals;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EquipmentEnergy;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.SessionCriteria;
+import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
+import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 import com.tidsec.sarc_bakend.shared.pagination.PageQuery;
 import com.tidsec.sarc_bakend.shared.pagination.PageResult;
 
@@ -126,6 +130,39 @@ class EnergySessionRepositoryAdapter implements EnergySessionRepository {
 				.map(row -> new DailyEnergy(row.get(0, LocalDate.class), row.get(1, Long.class),
 						row.get(2, BigDecimal.class)))
 				.toList();
+	}
+
+	@Override
+	public Map<ChargingNetwork, EnergyTotals> byNetwork(SessionCriteria criteria) {
+		return groupBy(criteria, "network", ChargingNetwork.class);
+	}
+
+	@Override
+	public Map<SessionSource, EnergyTotals> bySource(SessionCriteria criteria) {
+		return groupBy(criteria, "source", SessionSource.class);
+	}
+
+	@Override
+	public Map<InfrastructureType, EnergyTotals> byType(SessionCriteria criteria) {
+		return groupBy(criteria, "infrastructureType", InfrastructureType.class);
+	}
+
+	/** Sesiones, energia y equipos distintos agrupados por un atributo enumerado de la sesion. */
+	private <K extends Enum<K>> Map<K, EnergyTotals> groupBy(SessionCriteria criteria, String attribute,
+			Class<K> keyType) {
+		CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+		CriteriaQuery<Tuple> query = cb.createTupleQuery();
+		Root<EnergySession> root = query.from(EnergySession.class);
+		Expression<K> key = root.get(attribute);
+		query.multiselect(key, cb.count(root), energySum(root, cb), cb.countDistinct(root.get("equipmentId")))
+				.where(cb.and(SessionPredicates.of(criteria, root, cb)), cb.isNotNull(key))
+				.groupBy(key);
+		Map<K, EnergyTotals> totals = new EnumMap<>(keyType);
+		for (Tuple row : entityManager.createQuery(query).getResultList()) {
+			totals.put(row.get(0, keyType), new EnergyTotals(row.get(1, Long.class), row.get(2, BigDecimal.class),
+					row.get(3, Long.class)));
+		}
+		return totals;
 	}
 
 	@Override

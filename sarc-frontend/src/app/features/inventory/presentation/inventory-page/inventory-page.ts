@@ -1,6 +1,4 @@
-import { BreakpointObserver } from '@angular/cdk/layout';
 import { Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -18,7 +16,7 @@ import {
   LucidePlus,
   LucideSearch,
 } from '@lucide/angular';
-import { firstValueFrom, map } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
 import { SessionStore } from '../../../../core/auth/session-store';
 import { Problem } from '../../../../core/http/problem';
@@ -42,15 +40,14 @@ import {
   USAGE_STATUSES,
 } from '../../domain/equipment';
 import { INVENTORY_EDITORS } from '../../domain/inventory-permissions';
-import { ReportFormat } from '../../domain/inventory-summary';
+import { ReportFormat } from '../../../../shared/reports/report-format';
+import { injectIsHandset } from '../../../../shared/ui/handset';
 import { EquipmentBadges } from '../equipment-badges/equipment-badges';
 import {
   EquipmentFormDialog,
   EquipmentFormDialogData,
 } from '../equipment-form-dialog/equipment-form-dialog';
 import { InventoryKpis } from '../inventory-kpis/inventory-kpis';
-
-const HANDSET_QUERY = '(max-width: 767.98px)';
 
 @Component({
   selector: 'sarc-inventory-page',
@@ -83,12 +80,7 @@ export class InventoryPage {
 
   protected readonly facade = inject(InventoryFacade);
   protected readonly canEdit = inject(SessionStore).hasAnyRole(INVENTORY_EDITORS);
-  protected readonly isHandset = toSignal(
-    inject(BreakpointObserver)
-      .observe(HANDSET_QUERY)
-      .pipe(map((state) => state.matches)),
-    { initialValue: false },
-  );
+  protected readonly isHandset = injectIsHandset();
   protected readonly columns = ['equipment', 'network', 'type', 'status', 'connectors', 'location'];
   protected readonly pageSizeOptions = [10, 20, 50, 100];
 

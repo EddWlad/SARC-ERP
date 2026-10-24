@@ -52,6 +52,9 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 				.section("Top 5 equipos por energía")
 				.table(List.of("#", "Equipo", "Código", "Red", "Sesiones", "kWh"), ranked(summary.top()),
 						new float[] { 0.5f, 4, 2, 1.5f, 1.5f, 1.5f })
+				.section("Distribución de la energía")
+				.table(List.of("Dimensión", "Categoría", "Sesiones", "kWh", "Participación"),
+						distribution(summary), new float[] { 1.5f, 3, 1.5f, 1.5f, 1.5f })
 				.section("Tendencia diaria")
 				.table(List.of("Fecha", "Sesiones", "kWh"), daily(summary.daily()), new float[] { 2, 1.5f, 1.5f });
 		if (report.ranking().size() > summary.top().size()) {
@@ -78,6 +81,12 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 					ConsumptionLabels.count(item.sessions()), ConsumptionLabels.kwh(item.energyKwh())));
 		}
 		return rows;
+	}
+
+	private static List<List<String>> distribution(ConsumptionSummary summary) {
+		return ConsumptionLabels.distribution(summary).stream().map(share -> List.of(share.dimension(),
+				share.category(), ConsumptionLabels.count(share.sessions()), ConsumptionLabels.kwh(share.energyKwh()),
+				ConsumptionLabels.percent(share.energyKwh(), summary.official().energyKwh()))).toList();
 	}
 
 	private static List<List<String>> daily(List<DailyEnergy> days) {

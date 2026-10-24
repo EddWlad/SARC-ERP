@@ -2840,6 +2840,24 @@
               "$ref" : "#/components/schemas/Day"
             }
           },
+          "byNetwork" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/NetworkShare"
+            }
+          },
+          "bySource" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SourceShare"
+            }
+          },
+          "byType" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TypeShare"
+            }
+          },
           "pendingLink" : {
             "$ref" : "#/components/schemas/Totals"
           },
@@ -2851,7 +2869,7 @@
             "format" : "date-time"
           }
         },
-        "required" : [ "averageKwhPerSession", "daily", "from", "generatedAt", "official", "pendingLink", "test", "to", "top" ]
+        "required" : [ "averageKwhPerSession", "byNetwork", "bySource", "byType", "daily", "from", "generatedAt", "official", "pendingLink", "test", "to", "top" ]
       },
       "Day" : {
         "type" : "object",
@@ -2870,6 +2888,23 @@
         },
         "required" : [ "date", "energyKwh", "sessions" ]
       },
+      "NetworkShare" : {
+        "type" : "object",
+        "properties" : {
+          "network" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          },
+          "sessions" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "energyKwh" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "energyKwh", "network", "sessions" ]
+      },
       "Ranked" : {
         "type" : "object",
         "properties" : {
@@ -2887,6 +2922,23 @@
         },
         "required" : [ "energyKwh", "sessions" ]
       },
+      "SourceShare" : {
+        "type" : "object",
+        "properties" : {
+          "source" : {
+            "type" : "string",
+            "enum" : [ "ENERLINK", "WALLBOX" ]
+          },
+          "sessions" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "energyKwh" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "energyKwh", "sessions", "source" ]
+      },
       "Totals" : {
         "type" : "object",
         "properties" : {
@@ -2903,6 +2955,23 @@
           }
         },
         "required" : [ "energyKwh", "equipment", "sessions" ]
+      },
+      "TypeShare" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          },
+          "sessions" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "energyKwh" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "energyKwh", "sessions", "type" ]
       },
       "PageResultSessionResponse" : {
         "type" : "object",

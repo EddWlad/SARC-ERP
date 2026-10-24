@@ -1,0 +1,112 @@
+<header class="page-header">
+  <div>
+    <h1>Importaciones</h1>
+    <p>
+      Reportes originales de Enerlink y Wallbox: se revisan en una vista previa antes de
+      incorporarse.
+    </p>
+  </div>
+  <div class="header-actions">
+    <button matButton="filled" type="button" (click)="create()">
+      <svg lucideFileUp [size]="18"></svg>
+      Nueva importación
+    </button>
+  </div>
+</header>
+
+<section
+  class="results"
+  aria-label="Historial de importaciones"
+  [attr.aria-busy]="facade.loading()"
+>
+  @if (facade.loading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando importaciones" />
+  }
+
+  @if (facade.failed()) {
+    <div class="state" role="alert">
+      <p>No se pudo cargar el historial.</p>
+      <button matButton="tonal" type="button" (click)="facade.reload()">Reintentar</button>
+    </div>
+  } @else if (!facade.loading() && facade.batches().length === 0) {
+    <div class="state">
+      <p>Aún no hay importaciones. Cargue el primer reporte de Enerlink o Wallbox.</p>
+    </div>
+  } @else if (isHandset()) {
+    <ul class="cards">
+      @for (batch of facade.batches(); track batch.id) {
+        <li class="card">
+          <div class="card-head">
+            <a class="link" [routerLink]="[batch.id]">
+              <strong>{{ batch.fileName }}</strong>
+              <span class="muted">{{ batch.createdAt | date: 'short' }}</span>
+            </a>
+            <sarc-import-status-badge [status]="batch.status" />
+          </div>
+          <span class="muted">
+            {{ sourceLabels[batch.source] }} · {{ quantities.count(batch.totalRows) }} filas ·
+            {{ quantities.count(batch.appliedRows) }} incorporadas
+          </span>
+        </li>
+      }
+    </ul>
+  } @else {
+    <table mat-table [dataSource]="facade.batches()" class="table">
+      <ng-container matColumnDef="created">
+        <th mat-header-cell *matHeaderCellDef>Lote</th>
+        <td mat-cell *matCellDef="let row">
+          @let batch = batchOf(row);
+          <a class="link" [routerLink]="[batch.id]">
+            <strong>{{ batch.fileName }}</strong>
+            <span class="muted block">{{ batch.createdAt | date: 'short' }}</span>
+          </a>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="source">
+        <th mat-header-cell *matHeaderCellDef>Origen</th>
+        <td mat-cell *matCellDef="let row">
+          @let batch = batchOf(row);
+          {{ sourceLabels[batch.source] }}
+          <span class="muted block">{{ originLabels[batch.origin] }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <td mat-cell *matCellDef="let row">
+          <sarc-import-status-badge [status]="batchOf(row).status" />
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="rows">
+        <th mat-header-cell *matHeaderCellDef>Filas</th>
+        <td mat-cell *matCellDef="let row">
+          @let batch = batchOf(row);
+          {{ quantities.count(batch.totalRows) }}
+          <span class="muted block">
+            {{ quantities.count(batch.newRows) }} nuevas ·
+            {{ quantities.count(batch.modifiedRows) }} modificadas ·
+            {{ quantities.count(batch.invalidRows) }} inválidas ·
+            {{ quantities.count(batch.pendingLinkRows) }} pendientes
+          </span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="applied">
+        <th mat-header-cell *matHeaderCellDef class="number">Incorporadas</th>
+        <td mat-cell *matCellDef="let row" class="number">
+          <strong>{{ quantities.count(batchOf(row).appliedRows) }}</strong>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    </table>
+  }
+
+  <mat-paginator
+    [length]="facade.totalElements()"
+    [pageIndex]="facade.pageIndex()"
+    [pageSize]="facade.pageSize()"
+    [pageSizeOptions]="pageSizeOptions"
+    (page)="onPage($event)"
+    aria-label="Paginación de importaciones"
+  />
+</section>

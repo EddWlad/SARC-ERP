@@ -49,6 +49,12 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 		return CorporateWorkbook.create(branding, report.scope(), report.cutOff())
 				.sheet("Resumen", "Consumo de energía - indicadores", List.of("Indicador", "Valor"),
 						summary(report.summary()))
+				.sheet("Distribución", "Energía oficial por red, plataforma y tipo",
+						List.of("Dimensión", "Categoría", "Sesiones", "kWh"),
+						ConsumptionLabels.distribution(report.summary()).stream()
+								.map(share -> List.<Object>of(share.dimension(), share.category(), share.sessions(),
+										share.energyKwh()))
+								.toList())
 				.sheet("Diario", "Consumo por día de inicio", List.of("Fecha", "Sesiones", "kWh"),
 						report.summary().daily().stream()
 								.map(day -> List.<Object>of(ConsumptionLabels.DAY.format(day.date()), day.sessions(),
@@ -90,7 +96,7 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 	private List<Object> session(SessionView view, boolean withState) {
 		EnergySession session = view.session();
 		SessionReading reading = session.reading();
-		List<Object> row = new ArrayList<>(List.of(session.getExternalSessionId(), session.getSource().name(),
+		List<Object> row = new ArrayList<>(List.of(session.getExternalSessionId(), ConsumptionLabels.of(session.getSource()),
 				dateTime.format(session.getStartedAt()), dateTime.format(session.getEndedAt()),
 				ConsumptionLabels.DAY.format(session.getStartDate()), session.getEnergyKwh(),
 				ConsumptionLabels.name(view.equipment()), ConsumptionLabels.code(view.equipment()),

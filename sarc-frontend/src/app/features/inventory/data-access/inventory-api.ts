@@ -3,7 +3,7 @@ import { inject, Service } from '@angular/core';
 
 import { API_BASE } from '../../../core/http/api';
 import { EquipmentFilters } from '../domain/equipment';
-import { ReportFormat } from '../domain/inventory-summary';
+import { ReportFormat } from '../../../shared/reports/report-format';
 import { equipmentFilterParams } from './equipment-filter-params';
 
 /** Acceso HTTP a `/api/v1/inventory`: indicadores y reportes con los mismos filtros del listado. */

@@ -1,4 +1,10 @@
-import { LucideHouse, LucideIconData, LucidePlugZap, LucideUsers } from '@lucide/angular';
+import {
+  LucideBatteryCharging,
+  LucideHouse,
+  LucideIconData,
+  LucidePlugZap,
+  LucideUsers,
+} from '@lucide/angular';
 
 import { Role } from '../core/auth/role';
 
@@ -14,5 +20,6 @@ export interface NavItem {
 export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Inicio', path: '/inicio', icon: LucideHouse.icon },
   { label: 'Inventario', path: '/inventario', icon: LucidePlugZap.icon },
+  { label: 'Consumo', path: '/consumo', icon: LucideBatteryCharging.icon },
   { label: 'Usuarios', path: '/usuarios', icon: LucideUsers.icon, roles: ['ADMINISTRADOR'] },
 ];

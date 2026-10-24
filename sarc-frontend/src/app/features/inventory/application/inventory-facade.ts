@@ -4,7 +4,6 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
 
 import { FileSaver } from '../../../core/files/file-saver';
-import { toProblemFromBlob } from '../../../core/http/problem';
 import { EquipmentApi } from '../data-access/equipment-api';
 import { InventoryApi } from '../data-access/inventory-api';
 import {
@@ -14,7 +13,8 @@ import {
   EquipmentPage,
   NO_FILTERS,
 } from '../domain/equipment';
-import { InventorySummary, ReportFormat } from '../domain/inventory-summary';
+import { ReportFormat } from '../../../shared/reports/report-format';
+import { InventorySummary } from '../domain/inventory-summary';
 
 const SEARCH_DEBOUNCE_MS = 300;
 const DEFAULT_PAGE_SIZE = 20;
@@ -100,12 +100,10 @@ export class InventoryFacade {
   async downloadReport(format: ReportFormat): Promise<void> {
     this.downloading.set(format);
     try {
-      const response = await firstValueFrom(
+      await this.fileSaver.download(
         this.inventoryApi.downloadReport(format, this.appliedFilters()),
+        `inventario.${format.toLowerCase()}`,
       );
-      this.fileSaver.save(response, `inventario.${format.toLowerCase()}`);
-    } catch (error) {
-      throw await toProblemFromBlob(error);
     } finally {
       this.downloading.set(undefined);
     }

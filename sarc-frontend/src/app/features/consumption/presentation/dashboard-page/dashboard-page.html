@@ -1,0 +1,151 @@
+<header class="page-header">
+  <div>
+    <h1>Consumo de energía</h1>
+    <p>Sesiones de carga validadas de las redes KIA, JAC y CONECTZ, por día de inicio.</p>
+  </div>
+  <div class="header-actions">
+    <button
+      matButton="outlined"
+      type="button"
+      [disabled]="facade.downloading() !== undefined"
+      (click)="download('PDF')"
+    >
+      <svg lucideFileText [size]="18"></svg>
+      {{ facade.downloading() === 'PDF' ? 'Generando...' : 'Reporte PDF' }}
+    </button>
+    <button
+      matButton="outlined"
+      type="button"
+      [disabled]="facade.downloading() !== undefined"
+      (click)="download('XLSX')"
+    >
+      <svg lucideFileSpreadsheet [size]="18"></svg>
+      {{ facade.downloading() === 'XLSX' ? 'Generando...' : 'Excel' }}
+    </button>
+  </div>
+</header>
+
+<sarc-consumption-filter-bar
+  [period]="facade.period"
+  [filters]="facade.filters()"
+  (filtersChange)="facade.updateFilters($event)"
+  (cleared)="facade.clearFilters()"
+/>
+
+<div class="progress" aria-hidden="true">
+  @if (facade.loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+</div>
+
+@if (facade.error(); as message) {
+  <div class="state" role="alert">
+    <p>{{ message }}</p>
+    <button matButton="tonal" type="button" (click)="facade.reload()">Reintentar</button>
+  </div>
+} @else if (facade.summary(); as summary) {
+  <section aria-label="Indicadores oficiales" [attr.aria-busy]="facade.loading()">
+    <ul class="kpi-grid">
+      <li class="kpi-tile">
+        <span class="kpi-value">
+          {{ quantities.kwh(summary.official.energyKwh) }}<span class="kpi-unit">kWh</span>
+        </span>
+        <span class="kpi-label">Energía entregada</span>
+      </li>
+      <li class="kpi-tile">
+        <span class="kpi-value">{{ quantities.count(summary.official.sessions) }}</span>
+        <span class="kpi-label">Sesiones</span>
+      </li>
+      <li class="kpi-tile">
+        <span class="kpi-value">{{ quantities.count(summary.official.equipment) }}</span>
+        <span class="kpi-label">Equipos con actividad</span>
+      </li>
+      <li class="kpi-tile">
+        <span class="kpi-value">
+          {{ quantities.kwh(summary.averageKwhPerSession) }}<span class="kpi-unit">kWh</span>
+        </span>
+        <span class="kpi-label">Promedio por sesión</span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="excluded panel" aria-labelledby="excluded-title">
+    <h2 id="excluded-title">Fuera de los indicadores oficiales</h2>
+    <ul>
+      <li class="metric-row">
+        <span>Pendientes de vincular</span>
+        <span>
+          <strong>{{ quantities.count(summary.pendingLink.sessions) }}</strong>
+          <span class="muted"> · {{ quantities.kwh(summary.pendingLink.energyKwh) }} kWh</span>
+        </span>
+      </li>
+      <li class="metric-row">
+        <span>Pruebas</span>
+        <span>
+          <strong>{{ quantities.count(summary.test.sessions) }}</strong>
+          <span class="muted"> · {{ quantities.kwh(summary.test.energyKwh) }} kWh</span>
+        </span>
+      </li>
+    </ul>
+    <p class="dashboard-note">
+      Se conservan y se informan aparte; no suman en los totales (PRD 3.3).
+    </p>
+  </section>
+
+  @if (summary.official.sessions === 0) {
+    <div class="state">
+      <p>No hay sesiones validadas en este periodo con los filtros elegidos.</p>
+    </div>
+  } @else {
+    <div class="charts">
+      <section class="panel wide" aria-labelledby="energy-title">
+        <h2 id="energy-title">Energía diaria (kWh)</h2>
+        <sarc-chart-view
+          kind="line"
+          [labels]="days()"
+          [series]="dailyEnergy()"
+          [format]="formatKwh"
+          description="Energía entregada por día de inicio de las sesiones"
+        />
+      </section>
+
+      <section class="panel wide" aria-labelledby="sessions-title">
+        <h2 id="sessions-title">Sesiones diarias</h2>
+        <sarc-chart-view
+          kind="bar"
+          [labels]="days()"
+          [series]="dailySessions()"
+          [format]="formatCount"
+          description="Cantidad de sesiones por día de inicio"
+        />
+      </section>
+
+      <section class="panel wide" aria-labelledby="top-title">
+        <h2 id="top-title">Top 5 equipos por energía</h2>
+        <sarc-top-equipment [items]="summary.top" />
+      </section>
+
+      <section class="panel" aria-labelledby="network-title">
+        <h2 id="network-title">Energía por red</h2>
+        <sarc-share-chart title="Energía por red" [items]="byNetwork()" />
+      </section>
+
+      <section class="panel" aria-labelledby="source-title">
+        <h2 id="source-title">Energía por plataforma</h2>
+        <sarc-share-chart title="Energía por plataforma" [items]="bySource()" />
+      </section>
+
+      <section class="panel" aria-labelledby="type-title">
+        <h2 id="type-title">Energía por tipo de equipo</h2>
+        <sarc-share-chart title="Energía por tipo de equipo" [items]="byType()" />
+      </section>
+    </div>
+
+    <sarc-daily-table class="panel data-table" [days]="summary.daily" />
+  }
+
+  <p class="dashboard-note generated">
+    Calculado {{ summary.generatedAt | date: 'short' }} · Solo sesiones validadas; la red y el tipo
+    salen del inventario.
+  </p>
+}

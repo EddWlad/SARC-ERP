@@ -1,5 +1,6 @@
-import { Component, computed, inject, input, LOCALE_ID } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 
+import { QuantityFormat } from '../../../../shared/format/quantity-format';
 import {
   NETWORK_LABELS,
   NETWORKS,
@@ -27,8 +28,8 @@ interface Kpi {
 export class InventoryKpis {
   readonly summary = input.required<InventorySummary>();
 
-  /** Separador de miles es-EC. Intl evita cargar DecimalPipe en el bundle inicial compartido. */
-  protected readonly format = new Intl.NumberFormat(inject(LOCALE_ID)).format;
+  private readonly quantities = inject(QuantityFormat);
+  protected readonly format = (value: number) => this.quantities.count(value);
 
   protected readonly headline = computed<readonly Kpi[]>(() => {
     const summary = this.summary();

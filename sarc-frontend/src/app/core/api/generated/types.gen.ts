@@ -370,6 +370,9 @@ export type ConsumptionSummaryResponse = {
     averageKwhPerSession: number;
     top: Array<Ranked>;
     daily: Array<Day>;
+    byNetwork: Array<NetworkShare>;
+    bySource: Array<SourceShare>;
+    byType: Array<TypeShare>;
     pendingLink: Totals;
     test: Totals;
     generatedAt: string;
@@ -381,8 +384,20 @@ export type Day = {
     energyKwh: number;
 };
 
+export type NetworkShare = {
+    network: 'KIA' | 'JAC' | 'CONECTZ';
+    sessions: number;
+    energyKwh: number;
+};
+
 export type Ranked = {
     equipment?: EquipmentRefResponse;
+    sessions: number;
+    energyKwh: number;
+};
+
+export type SourceShare = {
+    source: 'ENERLINK' | 'WALLBOX';
     sessions: number;
     energyKwh: number;
 };
@@ -391,6 +406,12 @@ export type Totals = {
     sessions: number;
     energyKwh: number;
     equipment: number;
+};
+
+export type TypeShare = {
+    type: 'CHARGING_POINT' | 'CHARGING_STATION';
+    sessions: number;
+    energyKwh: number;
 };
 
 export type PageResultSessionResponse = {

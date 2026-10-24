@@ -1,0 +1,25 @@
+@use '../../../../shared/ui/list-page';
+
+:host {
+  display: block;
+}
+
+.number {
+  text-align: end;
+}
+
+.mono {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+
+.energy {
+  color: var(--mat-sys-primary);
+  white-space: nowrap;
+}
+
+.card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sarc-space-2);
+}

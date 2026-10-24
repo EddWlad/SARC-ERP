@@ -1,0 +1,65 @@
+@use '../../../../shared/ui/list-page';
+@use '../../../../shared/ui/dashboard';
+
+:host {
+  display: block;
+}
+
+.progress {
+  height: 4px;
+  margin-bottom: var(--sarc-space-3);
+}
+
+.kpi-grid {
+  margin-bottom: var(--sarc-space-3);
+}
+
+.excluded {
+  margin-bottom: var(--sarc-space-4);
+
+  ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    column-gap: var(--sarc-space-6);
+    margin: 0 0 var(--sarc-space-2);
+    padding: 0;
+  }
+
+  .metric-row + .metric-row {
+    border-top: none;
+  }
+}
+
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-medium);
+}
+
+// Tres columnas en escritorio; las graficas de serie temporal y el ranking ocupan todo el ancho.
+.charts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sarc-space-4);
+  margin-bottom: var(--sarc-space-4);
+
+  @media (max-width: 1023.98px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 767.98px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+.data-table {
+  display: block;
+  margin-bottom: var(--sarc-space-3);
+}
+
+.generated {
+  margin-bottom: var(--sarc-space-4);
+}

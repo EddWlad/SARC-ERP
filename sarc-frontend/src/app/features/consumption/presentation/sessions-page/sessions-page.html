@@ -1,0 +1,170 @@
+<header class="page-header">
+  <div>
+    <h1>Sesiones de carga</h1>
+    <p>Histórico importado de Enerlink y Wallbox; cada sesión se cuenta el día en que inicia.</p>
+  </div>
+  @if (canEdit) {
+    <div class="header-actions">
+      <button matButton="tonal" type="button" [disabled]="linking()" (click)="linkPending()">
+        <svg lucideLink [size]="18"></svg>
+        {{ linking() ? 'Vinculando...' : 'Vincular pendientes' }}
+      </button>
+    </div>
+  }
+</header>
+
+<sarc-consumption-filter-bar
+  [period]="facade.period"
+  [filters]="facade.filters()"
+  [ownFiltersActive]="facade.hasOwnFilters()"
+  (filtersChange)="facade.updateFilters($event)"
+  (cleared)="facade.clearFilters()"
+>
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Estado</mat-label>
+    <mat-select [value]="facade.state()" (selectionChange)="onState($event.value)">
+      <mat-option value="">Todos</mat-option>
+      @for (state of states; track state) {
+        <mat-option [value]="state">{{ stateLabels[state] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Buscar</mat-label>
+    <svg lucideSearch matPrefix [size]="18" class="prefix-icon"></svg>
+    <input
+      matInput
+      type="search"
+      placeholder="ID de sesión o cargador"
+      [value]="facade.text()"
+      (input)="onSearch($event)"
+    />
+  </mat-form-field>
+</sarc-consumption-filter-bar>
+
+<section class="results" aria-label="Sesiones" [attr.aria-busy]="facade.loading()">
+  @if (facade.loading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando sesiones" />
+  }
+
+  @if (facade.failed()) {
+    <div class="state" role="alert">
+      <p>No se pudo cargar el histórico.</p>
+      <button matButton="tonal" type="button" (click)="facade.reload()">Reintentar</button>
+    </div>
+  } @else if (!facade.loading() && facade.sessions().length === 0) {
+    <div class="state">
+      <p>No hay sesiones que coincidan con los filtros.</p>
+    </div>
+  } @else if (isHandset()) {
+    <ul class="cards">
+      @for (session of facade.sessions(); track session.id) {
+        <li class="card">
+          <div class="card-head">
+            <div>
+              <strong>{{ session.equipment?.name ?? session.charger ?? 'Sin vincular' }}</strong>
+              <span class="muted">{{ session.startedAt | date: 'short' }}</span>
+            </div>
+            <strong class="energy">{{ quantities.kwh(session.energyKwh) }} kWh</strong>
+          </div>
+          <span class="muted">
+            {{ sourceLabels[session.source] }} · {{ session.externalSessionId }}
+          </span>
+          <div class="card-foot">
+            <sarc-session-state-badge [state]="session.state" />
+            @if (canEdit) {
+              <button matButton type="button" (click)="toggleTest(session)">
+                {{ session.state === 'TEST' ? 'Reincorporar' : 'Marcar prueba' }}
+              </button>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+  } @else {
+    <table mat-table [dataSource]="facade.sessions()" class="table">
+      <ng-container matColumnDef="start">
+        <th mat-header-cell *matHeaderCellDef>Inicio</th>
+        <td mat-cell *matCellDef="let row">
+          @let session = sessionOf(row);
+          {{ session.startedAt | date: 'short' }}
+          <span class="muted block">hasta {{ session.endedAt | date: 'shortTime' }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="equipment">
+        <th mat-header-cell *matHeaderCellDef>Equipo</th>
+        <td mat-cell *matCellDef="let row">
+          @let session = sessionOf(row);
+          @if (session.equipment; as equipment) {
+            <strong>{{ equipment.name }}</strong>
+            <span class="muted block">
+              {{ equipment.assignedCode }} · {{ networkLabels[equipment.network] }}
+            </span>
+          } @else {
+            <strong>Sin vincular</strong>
+            <span class="muted block">
+              {{ session.site ? session.site + ' / ' : '' }}{{ session.charger ?? session.serial }}
+            </span>
+          }
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="source">
+        <th mat-header-cell *matHeaderCellDef>Origen</th>
+        <td mat-cell *matCellDef="let row">
+          @let session = sessionOf(row);
+          {{ sourceLabels[session.source] }}
+          <span class="muted block mono">{{ session.externalSessionId }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="energy">
+        <th mat-header-cell *matHeaderCellDef class="number">kWh</th>
+        <td mat-cell *matCellDef="let row" class="number">
+          <strong>{{ quantities.kwh(sessionOf(row).energyKwh) }}</strong>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="state">
+        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <td mat-cell *matCellDef="let row">
+          <sarc-session-state-badge [state]="sessionOf(row).state" />
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>
+          <span class="sarc-visually-hidden">Acciones</span>
+        </th>
+        <td mat-cell *matCellDef="let row" class="actions-cell">
+          @if (canEdit) {
+            @let session = sessionOf(row);
+            <button
+              matIconButton
+              type="button"
+              [matMenuTriggerFor]="menu"
+              [attr.aria-label]="'Acciones para la sesión ' + session.externalSessionId"
+            >
+              <svg lucideEllipsisVertical [size]="20"></svg>
+            </button>
+            <mat-menu #menu="matMenu" xPosition="before">
+              <button mat-menu-item type="button" (click)="toggleTest(session)">
+                {{
+                  session.state === 'TEST' ? 'Reincorporar a los indicadores' : 'Marcar como prueba'
+                }}
+              </button>
+            </mat-menu>
+          }
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    </table>
+  }
+
+  <mat-paginator
+    [length]="facade.totalElements()"
+    [pageIndex]="facade.pageIndex()"
+    [pageSize]="facade.pageSize()"
+    [pageSizeOptions]="pageSizeOptions"
+    (page)="onPage($event)"
+    aria-label="Paginación de sesiones"
+  />
+</section>

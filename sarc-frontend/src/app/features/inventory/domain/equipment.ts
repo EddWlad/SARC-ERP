@@ -5,6 +5,22 @@ import {
   PageResultEquipmentSummaryResponse,
   UpdateEquipmentRequest,
 } from '../../../core/api/generated';
+import {
+  ChargingNetwork,
+  InfrastructureType,
+} from '../../../shared/vocabulary/charging-infrastructure';
+
+// La red y el tipo son vocabulario comun; se reexportan para que el modulo los use desde su dominio.
+export {
+  NETWORK_LABELS,
+  NETWORKS,
+  TYPE_LABELS,
+  TYPES,
+} from '../../../shared/vocabulary/charging-infrastructure';
+export type {
+  ChargingNetwork,
+  InfrastructureType,
+} from '../../../shared/vocabulary/charging-infrastructure';
 
 /** Contrato del backend (generado desde docs/api/openapi.json). */
 export type Equipment = EquipmentResponse;
@@ -12,22 +28,9 @@ export type EquipmentSummary = EquipmentSummaryResponse;
 export type EquipmentPage = PageResultEquipmentSummaryResponse;
 export type CreateEquipmentInput = CreateEquipmentRequest;
 export type UpdateEquipmentInput = UpdateEquipmentRequest;
-export type ChargingNetwork = Equipment['network'];
-export type InfrastructureType = Equipment['type'];
 export type EquipmentBrand = Equipment['brand'];
 export type AdministrativeStatus = Equipment['adminStatus'];
 export type UsageStatus = NonNullable<Equipment['usageStatus']>;
-
-export const NETWORK_LABELS: Readonly<Record<ChargingNetwork, string>> = {
-  KIA: 'KIA',
-  JAC: 'JAC',
-  CONECTZ: 'CONECTZ',
-};
-
-export const TYPE_LABELS: Readonly<Record<InfrastructureType, string>> = {
-  CHARGING_POINT: 'Punto de carga',
-  CHARGING_STATION: 'Electrolinera',
-};
 
 export const BRAND_LABELS: Readonly<Record<EquipmentBrand, string>> = {
   BENNY: 'Benny',
@@ -53,8 +56,6 @@ export const USAGE_STATUS_HINTS: Readonly<Record<UsageStatus, string>> = {
   DISCONNECTED: 'Instalado sin servicio',
 };
 
-export const NETWORKS = Object.keys(NETWORK_LABELS) as readonly ChargingNetwork[];
-export const TYPES = Object.keys(TYPE_LABELS) as readonly InfrastructureType[];
 export const BRANDS = Object.keys(BRAND_LABELS) as readonly EquipmentBrand[];
 export const ADMIN_STATUSES = Object.keys(ADMIN_STATUS_LABELS) as readonly AdministrativeStatus[];
 export const USAGE_STATUSES = Object.keys(USAGE_STATUS_LABELS) as readonly UsageStatus[];

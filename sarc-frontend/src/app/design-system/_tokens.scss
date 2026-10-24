@@ -19,6 +19,12 @@
     --sarc-topbar-height: 64px;
     --sarc-content-max-width: 1280px;
 
+    // Series de graficas: paleta categorica validada (daltonismo y contraste) en claro y oscuro.
+    // Orden fijo: cada categoria conserva su color. light-dark() sigue el color-scheme del tema.
+    --sarc-series-1: light-dark(#2a78d6, #3987e5);
+    --sarc-series-2: light-dark(#eb6834, #d95926);
+    --sarc-series-3: light-dark(#1baf7a, #199e70);
+
     --sarc-motion-fast: 150ms;
     --sarc-motion-base: 220ms;
     --sarc-easing: cubic-bezier(0.2, 0, 0, 1);

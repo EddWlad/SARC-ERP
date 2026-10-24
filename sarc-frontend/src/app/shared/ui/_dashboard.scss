@@ -1,0 +1,86 @@
+// Piezas de los tableros gerenciales: cifras grandes en color de marca para leerse de un vistazo
+// y paneles para agrupar indicadores o graficas. Cada pantalla las incluye con `@use`.
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--sarc-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kpi-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sarc-space-1);
+  padding: var(--sarc-space-4);
+  border-radius: var(--sarc-radius-md);
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+
+.kpi-value {
+  font: var(--mat-sys-display-small);
+  font-weight: 700;
+  line-height: 1;
+  overflow-wrap: anywhere;
+
+  // Dos columnas en un telefono: la cifra baja de tamaño para no partirse.
+  @media (max-width: 599.98px) {
+    font: var(--mat-sys-headline-medium);
+    font-weight: 700;
+  }
+}
+
+.kpi-unit {
+  display: inline-block;
+  margin-left: var(--sarc-space-1);
+  font: var(--mat-sys-title-medium);
+}
+
+.kpi-label {
+  font: var(--mat-sys-title-small);
+}
+
+.panel {
+  min-width: 0;
+  padding: var(--sarc-space-4);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--sarc-radius-md);
+  background: var(--mat-sys-surface-container-low);
+
+  h2 {
+    margin: 0 0 var(--sarc-space-3);
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-title-small);
+  }
+}
+
+// Fila "etiqueta ... cifra" dentro de un panel.
+.metric-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sarc-space-2);
+  margin: 0;
+  padding: var(--sarc-space-1) 0;
+  font: var(--mat-sys-body-large);
+  list-style: none;
+
+  strong {
+    color: var(--mat-sys-primary);
+    font: var(--mat-sys-headline-small);
+    font-weight: 700;
+  }
+
+  & + .metric-row {
+    border-top: 1px solid var(--mat-sys-outline-variant);
+  }
+}
+
+.dashboard-note {
+  margin: 0;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-medium);
+}
