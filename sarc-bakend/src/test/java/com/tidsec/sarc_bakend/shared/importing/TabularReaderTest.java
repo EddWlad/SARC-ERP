@@ -79,6 +79,22 @@ class TabularReaderTest {
 	}
 
 	@Test
+	void ignoresColumnsBeyondTheLimitSoAStrayFarCellCannotExhaustMemory() throws Exception {
+		byte[] xlsx;
+		try (XSSFWorkbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+			Row row = workbook.createSheet().createRow(0);
+			row.createCell(0).setCellValue("ID");
+			row.createCell(16_000).setCellValue("lejos");
+			workbook.write(out);
+			xlsx = out.toByteArray();
+		}
+
+		List<TabularRow> rows = reader.read(xlsx);
+
+		assertThat(rows.getFirst().cells()).hasSize(TabularReader.MAX_COLUMNS).startsWith("ID");
+	}
+
+	@Test
 	void rejectsEmptyAndUnreadableContent() {
 		assertThatThrownBy(() -> reader.read(new byte[0])).extracting("code").isEqualTo("IMPORT_FILE_EMPTY");
 		assertThatThrownBy(() -> reader.read(new byte[] { 'P', 'K', 3, 4, 0, 0 }))

@@ -8,7 +8,8 @@ import java.util.Map;
  * eliminado que puede recuperarse). No conoce HTTP.
  */
 public abstract sealed class SarcException extends RuntimeException
-		permits NotFoundException, ConflictException, BusinessRuleException, ServiceUnavailableException {
+		permits NotFoundException, ConflictException, BusinessRuleException, ServiceUnavailableException,
+		TooManyRequestsException {
 
 	private final String code;
 	private final Map<String, Object> properties;

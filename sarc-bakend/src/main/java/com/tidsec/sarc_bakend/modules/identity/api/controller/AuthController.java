@@ -48,7 +48,7 @@ class AuthController {
 	@PostMapping("/login")
 	CurrentUserResponse login(@Valid @RequestBody LoginRequest body, HttpServletRequest request,
 			HttpServletResponse response) {
-		Authentication authentication = loginService.login(body.email(), body.password());
+		Authentication authentication = loginService.login(body.email(), body.password(), request.getRemoteAddr());
 		sessionStrategy.onAuthentication(authentication, request, response);
 		SecurityContext context = contextHolder.createEmptyContext();
 		context.setAuthentication(authentication);

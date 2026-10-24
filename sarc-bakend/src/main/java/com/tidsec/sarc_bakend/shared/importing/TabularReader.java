@@ -12,6 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -35,6 +36,17 @@ public class TabularReader {
 	/** TRD 09.1: limites de tamano y filas antes de procesar. */
 	public static final int MAX_BYTES = 20 * 1024 * 1024;
 	public static final int MAX_ROWS = 50_000;
+	/** Los reportes de las plataformas traen unas decenas de columnas; el resto se ignora. */
+	static final int MAX_COLUMNS = 200;
+	/**
+	 * Tope de cada parte descomprimida de un XLSX: 50 000 filas de un reporte ocupan unas decenas de MB.
+	 * Sin el, un archivo de 20 MiB muy comprimido podria inflarse a varios GB en memoria.
+	 */
+	static final long MAX_XLSX_ENTRY_BYTES = 128L * 1024 * 1024;
+
+	static {
+		ZipSecureFile.setMaxEntrySize(MAX_XLSX_ENTRY_BYTES);
+	}
 
 	private static final byte[] ZIP_SIGNATURE = { 'P', 'K', 3, 4 };
 	private static final byte[] OLE_SIGNATURE = { (byte) 0xD0, (byte) 0xCF, 0x11, (byte) 0xE0 };
@@ -91,7 +103,8 @@ public class TabularReader {
 			List<TabularRow> rows = new ArrayList<>();
 			for (Row row : sheet) {
 				List<String> cells = new ArrayList<>();
-				for (int column = 0; column < row.getLastCellNum(); column++) {
+				int columns = Math.min(row.getLastCellNum(), MAX_COLUMNS);
+				for (int column = 0; column < columns; column++) {
 					cells.add(text(row.getCell(column)));
 				}
 				TabularRow tabular = new TabularRow(row.getRowNum() + 1, cells);

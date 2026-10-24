@@ -37,11 +37,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 			case ConflictException _ -> HttpStatus.CONFLICT;
 			case BusinessRuleException _ -> HttpStatus.UNPROCESSABLE_CONTENT;
 			case ServiceUnavailableException _ -> HttpStatus.SERVICE_UNAVAILABLE;
+			case TooManyRequestsException _ -> HttpStatus.TOO_MANY_REQUESTS;
 		};
 		ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, ex.getMessage());
 		ex.properties().forEach(problem::setProperty);
 		problem.setProperty("code", ex.code());
-		return createResponseEntity(problem, new HttpHeaders(), status, request);
+		HttpHeaders headers = new HttpHeaders();
+		if (ex instanceof TooManyRequestsException tooMany) {
+			headers.set(HttpHeaders.RETRY_AFTER, Long.toString(Math.max(1, tooMany.retryAfter().toSeconds())));
+		}
+		return createResponseEntity(problem, headers, status, request);
 	}
 
 	@ExceptionHandler(AuthenticationException.class)

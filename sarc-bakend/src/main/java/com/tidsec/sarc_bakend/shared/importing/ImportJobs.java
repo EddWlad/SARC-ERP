@@ -23,7 +23,8 @@ public class ImportJobs {
 
 	private static final Logger log = LoggerFactory.getLogger(ImportJobs.class);
 	private static final int THREADS = 2;
-	private static final int QUEUE_CAPACITY = 100;
+	/** Cada trabajo en cola retiene su archivo (hasta 20 MiB): la cola se mantiene corta. */
+	private static final int QUEUE_CAPACITY = 10;
 
 	private final ThreadPoolTaskExecutor pool;
 	private final TaskExecutor executor;
@@ -41,16 +42,17 @@ public class ImportJobs {
 	}
 
 	/**
-	 * Con la cola llena el trabajo se rechaza: el lote queda en proceso y la recuperacion del siguiente
-	 * arranque lo marca fallido para reintentarlo.
+	 * Con la cola llena el trabajo se rechaza y se ejecuta {@code onRejected} (fuera de transaccion),
+	 * para que quien lo pidio no quede esperando un trabajo que nunca correra.
 	 */
-	public void submitAfterCommit(Runnable job) {
+	public void submitAfterCommit(Runnable job, Runnable onRejected) {
 		AfterCommit.run(() -> {
 			try {
 				executor.execute(job);
 			}
 			catch (TaskRejectedException ex) {
-				log.error("Cola de importaciones llena; el trabajo no se encolo", ex);
+				log.warn("Cola de importaciones llena; el trabajo no se encolo");
+				onRejected.run();
 			}
 		});
 	}

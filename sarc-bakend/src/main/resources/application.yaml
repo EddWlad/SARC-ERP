@@ -69,6 +69,10 @@ sarc:
     bcrypt-strength: 12
     max-failed-login-attempts: 5
     lockout-duration: 15m
+    # Fallos de ingreso por direccion de origen (TRD 16.1); detras de Nginx la direccion real llega
+    # por X-Forwarded-For (server.forward-headers-strategy en prod).
+    max-failed-logins-per-client: 20
+    client-throttle-window: 15m
   # Admin inicial: solo se crea si no existe ningun usuario. Definir ambas variables.
   bootstrap-admin:
     email: ${SARC_BOOTSTRAP_ADMIN_EMAIL:}

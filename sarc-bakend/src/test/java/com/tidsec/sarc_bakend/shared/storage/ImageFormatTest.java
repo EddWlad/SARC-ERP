@@ -22,5 +22,6 @@ class ImageFormatTest {
 	void rejectsAnythingElse() {
 		assertThat(ImageFormat.detect("%PDF-1.7".getBytes(StandardCharsets.US_ASCII))).isEmpty();
 		assertThat(ImageFormat.detect(new byte[0])).isEmpty();
+		assertThat(ImageFormat.detect("12345678WEBP<html>".getBytes(StandardCharsets.US_ASCII))).isEmpty();
 	}
 }

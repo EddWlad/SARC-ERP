@@ -131,7 +131,7 @@ public class SessionImportService {
 		batch.confirm(currentActor.id().orElse(null), clock.instant());
 		batches.save(batch);
 		audit.record("ENERGY_IMPORT_CONFIRMED", ImportBatch.AUDIT_ENTITY_TYPE, id, Map.of());
-		jobs.submitAfterCommit(() -> processor.apply(id));
+		jobs.submitAfterCommit(() -> processor.apply(id), failWhenBusy(id));
 		return batch;
 	}
 
@@ -141,7 +141,7 @@ public class SessionImportService {
 		batch.retry();
 		batches.save(batch);
 		audit.record("ENERGY_IMPORT_RETRIED", ImportBatch.AUDIT_ENTITY_TYPE, id, Map.of());
-		jobs.submitAfterCommit(() -> processor.apply(id));
+		jobs.submitAfterCommit(() -> processor.apply(id), failWhenBusy(id));
 		return batch;
 	}
 
@@ -173,7 +173,7 @@ public class SessionImportService {
 					"origin", origin.name(),
 					"fileName", fileName,
 					"sha256", batch.getChecksum()));
-			jobs.submitAfterCommit(() -> processor.prepare(id, original));
+			jobs.submitAfterCommit(() -> processor.prepare(id, original), failWhenBusy(id));
 			return batch;
 		});
 	}
@@ -200,6 +200,16 @@ public class SessionImportService {
 		ImportBatch batch = load(id);
 		batch.requireVersion(version);
 		return batch;
+	}
+
+	/** Si la cola de trabajos esta llena el lote falla de inmediato y el analista lo reintenta luego. */
+	private Runnable failWhenBusy(UUID id) {
+		return () -> transactions.executeWithoutResult(status -> batches.findById(id).ifPresent(batch -> {
+			batch.fail("IMPORT_BUSY", batch.getConfirmedAt() == null
+					? "El sistema esta procesando otras importaciones; vuelva a cargar el archivo en unos minutos"
+					: "El sistema esta procesando otras importaciones; reintente la confirmacion en unos minutos");
+			batches.save(batch);
+		}));
 	}
 
 	private ImportBatch load(UUID id) {

@@ -6,6 +6,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.tidsec.sarc_bakend.modules.identity.domain.policy.LoginPolicy;
+import com.tidsec.sarc_bakend.modules.identity.domain.policy.LoginThrottlePolicy;
 
 @Configuration(proxyBeanMethods = false)
 class IdentityConfig {
@@ -18,5 +19,10 @@ class IdentityConfig {
 	@Bean
 	LoginPolicy loginPolicy(IdentityProperties properties) {
 		return new LoginPolicy(properties.maxFailedLoginAttempts(), properties.lockoutDuration());
+	}
+
+	@Bean
+	LoginThrottlePolicy loginThrottlePolicy(IdentityProperties properties) {
+		return new LoginThrottlePolicy(properties.maxFailedLoginsPerClient(), properties.clientThrottleWindow());
 	}
 }

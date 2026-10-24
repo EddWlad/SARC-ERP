@@ -59,6 +59,7 @@ import com.tidsec.sarc_bakend.modules.identity.domain.repository.UserRepository;
 @SpringBootTest(properties = {
 		"sarc.security.bcrypt-strength=4",
 		"sarc.security.max-failed-login-attempts=3",
+		"sarc.security.max-failed-logins-per-client=1000",
 		"spring.jpa.properties.hibernate.generate_statistics=true"
 })
 @AutoConfigureMockMvc
@@ -139,7 +140,7 @@ class IdentityApiTest {
 		for (int i = 0; i < 8; i++) {
 			attempts.add(() -> {
 				try {
-					loginService.login("admin@eos.com", "otra-clave-equivocada");
+					loginService.login("admin@eos.com", "otra-clave-equivocada", "127.0.0.1");
 					return "LOGGED_IN";
 				}
 				catch (AuthenticationException ex) {

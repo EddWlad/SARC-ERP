@@ -2379,7 +2379,8 @@
           },
           "text" : {
             "type" : "string",
-            "minLength" : 1
+            "maxLength" : 20971520,
+            "minLength" : 0
           }
         },
         "required" : [ "source", "text" ]

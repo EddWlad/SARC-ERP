@@ -9,5 +9,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 record IdentityProperties(
 		@DefaultValue("12") int bcryptStrength,
 		@DefaultValue("5") int maxFailedLoginAttempts,
-		@DefaultValue("15m") Duration lockoutDuration) {
+		@DefaultValue("15m") Duration lockoutDuration,
+		@DefaultValue("20") int maxFailedLoginsPerClient,
+		@DefaultValue("15m") Duration clientThrottleWindow) {
 }
