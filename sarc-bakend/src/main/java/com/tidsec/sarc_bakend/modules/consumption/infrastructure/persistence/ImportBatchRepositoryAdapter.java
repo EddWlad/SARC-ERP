@@ -10,8 +10,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportBatch;
-import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportStatus;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.ImportBatchRepository;
+import com.tidsec.sarc_bakend.shared.importing.batch.ImportStatus;
 import com.tidsec.sarc_bakend.shared.pagination.PageQuery;
 import com.tidsec.sarc_bakend.shared.pagination.PageResult;
 

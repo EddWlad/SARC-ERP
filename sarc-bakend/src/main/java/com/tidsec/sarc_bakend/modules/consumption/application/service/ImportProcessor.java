@@ -6,7 +6,6 @@ import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -25,7 +24,6 @@ import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportBatch
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportRow;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowClassification;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowCounts;
-import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowIssue;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowOutcome;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergySession;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
@@ -37,8 +35,9 @@ import com.tidsec.sarc_bakend.shared.audit.AuditTrail;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentReference;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 import com.tidsec.sarc_bakend.shared.error.NotFoundException;
-import com.tidsec.sarc_bakend.shared.error.SarcException;
-import com.tidsec.sarc_bakend.shared.importing.TabularRow;
+import com.tidsec.sarc_bakend.shared.importing.batch.ImportFailure;
+import com.tidsec.sarc_bakend.shared.importing.batch.RowIssue;
+import com.tidsec.sarc_bakend.shared.importing.reading.TabularRow;
 import com.tidsec.sarc_bakend.shared.security.CurrentActor;
 import com.tidsec.sarc_bakend.shared.time.OperatingZone;
 
@@ -231,18 +230,17 @@ class ImportProcessor {
 	}
 
 	private void fail(UUID batchId, RuntimeException ex) {
-		String code = ex instanceof SarcException sarc ? sarc.code() : "IMPORT_FAILED";
-		String message = ex instanceof SarcException ? ex.getMessage()
-				: "Error inesperado al procesar el lote; reintente y, si persiste, contacte a soporte";
-		if (!(ex instanceof SarcException)) {
+		ImportFailure failure = ImportFailure.of(ex);
+		if (failure.unexpected()) {
 			log.error("Fallo el procesamiento del lote {}", batchId, ex);
 		}
 		transactions.executeWithoutResult(status -> {
 			ImportBatch batch = load(batchId);
 			if (batch.isInProgress()) {
-				batch.fail(code, Objects.requireNonNullElse(message, code));
+				batch.fail(failure.code(), failure.message());
 				batches.save(batch);
-				audit.record("ENERGY_IMPORT_FAILED", ImportBatch.AUDIT_ENTITY_TYPE, batchId, Map.of("code", code));
+				audit.record("ENERGY_IMPORT_FAILED", ImportBatch.AUDIT_ENTITY_TYPE, batchId,
+						Map.of("code", failure.code()));
 			}
 		});
 	}

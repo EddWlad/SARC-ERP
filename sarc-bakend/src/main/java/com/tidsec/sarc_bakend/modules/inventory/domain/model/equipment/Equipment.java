@@ -122,16 +122,38 @@ public class Equipment extends BaseAuditableEntity {
 	 */
 	public static Equipment register(ChargingNetwork network, InfrastructureType type, EquipmentDetails details,
 			List<ConnectorType> connectorTypes, Equipment replaces) {
-		if (network == null || type == null) {
-			throw new BusinessRuleException("INVALID_CLASSIFICATION", "La red y el tipo de equipo son obligatorios");
-		}
 		if (replaces != null && replaces.adminStatus == AdministrativeStatus.ACTIVE) {
 			throw new BusinessRuleException("REPLACED_EQUIPMENT_ACTIVE",
 					"El equipo reemplazado debe estar inactivo o eliminado antes del reemplazo");
 		}
-		Equipment equipment = new Equipment(network, type, replaces == null ? null : replaces.getId());
-		equipment.applyDetails(details);
+		Equipment equipment = withDetails(network, type, details, replaces == null ? null : replaces.getId());
 		equipment.replaceConnectors(connectorTypes);
+		return equipment;
+	}
+
+	/**
+	 * Borrador sin persistir con los datos dados, para revisar una carga masiva: aplica las mismas
+	 * reglas que el alta y la edicion. Si {@code current} es el equipo que se editaria, sus tipos de
+	 * conector se aceptan en la misma posicion aunque hoy esten inactivos, como al editarlo.
+	 */
+	public static Equipment draft(ChargingNetwork network, InfrastructureType type, EquipmentDetails details,
+			List<ConnectorType> connectorTypes, Equipment current) {
+		Equipment draft = withDetails(network, type, details, null);
+		if (current != null) {
+			current.activeConnectors().forEach(connector -> draft.connectors
+					.add(new Connector(draft, connector.getOrdinal(), connector.getConnectorType())));
+		}
+		draft.replaceConnectors(connectorTypes);
+		return draft;
+	}
+
+	private static Equipment withDetails(ChargingNetwork network, InfrastructureType type, EquipmentDetails details,
+			UUID replacesEquipmentId) {
+		if (network == null || type == null) {
+			throw new BusinessRuleException("INVALID_CLASSIFICATION", "La red y el tipo de equipo son obligatorios");
+		}
+		Equipment equipment = new Equipment(network, type, replacesEquipmentId);
+		equipment.applyDetails(details);
 		return equipment;
 	}
 

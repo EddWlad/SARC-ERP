@@ -3,7 +3,7 @@ package com.tidsec.sarc_bakend.modules.consumption.application.port;
 import java.util.List;
 
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
-import com.tidsec.sarc_bakend.shared.importing.TabularRow;
+import com.tidsec.sarc_bakend.shared.importing.reading.TabularRow;
 
 /**
  * Interpreta el reporte original de una plataforma (Strategy, TRD 05): cada fuente sabe en que

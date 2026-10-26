@@ -11,14 +11,14 @@ import java.util.function.Supplier;
 import com.tidsec.sarc_bakend.modules.consumption.application.port.EquipmentLookup;
 import com.tidsec.sarc_bakend.modules.consumption.application.port.ParsedSession;
 import com.tidsec.sarc_bakend.modules.consumption.application.port.SessionReportParser;
-import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowIssue;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionReading;
 import com.tidsec.sarc_bakend.modules.consumption.domain.policy.SessionRules;
-import com.tidsec.sarc_bakend.shared.importing.DateTimeText;
-import com.tidsec.sarc_bakend.shared.importing.DecimalText;
-import com.tidsec.sarc_bakend.shared.importing.HeaderLayout;
-import com.tidsec.sarc_bakend.shared.importing.InvalidValueException;
-import com.tidsec.sarc_bakend.shared.importing.TabularRow;
+import com.tidsec.sarc_bakend.shared.importing.batch.RowIssue;
+import com.tidsec.sarc_bakend.shared.importing.reading.DateTimeText;
+import com.tidsec.sarc_bakend.shared.importing.reading.DecimalText;
+import com.tidsec.sarc_bakend.shared.importing.reading.HeaderLayout;
+import com.tidsec.sarc_bakend.shared.importing.reading.InvalidValueException;
+import com.tidsec.sarc_bakend.shared.importing.reading.TabularRow;
 
 /**
  * Pasos comunes a los reportes tabulares (Template Method): ubicar encabezados, leer ID, inicio,

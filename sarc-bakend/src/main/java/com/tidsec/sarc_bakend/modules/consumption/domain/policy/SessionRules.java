@@ -4,9 +4,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowIssue;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionReading;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
+import com.tidsec.sarc_bakend.shared.importing.batch.RowIssue;
 
 /**
  * Coherencia minima de una sesion. Una sesion de 0 kWh es valida (PRD RF-003.11); una que termina

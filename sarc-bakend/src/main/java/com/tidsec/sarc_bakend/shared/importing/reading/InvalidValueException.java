@@ -1,4 +1,4 @@
-package com.tidsec.sarc_bakend.shared.importing;
+package com.tidsec.sarc_bakend.shared.importing.reading;
 
 /**
  * Un valor del archivo no se puede interpretar sin adivinar. No es un error de la peticion: el

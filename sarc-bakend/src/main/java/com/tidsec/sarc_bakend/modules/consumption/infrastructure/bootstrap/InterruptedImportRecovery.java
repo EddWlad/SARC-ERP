@@ -30,9 +30,7 @@ class InterruptedImportRecovery {
 	@Transactional
 	void markInterrupted() {
 		for (ImportBatch batch : batches.findInProgress()) {
-			batch.fail("IMPORT_INTERRUPTED", batch.getConfirmedAt() == null
-					? "La lectura se interrumpio al reiniciar el sistema; vuelva a cargar el archivo"
-					: "La confirmacion se interrumpio al reiniciar el sistema; reintentela para continuar");
+			batch.failBecauseInterrupted();
 			batches.save(batch);
 			log.warn("Lote de importacion {} interrumpido por reinicio", batch.getId());
 		}

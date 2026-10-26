@@ -189,6 +189,46 @@
         }
       }
     },
+    "/api/v1/equipment/imports/{id}/rows/decision" : {
+      "put" : {
+        "tags" : [ "equipment-import-controller" ],
+        "operationId" : "decideEquipmentImportRows",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EquipmentRowDecisionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/EquipmentImportRowResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/energy/imports/{id}/rows/decision" : {
       "put" : {
         "tags" : [ "energy-import-controller" ],
@@ -557,6 +597,217 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ExternalIdentityResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipment/imports" : {
+      "get" : {
+        "tags" : [ "equipment-import-controller" ],
+        "operationId" : "equipmentImportHistory",
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultEquipmentImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "equipment-import-controller" ],
+        "operationId" : "uploadEquipmentImport",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "file" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EquipmentImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipment/imports/{id}/retry" : {
+      "post" : {
+        "tags" : [ "equipment-import-controller" ],
+        "operationId" : "retryEquipmentImport",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EquipmentImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipment/imports/{id}/discard" : {
+      "post" : {
+        "tags" : [ "equipment-import-controller" ],
+        "operationId" : "discardEquipmentImport",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EquipmentImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipment/imports/{id}/confirm" : {
+      "post" : {
+        "tags" : [ "equipment-import-controller" ],
+        "operationId" : "confirmEquipmentImport",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EquipmentImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipment/imports/paste" : {
+      "post" : {
+        "tags" : [ "equipment-import-controller" ],
+        "operationId" : "pasteEquipmentImport",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PasteEquipmentImportRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EquipmentImportBatchResponse"
                 }
               }
             }
@@ -1246,6 +1497,108 @@
         }
       }
     },
+    "/api/v1/equipment/imports/{id}" : {
+      "get" : {
+        "tags" : [ "equipment-import-controller" ],
+        "operationId" : "equipmentImport",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EquipmentImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipment/imports/{id}/rows" : {
+      "get" : {
+        "tags" : [ "equipment-import-controller" ],
+        "operationId" : "equipmentImportRows",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "classification",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "INVALID", "DUPLICATE", "DELETED_EXISTS", "CONFLICT" ]
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 50,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultEquipmentImportRowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipment/imports/template" : {
+      "get" : {
+        "tags" : [ "equipment-import-controller" ],
+        "operationId" : "equipmentImportTemplate",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/energy/summary" : {
       "get" : {
         "tags" : [ "consumption-controller" ],
@@ -1927,6 +2280,128 @@
         },
         "required" : [ "exceptions", "intervals", "mode", "version" ]
       },
+      "EquipmentRowDecisionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "rowIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 1000,
+            "minItems" : 0
+          },
+          "approved" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "approved", "rowIds" ]
+      },
+      "EquipmentImportRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "rowNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "network" : {
+            "type" : [ "string", "null" ]
+          },
+          "type" : {
+            "type" : [ "string", "null" ]
+          },
+          "brand" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "serial" : {
+            "type" : [ "string", "null" ]
+          },
+          "assignedCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "uidPuk" : {
+            "type" : [ "string", "null" ]
+          },
+          "location" : {
+            "type" : [ "string", "null" ]
+          },
+          "mapsUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "ocppUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "usageStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "connectors" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "enerlinkScope" : {
+            "type" : [ "string", "null" ]
+          },
+          "enerlinkCharger" : {
+            "type" : [ "string", "null" ]
+          },
+          "wallboxId" : {
+            "type" : [ "string", "null" ]
+          },
+          "ocppId" : {
+            "type" : [ "string", "null" ]
+          },
+          "classification" : {
+            "type" : "string",
+            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "INVALID", "DUPLICATE", "DELETED_EXISTS", "CONFLICT" ]
+          },
+          "issues" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RowIssue"
+            }
+          },
+          "equipmentId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "requiresApproval" : {
+            "type" : "boolean"
+          },
+          "approved" : {
+            "type" : "boolean"
+          },
+          "outcome" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "CREATED", "UPDATED", "UNCHANGED", "SKIPPED" ]
+          },
+          "outcomeDetail" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "approved", "classification", "connectors", "id", "issues", "requiresApproval", "rowNumber" ]
+      },
+      "RowIssue" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "message" ]
+      },
       "RowDecisionRequest" : {
         "type" : "object",
         "properties" : {
@@ -2269,6 +2744,95 @@
           }
         },
         "required" : [ "externalId", "platform" ]
+      },
+      "EquipmentImportBatchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "origin" : {
+            "type" : "string",
+            "enum" : [ "FILE", "PASTE" ]
+          },
+          "fileName" : {
+            "type" : "string"
+          },
+          "checksum" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "PARSING", "READY", "CONFIRMING", "COMPLETED", "FAILED", "DISCARDED" ]
+          },
+          "failureCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "failureMessage" : {
+            "type" : [ "string", "null" ]
+          },
+          "totalRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "newRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "identicalRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "modifiedRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "invalidRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "duplicateRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "deletedExistsRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "conflictRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "appliedRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "confirmedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "appliedRows", "checksum", "conflictRows", "createdAt", "deletedExistsRows", "duplicateRows", "fileName", "id", "identicalRows", "invalidRows", "modifiedRows", "newRows", "origin", "status", "totalRows", "version" ]
+      },
+      "PasteEquipmentImportRequest" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string",
+            "maxLength" : 20971520,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "text" ]
       },
       "PendingLinkResponse" : {
         "type" : "object",
@@ -2791,6 +3355,62 @@
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/EquipmentSummaryResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "PageResultEquipmentImportBatchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EquipmentImportBatchResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "PageResultEquipmentImportRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EquipmentImportRowResponse"
             }
           },
           "page" : {

@@ -13,9 +13,9 @@ import org.springframework.stereotype.Component;
 import com.tidsec.sarc_bakend.modules.consumption.application.port.EquipmentLookup;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
 import com.tidsec.sarc_bakend.shared.catalog.ExternalKey;
-import com.tidsec.sarc_bakend.shared.importing.DateTimeText;
-import com.tidsec.sarc_bakend.shared.importing.HeaderLayout;
-import com.tidsec.sarc_bakend.shared.importing.TabularRow;
+import com.tidsec.sarc_bakend.shared.importing.reading.DateTimeText;
+import com.tidsec.sarc_bakend.shared.importing.reading.HeaderLayout;
+import com.tidsec.sarc_bakend.shared.importing.reading.TabularRow;
 import com.tidsec.sarc_bakend.shared.time.OperatingZone;
 
 /**

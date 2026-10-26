@@ -13,7 +13,8 @@ Spring Boot 4 / Java 25 / PostgreSQL 18. Especificacion funcional: `../documents
 ```
 shared/            kernel compartido: error, audit, security, persistence, pagination, time, web,
                    domain (tipos comunes), storage (archivos), report (PDF/Excel corporativos),
-                   catalog (puertos publicos entre modulos), importing (lectura tabular y trabajos)
+                   catalog (puertos publicos entre modulos), importing (reading: lectura tabular;
+                   batch: ciclo de vida de lotes y trabajos en segundo plano, ADR 0007)
 modules/<modulo>/
   api/             controller/  request/  response/
   application/     service/  command/  result/  port/

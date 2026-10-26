@@ -1,4 +1,4 @@
-package com.tidsec.sarc_bakend.shared.importing;
+package com.tidsec.sarc_bakend.shared.importing.batch;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

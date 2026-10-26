@@ -1,4 +1,4 @@
-package com.tidsec.sarc_bakend.shared.importing;
+package com.tidsec.sarc_bakend.shared.importing.reading;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,6 +35,6 @@ class HeaderLayoutTest {
 		assertThatThrownBy(() -> HeaderLayout.locate(rows, COLUMNS))
 				.extracting("code", "message")
 				.containsExactly("IMPORT_COLUMNS_MISSING",
-						"El archivo no corresponde a la fuente elegida; faltan las columnas: ID, TERMINO, ENERGIA CARGADA");
+						"El archivo no tiene el formato esperado; faltan las columnas: ID, TERMINO, ENERGIA CARGADA");
 	}
 }

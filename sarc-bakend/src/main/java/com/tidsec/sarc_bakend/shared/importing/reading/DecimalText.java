@@ -1,4 +1,4 @@
-package com.tidsec.sarc_bakend.shared.importing;
+package com.tidsec.sarc_bakend.shared.importing.reading;
 
 import java.math.BigDecimal;
 import java.util.regex.Pattern;

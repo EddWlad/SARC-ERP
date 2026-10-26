@@ -13,6 +13,7 @@ import com.tidsec.sarc_bakend.shared.catalog.EquipmentReference;
 import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
 import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
+import com.tidsec.sarc_bakend.shared.importing.batch.RowIssue;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

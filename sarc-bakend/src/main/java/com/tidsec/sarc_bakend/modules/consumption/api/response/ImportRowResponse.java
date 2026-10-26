@@ -7,9 +7,9 @@ import java.util.UUID;
 
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportRow;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowClassification;
-import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowIssue;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowOutcome;
 import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
+import com.tidsec.sarc_bakend.shared.importing.batch.RowIssue;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

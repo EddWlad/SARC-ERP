@@ -1,4 +1,4 @@
-package com.tidsec.sarc_bakend.shared.importing;
+package com.tidsec.sarc_bakend.shared.importing.reading;
 
 import java.text.Normalizer;
 import java.util.HashMap;
@@ -58,7 +58,7 @@ public final class HeaderLayout {
 			}
 		}
 		throw new BusinessRuleException("IMPORT_COLUMNS_MISSING",
-				"El archivo no corresponde a la fuente elegida; faltan las columnas: " + String.join(", ", bestMissing));
+				"El archivo no tiene el formato esperado; faltan las columnas: " + String.join(", ", bestMissing));
 	}
 
 	public List<TabularRow> dataRows() {

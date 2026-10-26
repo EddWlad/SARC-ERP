@@ -18,7 +18,6 @@ import com.tidsec.sarc_bakend.modules.consumption.application.command.PasteImpor
 import com.tidsec.sarc_bakend.modules.consumption.application.command.RowDecisionCommand;
 import com.tidsec.sarc_bakend.modules.consumption.application.command.UploadImportCommand;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportBatch;
-import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportOrigin;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportRow;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowClassification;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
@@ -28,9 +27,11 @@ import com.tidsec.sarc_bakend.shared.audit.AuditTrail;
 import com.tidsec.sarc_bakend.shared.audit.ContentFingerprint;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 import com.tidsec.sarc_bakend.shared.error.NotFoundException;
-import com.tidsec.sarc_bakend.shared.importing.ImportJobs;
-import com.tidsec.sarc_bakend.shared.importing.TabularReader;
-import com.tidsec.sarc_bakend.shared.importing.TabularRow;
+import com.tidsec.sarc_bakend.shared.importing.batch.ImportFiles;
+import com.tidsec.sarc_bakend.shared.importing.batch.ImportJobs;
+import com.tidsec.sarc_bakend.shared.importing.batch.ImportOrigin;
+import com.tidsec.sarc_bakend.shared.importing.reading.TabularReader;
+import com.tidsec.sarc_bakend.shared.importing.reading.TabularRow;
 import com.tidsec.sarc_bakend.shared.pagination.PageQuery;
 import com.tidsec.sarc_bakend.shared.pagination.PageResult;
 import com.tidsec.sarc_bakend.shared.security.CurrentActor;
@@ -79,8 +80,9 @@ public class SessionImportService {
 	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	public ImportBatch upload(UploadImportCommand command) {
 		byte[] content = command.content();
-		requireContent(content.length);
-		return open(command.source(), command.scope(), ImportOrigin.FILE, fileName(command.fileName()), content,
+		ImportFiles.requireContent(content.length);
+		return open(command.source(), command.scope(), ImportOrigin.FILE,
+				ImportFiles.safeName(command.fileName(), "importacion"), content,
 				() -> reader.read(content));
 	}
 
@@ -89,7 +91,7 @@ public class SessionImportService {
 	public ImportBatch paste(PasteImportCommand command) {
 		String text = command.text() == null ? "" : command.text();
 		byte[] content = text.getBytes(StandardCharsets.UTF_8);
-		requireContent(text.isBlank() ? 0 : content.length);
+		ImportFiles.requireContent(text.isBlank() ? 0 : content.length);
 		return open(command.source(), command.scope(), ImportOrigin.PASTE, PASTE_FILE_NAME, content,
 				() -> reader.readText(text));
 	}
@@ -178,24 +180,6 @@ public class SessionImportService {
 		});
 	}
 
-	private static void requireContent(int length) {
-		if (length == 0) {
-			throw new BusinessRuleException("IMPORT_FILE_EMPTY", "No hay datos para importar");
-		}
-		if (length > TabularReader.MAX_BYTES) {
-			throw new BusinessRuleException("IMPORT_FILE_TOO_LARGE", "El archivo supera 20 MiB");
-		}
-	}
-
-	private static String fileName(String name) {
-		String clean = name == null ? "" : name.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]", "_").strip();
-		if (clean.isEmpty()) {
-			return "importacion";
-		}
-		return clean.length() > 255 ? clean.substring(clean.length() - 255) : clean;
-	}
-
-
 	private ImportBatch loadForChange(UUID id, long version) {
 		ImportBatch batch = load(id);
 		batch.requireVersion(version);
@@ -205,9 +189,7 @@ public class SessionImportService {
 	/** Si la cola de trabajos esta llena el lote falla de inmediato y el analista lo reintenta luego. */
 	private Runnable failWhenBusy(UUID id) {
 		return () -> transactions.executeWithoutResult(status -> batches.findById(id).ifPresent(batch -> {
-			batch.fail("IMPORT_BUSY", batch.getConfirmedAt() == null
-					? "El sistema esta procesando otras importaciones; vuelva a cargar el archivo en unos minutos"
-					: "El sistema esta procesando otras importaciones; reintente la confirmacion en unos minutos");
+			batch.failBecauseBusy();
 			batches.save(batch);
 		}));
 	}

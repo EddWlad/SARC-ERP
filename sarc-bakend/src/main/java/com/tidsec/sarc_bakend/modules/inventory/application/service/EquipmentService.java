@@ -28,7 +28,6 @@ import com.tidsec.sarc_bakend.modules.inventory.domain.repository.ConnectorTypeR
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentRepository;
 import com.tidsec.sarc_bakend.shared.audit.AuditTrail;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
-import com.tidsec.sarc_bakend.shared.error.ConflictException;
 import com.tidsec.sarc_bakend.shared.error.NotFoundException;
 import com.tidsec.sarc_bakend.shared.persistence.AfterCommit;
 import com.tidsec.sarc_bakend.shared.storage.FileStorage;
@@ -46,15 +45,18 @@ public class EquipmentService {
 
 	private final EquipmentRepository equipment;
 	private final ConnectorTypeRepository connectorTypes;
+	private final EquipmentIdentifiers identifiers;
 	private final FileStorage fileStorage;
 	private final EquipmentViewFactory views;
 	private final AuditTrail audit;
 	private final TransactionTemplate transactions;
 
-	EquipmentService(EquipmentRepository equipment, ConnectorTypeRepository connectorTypes, FileStorage fileStorage,
-			EquipmentViewFactory views, AuditTrail audit, TransactionTemplate transactions) {
+	EquipmentService(EquipmentRepository equipment, ConnectorTypeRepository connectorTypes,
+			EquipmentIdentifiers identifiers, FileStorage fileStorage, EquipmentViewFactory views, AuditTrail audit,
+			TransactionTemplate transactions) {
 		this.equipment = equipment;
 		this.connectorTypes = connectorTypes;
+		this.identifiers = identifiers;
 		this.fileStorage = fileStorage;
 		this.views = views;
 		this.audit = audit;
@@ -65,7 +67,7 @@ public class EquipmentService {
 		Equipment replaced = command.replacesEquipmentId() == null ? null : load(command.replacesEquipmentId());
 		Equipment created = Equipment.register(command.network(), command.type(), command.details(),
 				resolveConnectorTypes(command.connectorTypeIds()), replaced);
-		requireUniqueIdentifiers(created);
+		identifiers.requireUnique(created, created.getId());
 		equipment.save(created);
 		Map<String, String> details = new HashMap<>(Map.of("network", created.getNetwork().name(), "type",
 				created.getType().name(), "serial", created.getSerial(), "assignedCode", created.getAssignedCode()));
@@ -81,7 +83,7 @@ public class EquipmentService {
 		String previousSerial = target.getSerial();
 		target.applyDetails(command.details());
 		target.replaceConnectors(resolveConnectorTypes(command.connectorTypeIds()));
-		requireUniqueIdentifiers(target);
+		identifiers.requireUnique(target, target.getId());
 		equipment.save(target);
 		Map<String, String> details = new HashMap<>();
 		if (!previousSerial.equals(target.getSerial())) {
@@ -151,34 +153,6 @@ public class EquipmentService {
 		});
 		equipment.save(target);
 		return views.forCurrentUser(target);
-	}
-
-	/**
-	 * Serie, codigo y UID/PUK son unicos en todo el inventario, eliminados incluidos (RF-002.2/3).
-	 * Si el dueno es un equipo eliminado se indica su id para recuperarlo en vez de duplicarlo; si
-	 * los identificadores pertenecen a equipos distintos se detiene sin fusionar identidades.
-	 */
-	private void requireUniqueIdentifiers(Equipment candidate) {
-		List<Equipment> holders = equipment
-				.findHoldersOf(candidate.getSerial(), candidate.getAssignedCode(), candidate.getUidPuk()).stream()
-				.filter(holder -> !holder.getId().equals(candidate.getId()))
-				.toList();
-		if (holders.isEmpty()) {
-			return;
-		}
-		if (holders.size() > 1) {
-			throw new ConflictException("IDENTIFIERS_BELONG_TO_DIFFERENT_EQUIPMENT",
-					"La serie, el codigo o el UID/PUK pertenecen a equipos distintos; revise los datos",
-					Map.of("equipmentIds", holders.stream().map(Equipment::getId).toList()));
-		}
-		Equipment holder = holders.getFirst();
-		if (holder.isDeleted()) {
-			throw new ConflictException("EQUIPMENT_DELETED_EXISTS",
-					"Ya existe un equipo eliminado con esos identificadores; recuperelo en lugar de crear otro",
-					Map.of("equipmentId", holder.getId()));
-		}
-		throw new ConflictException("EQUIPMENT_IDENTIFIER_IN_USE",
-				"La serie, el codigo o el UID/PUK ya pertenecen a otro equipo", Map.of("equipmentId", holder.getId()));
 	}
 
 	/** Tipos de conector en el mismo orden de las posiciones solicitadas. */

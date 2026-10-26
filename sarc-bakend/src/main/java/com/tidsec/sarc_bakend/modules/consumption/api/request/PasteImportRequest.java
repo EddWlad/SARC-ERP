@@ -2,7 +2,7 @@ package com.tidsec.sarc_bakend.modules.consumption.api.request;
 
 import com.tidsec.sarc_bakend.modules.consumption.application.command.PasteImportCommand;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
-import com.tidsec.sarc_bakend.shared.importing.TabularReader;
+import com.tidsec.sarc_bakend.shared.importing.reading.TabularReader;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

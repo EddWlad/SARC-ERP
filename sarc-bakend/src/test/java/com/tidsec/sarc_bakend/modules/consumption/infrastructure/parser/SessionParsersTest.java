@@ -11,9 +11,9 @@ import org.junit.jupiter.api.Test;
 
 import com.tidsec.sarc_bakend.modules.consumption.application.port.EquipmentLookup;
 import com.tidsec.sarc_bakend.modules.consumption.application.port.ParsedSession;
-import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowIssue;
 import com.tidsec.sarc_bakend.shared.catalog.ExternalKey;
-import com.tidsec.sarc_bakend.shared.importing.TabularReader;
+import com.tidsec.sarc_bakend.shared.importing.batch.RowIssue;
+import com.tidsec.sarc_bakend.shared.importing.reading.TabularReader;
 import com.tidsec.sarc_bakend.shared.time.OperatingZone;
 
 /** Formatos tomados de los reportes reales de Wallbox y Enerlink, con datos ficticios. */

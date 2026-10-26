@@ -8,7 +8,7 @@ Con tres modulos, `shared` tiene 13 paquetes y el modelo de inventario 10 clases
 
 ## Decision
 
-1. **Se mantiene la agrupacion por rol, nunca por construccion de Java** (ADR 0002). Un enum o un record vive con lo que describe: `UsageStatus` junto a `Equipment`, `RowIssue` junto a `ImportRow`. Separarlos por sintaxis aleja lo que cambia junto y no permite reglas de arquitectura.
+1. **Se mantiene la agrupacion por rol, nunca por construccion de Java** (ADR 0002). Un enum o un record vive con lo que describe: `UsageStatus` junto a `Equipment`, `ImportStatus` junto a `BaseImportBatch`. Separarlos por sintaxis aleja lo que cambia junto y no permite reglas de arquitectura.
 
 2. **`domain/model` se parte por agregado cuando el modulo tiene mas de un agregado raiz** (antes: al superar ~10 clases). Cada subpaquete contiene la raiz, sus entidades internas, value objects y enums:
    - `inventory/domain/model/equipment` (Equipment, Connector, horario, estados), `connectortype`, `externalidentity`.

@@ -2,8 +2,8 @@ package com.tidsec.sarc_bakend.modules.consumption.application.port;
 
 import java.util.List;
 
-import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowIssue;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionReading;
+import com.tidsec.sarc_bakend.shared.importing.batch.RowIssue;
 
 /**
  * Fila interpretada por un {@link SessionReportParser}. Si tiene observaciones, {@code reading} es

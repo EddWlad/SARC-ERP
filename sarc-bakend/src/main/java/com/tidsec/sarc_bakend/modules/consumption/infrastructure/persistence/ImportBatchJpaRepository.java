@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportBatch;
-import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportStatus;
+import com.tidsec.sarc_bakend.shared.importing.batch.ImportStatus;
 
 interface ImportBatchJpaRepository extends JpaRepository<ImportBatch, UUID> {
 

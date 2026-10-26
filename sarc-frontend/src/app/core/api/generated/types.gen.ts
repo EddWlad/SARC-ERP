@@ -92,6 +92,44 @@ export type ScheduleRequest = {
     exceptions: Array<ExceptionRequest>;
 };
 
+export type EquipmentRowDecisionRequest = {
+    rowIds: Array<string>;
+    approved: boolean;
+};
+
+export type EquipmentImportRowResponse = {
+    id: string;
+    rowNumber: number;
+    network?: string | null;
+    type?: string | null;
+    brand?: string | null;
+    name?: string | null;
+    serial?: string | null;
+    assignedCode?: string | null;
+    uidPuk?: string | null;
+    location?: string | null;
+    mapsUrl?: string | null;
+    ocppUrl?: string | null;
+    usageStatus?: string | null;
+    connectors: Array<string>;
+    enerlinkScope?: string | null;
+    enerlinkCharger?: string | null;
+    wallboxId?: string | null;
+    ocppId?: string | null;
+    classification: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'INVALID' | 'DUPLICATE' | 'DELETED_EXISTS' | 'CONFLICT';
+    issues: Array<RowIssue>;
+    equipmentId?: string | null;
+    requiresApproval: boolean;
+    approved: boolean;
+    outcome?: 'CREATED' | 'UPDATED' | 'UNCHANGED' | 'SKIPPED';
+    outcomeDetail?: string | null;
+};
+
+export type RowIssue = {
+    code: string;
+    message: string;
+};
+
 export type RowDecisionRequest = {
     rowIds: Array<string>;
     test?: boolean | null;
@@ -190,6 +228,32 @@ export type ExternalIdentityRequest = {
     scope?: string;
     externalId: string;
     alias?: string;
+};
+
+export type EquipmentImportBatchResponse = {
+    id: string;
+    origin: 'FILE' | 'PASTE';
+    fileName: string;
+    checksum: string;
+    status: 'PARSING' | 'READY' | 'CONFIRMING' | 'COMPLETED' | 'FAILED' | 'DISCARDED';
+    failureCode?: string | null;
+    failureMessage?: string | null;
+    totalRows: number;
+    newRows: number;
+    identicalRows: number;
+    modifiedRows: number;
+    invalidRows: number;
+    duplicateRows: number;
+    deletedExistsRows: number;
+    conflictRows: number;
+    appliedRows: number;
+    createdAt: string;
+    confirmedAt?: string | null;
+    version: number;
+};
+
+export type PasteEquipmentImportRequest = {
+    text: string;
 };
 
 export type PendingLinkResponse = {
@@ -357,6 +421,22 @@ export type EquipmentSummaryResponse = {
 
 export type PageResultEquipmentSummaryResponse = {
     content: Array<EquipmentSummaryResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type PageResultEquipmentImportBatchResponse = {
+    content: Array<EquipmentImportBatchResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type PageResultEquipmentImportRowResponse = {
+    content: Array<EquipmentImportRowResponse>;
     page: number;
     size: number;
     totalElements: number;
@@ -534,6 +614,24 @@ export type AttachImageResponses = {
 
 export type AttachImageResponse = AttachImageResponses[keyof AttachImageResponses];
 
+export type DecideEquipmentImportRowsData = {
+    body: EquipmentRowDecisionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/equipment/imports/{id}/rows/decision';
+};
+
+export type DecideEquipmentImportRowsResponses = {
+    /**
+     * OK
+     */
+    200: Array<EquipmentImportRowResponse>;
+};
+
+export type DecideEquipmentImportRowsResponse = DecideEquipmentImportRowsResponses[keyof DecideEquipmentImportRowsResponses];
+
 export type DecideData = {
     body: RowDecisionRequest;
     path: {
@@ -702,6 +800,113 @@ export type AddExternalIdentityResponses = {
 };
 
 export type AddExternalIdentityResponse = AddExternalIdentityResponses[keyof AddExternalIdentityResponses];
+
+export type EquipmentImportHistoryData = {
+    body?: never;
+    path?: never;
+    query?: {
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/equipment/imports';
+};
+
+export type EquipmentImportHistoryResponses = {
+    /**
+     * OK
+     */
+    200: PageResultEquipmentImportBatchResponse;
+};
+
+export type EquipmentImportHistoryResponse = EquipmentImportHistoryResponses[keyof EquipmentImportHistoryResponses];
+
+export type UploadEquipmentImportData = {
+    body?: {
+        file: Blob | File;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/equipment/imports';
+};
+
+export type UploadEquipmentImportResponses = {
+    /**
+     * Accepted
+     */
+    202: EquipmentImportBatchResponse;
+};
+
+export type UploadEquipmentImportResponse = UploadEquipmentImportResponses[keyof UploadEquipmentImportResponses];
+
+export type RetryEquipmentImportData = {
+    body: VersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/equipment/imports/{id}/retry';
+};
+
+export type RetryEquipmentImportResponses = {
+    /**
+     * Accepted
+     */
+    202: EquipmentImportBatchResponse;
+};
+
+export type RetryEquipmentImportResponse = RetryEquipmentImportResponses[keyof RetryEquipmentImportResponses];
+
+export type DiscardEquipmentImportData = {
+    body: VersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/equipment/imports/{id}/discard';
+};
+
+export type DiscardEquipmentImportResponses = {
+    /**
+     * OK
+     */
+    200: EquipmentImportBatchResponse;
+};
+
+export type DiscardEquipmentImportResponse = DiscardEquipmentImportResponses[keyof DiscardEquipmentImportResponses];
+
+export type ConfirmEquipmentImportData = {
+    body: VersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/equipment/imports/{id}/confirm';
+};
+
+export type ConfirmEquipmentImportResponses = {
+    /**
+     * Accepted
+     */
+    202: EquipmentImportBatchResponse;
+};
+
+export type ConfirmEquipmentImportResponse = ConfirmEquipmentImportResponses[keyof ConfirmEquipmentImportResponses];
+
+export type PasteEquipmentImportData = {
+    body: PasteEquipmentImportRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/equipment/imports/paste';
+};
+
+export type PasteEquipmentImportResponses = {
+    /**
+     * Accepted
+     */
+    202: EquipmentImportBatchResponse;
+};
+
+export type PasteEquipmentImportResponse = PasteEquipmentImportResponses[keyof PasteEquipmentImportResponses];
 
 export type LinkPendingData = {
     body?: never;
@@ -1031,6 +1236,62 @@ export type ResolveResponses = {
 };
 
 export type ResolveResponse = ResolveResponses[keyof ResolveResponses];
+
+export type EquipmentImportData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/equipment/imports/{id}';
+};
+
+export type EquipmentImportResponses = {
+    /**
+     * OK
+     */
+    200: EquipmentImportBatchResponse;
+};
+
+export type EquipmentImportResponse = EquipmentImportResponses[keyof EquipmentImportResponses];
+
+export type EquipmentImportRowsData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        classification?: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'INVALID' | 'DUPLICATE' | 'DELETED_EXISTS' | 'CONFLICT';
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/equipment/imports/{id}/rows';
+};
+
+export type EquipmentImportRowsResponses = {
+    /**
+     * OK
+     */
+    200: PageResultEquipmentImportRowResponse;
+};
+
+export type EquipmentImportRowsResponse = EquipmentImportRowsResponses[keyof EquipmentImportRowsResponses];
+
+export type EquipmentImportTemplateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/equipment/imports/template';
+};
+
+export type EquipmentImportTemplateResponses = {
+    /**
+     * OK
+     */
+    200: string;
+};
+
+export type EquipmentImportTemplateResponse = EquipmentImportTemplateResponses[keyof EquipmentImportTemplateResponses];
 
 export type Summary1Data = {
     body?: never;

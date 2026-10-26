@@ -1,4 +1,4 @@
-package com.tidsec.sarc_bakend.modules.consumption.domain.model.batch;
+package com.tidsec.sarc_bakend.shared.importing.batch;
 
 /** Ciclo de vida de un lote: interpretar, revisar, confirmar. */
 public enum ImportStatus {

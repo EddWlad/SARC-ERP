@@ -4,10 +4,10 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportBatch;
-import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportOrigin;
-import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportStatus;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowCounts;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
+import com.tidsec.sarc_bakend.shared.importing.batch.ImportOrigin;
+import com.tidsec.sarc_bakend.shared.importing.batch.ImportStatus;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
