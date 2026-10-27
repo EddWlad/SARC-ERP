@@ -16,6 +16,7 @@ import { LucideTriangleAlert } from '@lucide/angular';
 
 import { toProblem } from '../../../../core/http/problem';
 import { ConnectorType } from '../../domain/connector-type';
+import { guardUnsavedChanges } from '../../../../shared/ui/unsaved-changes';
 
 export interface ConnectorTypeFormValue {
   code: string;
@@ -71,7 +72,9 @@ export interface ConnectorTypeDialogData {
         </mat-form-field>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
-        <button matButton type="button" mat-dialog-close [disabled]="busy()">Cancelar</button>
+        <button matButton type="button" [disabled]="busy()" (click)="unsaved.cancel()">
+          Cancelar
+        </button>
         <button matButton="filled" type="submit" [disabled]="busy()">
           {{ busy() ? 'Guardando...' : editing ? 'Guardar' : 'Crear' }}
         </button>
@@ -93,6 +96,8 @@ export class ConnectorTypeDialog {
   private readonly data = inject<ConnectorTypeDialogData>(MAT_DIALOG_DATA);
   private readonly dialogRef =
     inject<MatDialogRef<ConnectorTypeDialog, ConnectorType>>(MatDialogRef);
+  /** Esc, clic fuera o Cancelar no descartan cambios sin confirmarlo. */
+  protected readonly unsaved = guardUnsavedChanges(() => this.typeForm().dirty());
 
   protected readonly editing = this.data.connectorType !== undefined;
   protected readonly model = signal<ConnectorTypeFormValue>({

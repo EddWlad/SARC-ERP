@@ -21,6 +21,24 @@ export const INVENTORY_ROUTES: Routes = [
       ),
   },
   {
+    path: 'importaciones',
+    title: 'Carga masiva | SARC',
+    canActivate: [roleGuard(...INVENTORY_EDITORS)],
+    loadComponent: () =>
+      import('./presentation/equipment-imports-page/equipment-imports-page').then(
+        (m) => m.EquipmentImportsPage,
+      ),
+  },
+  {
+    path: 'importaciones/:id',
+    title: 'Carga de equipos | SARC',
+    canActivate: [roleGuard(...INVENTORY_EDITORS)],
+    loadComponent: () =>
+      import('./presentation/equipment-import-batch-page/equipment-import-batch-page').then(
+        (m) => m.EquipmentImportBatchPage,
+      ),
+  },
+  {
     path: ':id',
     title: 'Equipo | SARC',
     loadComponent: () =>

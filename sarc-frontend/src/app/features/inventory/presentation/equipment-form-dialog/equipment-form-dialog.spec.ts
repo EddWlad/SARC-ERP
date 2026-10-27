@@ -3,6 +3,7 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Router } from '@angular/router';
+import { EMPTY } from 'rxjs';
 
 import { ConnectorTypesFacade } from '../../application/connector-types-facade';
 import { Equipment } from '../../domain/equipment';
@@ -45,7 +46,10 @@ describe('EquipmentFormDialog', () => {
       imports: [EquipmentFormDialog],
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: { ...data, save } },
-        { provide: MatDialogRef, useValue: { close } },
+        {
+          provide: MatDialogRef,
+          useValue: { close, backdropClick: () => EMPTY, keydownEvents: () => EMPTY },
+        },
         { provide: Router, useValue: { navigate } },
         {
           provide: ConnectorTypesFacade,

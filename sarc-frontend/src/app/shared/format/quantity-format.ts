@@ -22,6 +22,11 @@ export class QuantityFormat {
     return this.integer.format(value);
   }
 
+  /** Cantidad con su sustantivo en singular o plural: "1 fila", "3 filas". */
+  amount(value: number, singular: string, plural: string): string {
+    return `${this.count(value)} ${value === 1 ? singular : plural}`;
+  }
+
   /** Energia con dos decimales, sin unidad. */
   kwh(value: number): string {
     return this.energy.format(value);

@@ -3,13 +3,7 @@ import { inject, Service } from '@angular/core';
 
 import { API_BASE } from '../../../core/http/api';
 import { SessionSource } from '../domain/consumption';
-import { ImportBatch, ImportRow, RowClassification } from '../domain/energy-import';
-
-/** Decision sobre filas de la vista previa; un campo omitido no cambia esa decision. */
-export interface RowDecision {
-  readonly test?: boolean;
-  readonly approved?: boolean;
-}
+import { ImportBatch, ImportRow, RowClassification, RowDecision } from '../domain/energy-import';
 
 /** Acceso HTTP a `/api/v1/energy/imports` (solo administradores y analistas). */
 @Service()

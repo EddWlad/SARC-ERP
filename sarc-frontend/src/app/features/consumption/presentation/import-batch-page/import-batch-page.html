@@ -7,93 +7,42 @@
   <div class="state" role="alert"><p>El lote de importación no existe.</p></div>
 } @else if (facade.failed()) {
   <div class="state" role="alert">
-    <p>No se pudo cargar el lote.</p>
-    <button matButton="tonal" type="button" (click)="facade.reload()">Reintentar</button>
+    @if (facade.reconnecting()) {
+      <p>Se perdió la conexión con el servidor; reintentando automáticamente...</p>
+    } @else {
+      <p>No se pudo cargar el lote.</p>
+    }
+    <button matButton="tonal" type="button" (click)="facade.reload()">Reintentar ahora</button>
   </div>
 } @else if (facade.batch(); as batch) {
-  <header class="page-header">
-    <div>
-      <h1>{{ batch.fileName }}</h1>
-      <p class="subtitle">
-        {{ sourceLabels[batch.source] }} · {{ originLabels[batch.origin] }} · cargado
-        {{ batch.createdAt | date: 'short' }}
-      </p>
-      <sarc-import-status-badge [status]="batch.status" />
-    </div>
-    <div class="header-actions">
-      @if (canDiscard()) {
-        <button matButton="outlined" type="button" [disabled]="facade.busy()" (click)="discard()">
-          Descartar
-        </button>
-      }
-      @if (canRetry()) {
-        <button matButton="filled" type="button" [disabled]="facade.busy()" (click)="retry()">
-          Reintentar
-        </button>
-      }
-      @if (facade.reviewable()) {
-        <button matButton="filled" type="button" [disabled]="facade.busy()" (click)="confirm()">
-          Confirmar importación
-        </button>
-      }
-    </div>
-  </header>
-
-  @if (facade.inProgress()) {
-    <div class="banner info" role="status">
-      <p>
-        {{
-          batch.status === 'PARSING'
-            ? 'Interpretando el archivo y clasificando las filas...'
-            : 'Incorporando las sesiones aprobadas...'
-        }}
-      </p>
-      <mat-progress-bar mode="indeterminate" aria-label="Procesando el lote" />
-    </div>
-  }
-
-  @if (batch.status === 'FAILED') {
-    <div class="banner error" role="alert">
-      <svg lucideCircleAlert [size]="20" aria-hidden="true"></svg>
-      <p>{{ batch.failureMessage }}</p>
-    </div>
-  }
-
-  @if (batch.status === 'COMPLETED') {
-    <div class="banner success" role="status">
-      <p>
-        Importación completada: {{ quantities.count(batch.appliedRows) }} sesiones incorporadas o
-        corregidas de {{ quantities.count(batch.totalRows) }} filas.
-      </p>
-    </div>
-  }
+  <sarc-import-batch-header
+    [state]="facade"
+    [kind]="sourceLabels[batch.source]"
+    confirmMessage="Se incorporarán las sesiones nuevas y las pendientes de vincular; las modificadas y las de fuente no preferente solo si las aprobó, y las que cambian de cargador solo si las reasignó. Las inválidas, duplicadas e idénticas no se tocan."
+    applyingMessage="Incorporando las sesiones aprobadas..."
+    [completedMessage]="completedMessage()"
+  />
 
   @if (batch.status !== 'PARSING' && batch.totalRows > 0) {
-    <mat-chip-listbox
-      aria-label="Filtrar filas por clasificación"
-      [value]="facade.classification()"
-      (change)="onFilter($event.value)"
-      class="classifications"
-    >
-      <mat-chip-option value="" [selectable]="facade.classification() !== ''">
-        Todas ({{ quantities.count(batch.totalRows) }})
-      </mat-chip-option>
-      @for (classification of filters(); track classification) {
-        <mat-chip-option
-          [value]="classification"
-          [selectable]="facade.classification() !== classification"
-        >
-          {{ classificationLabels[classification] }} ({{ quantities.count(count(classification)) }})
-        </mat-chip-option>
-      }
-    </mat-chip-listbox>
-    @if (facade.classification(); as selected) {
-      <p class="hint">{{ classificationHints[selected] }}</p>
-    }
+    <sarc-import-classification-filter
+      [options]="classificationOptions()"
+      [total]="batch.totalRows"
+      [selected]="facade.classification()"
+      (selectedChange)="onFilter($event)"
+    />
 
     @if (facade.reviewable() && pendingApproval().length > 0) {
       <div class="bulk">
-        <span>{{ pendingApproval().length }} filas visibles esperan aprobación.</span>
+        <span>
+          {{
+            quantities.amount(
+              pendingApproval().length,
+              'fila visible espera',
+              'filas visibles esperan'
+            )
+          }}
+          aprobación.
+        </span>
         <button
           matButton="tonal"
           type="button"
@@ -104,7 +53,35 @@
       </div>
     }
 
+    @if (facade.reviewable() && pendingReassign().length > 0) {
+      <div class="bulk">
+        <span>
+          {{
+            quantities.amount(
+              pendingReassign().length,
+              'fila visible cambia',
+              'filas visibles cambian'
+            )
+          }}
+          de cargador.
+        </span>
+        <button
+          matButton="tonal"
+          type="button"
+          (click)="decide(pendingReassign(), { reassign: true })"
+        >
+          Reasignar las visibles
+        </button>
+      </div>
+    }
+
     <section class="results" aria-label="Filas del lote" [attr.aria-busy]="facade.rowsLoading()">
+      @if (facade.rowsFailed()) {
+        <div class="state" role="alert">
+          <p>No se pudieron cargar las filas; no se puede confirmar sin revisarlas.</p>
+          <button matButton="tonal" type="button" (click)="facade.reloadRows()">Reintentar</button>
+        </div>
+      }
       @if (facade.rowsLoading()) {
         <mat-progress-bar mode="indeterminate" aria-label="Cargando filas" />
       }
@@ -220,7 +197,9 @@
       <span
         class="badge"
         [class.badge-accent]="item.classification === 'NEW'"
-        [class.badge-info]="item.classification === 'MODIFIED'"
+        [class.badge-info]="
+          item.classification === 'MODIFIED' || item.classification === 'EQUIPMENT_CHANGED'
+        "
         [class.badge-warn]="
           item.classification === 'INVALID' || item.classification === 'PENDING_LINK'
         "
@@ -249,6 +228,14 @@
             Aprobar
           </mat-checkbox>
         }
+        @if (item.classification === 'EQUIPMENT_CHANGED') {
+          <mat-checkbox
+            [checked]="item.reassigned"
+            (change)="decide([item], { reassign: $event.checked })"
+          >
+            Reasignar
+          </mat-checkbox>
+        }
         @if (canMarkTest(item)) {
           <mat-checkbox [checked]="item.test" (change)="decide([item], { test: $event.checked })">
             Prueba
@@ -261,6 +248,9 @@
       @let item = rowOf(row);
       <span>
         {{ item.outcome ? outcomeLabels[item.outcome] : '—' }}
+        @if (item.outcomeDetail) {
+          <span class="muted block">{{ item.outcomeDetail }}</span>
+        }
         @if (item.test) {
           <span class="muted block">Marcada como prueba</span>
         }

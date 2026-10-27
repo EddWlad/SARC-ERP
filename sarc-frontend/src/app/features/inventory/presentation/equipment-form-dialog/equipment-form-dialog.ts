@@ -44,6 +44,7 @@ import {
   initialFormValue,
   toEquipmentDraft,
 } from './equipment-form';
+import { guardUnsavedChanges } from '../../../../shared/ui/unsaved-changes';
 
 export interface EquipmentFormDialogData {
   /** Equipo a editar: red y tipo no cambian. */
@@ -73,6 +74,8 @@ const MAX_TEXT = 80;
 export class EquipmentFormDialog {
   private readonly data = inject<EquipmentFormDialogData>(MAT_DIALOG_DATA);
   private readonly dialogRef = inject<MatDialogRef<EquipmentFormDialog, Equipment>>(MatDialogRef);
+  /** Esc, clic fuera o Cancelar no descartan cambios sin confirmarlo. */
+  protected readonly unsaved = guardUnsavedChanges(() => this.equipmentForm().dirty());
   private readonly router = inject(Router);
   private readonly connectorTypes = inject(ConnectorTypesFacade);
 

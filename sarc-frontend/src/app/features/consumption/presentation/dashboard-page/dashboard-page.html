@@ -80,6 +80,13 @@
         </span>
       </li>
       <li class="metric-row">
+        <span>Por aprobar (fuente no preferente)</span>
+        <span>
+          <strong>{{ quantities.count(summary.awaitingApproval.sessions) }}</strong>
+          <span class="muted"> · {{ quantities.kwh(summary.awaitingApproval.energyKwh) }} kWh</span>
+        </span>
+      </li>
+      <li class="metric-row">
         <span>Pruebas</span>
         <span>
           <strong>{{ quantities.count(summary.test.sessions) }}</strong>

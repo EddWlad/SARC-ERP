@@ -1,0 +1,29 @@
+@use '../../../../shared/ui/list-page';
+
+:host {
+  display: block;
+}
+
+.filters {
+  --sarc-filter-columns: minmax(200px, 280px);
+}
+
+.mono {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+
+// La huella completa es larga: en tarjetas se corta por cualquier caracter para no desbordar.
+.checksum {
+  overflow-wrap: anywhere;
+  font-size: var(--mat-sys-body-small-size);
+}
+
+.scope {
+  overflow-wrap: anywhere;
+}
+
+.download-cell {
+  width: 1%;
+  text-align: end;
+  white-space: nowrap;
+}

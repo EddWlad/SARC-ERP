@@ -9,6 +9,7 @@ import { SESSION_STATE_HINTS, SESSION_STATE_LABELS, SessionState } from '../../d
     <span
       class="badge"
       [class.badge-warn]="state() === 'PENDING_LINK'"
+      [class.badge-accent]="state() === 'AWAITING_APPROVAL'"
       [class.badge-off]="state() === 'TEST'"
       [title]="hints[state()]"
       >{{ labels[state()] }}</span

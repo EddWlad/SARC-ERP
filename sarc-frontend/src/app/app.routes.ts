@@ -47,6 +47,11 @@ export const routes: Routes = [
           import('./features/consumption/consumption.routes').then((m) => m.CONSUMPTION_ROUTES),
       },
       {
+        path: 'reportes',
+        loadChildren: () =>
+          import('./features/reports/reports.routes').then((m) => m.REPORTS_ROUTES),
+      },
+      {
         path: 'usuarios',
         title: 'Usuarios | SARC',
         canActivate: [roleGuard('ADMINISTRADOR')],

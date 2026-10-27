@@ -98,15 +98,34 @@ export class SessionsPage {
     }
   }
 
+  protected async approveSource(session: Session): Promise<void> {
+    try {
+      await this.facade.approveSource(session);
+      this.notifier.success('Fuente aprobada; la sesión ya suma en los indicadores.');
+    } catch (error) {
+      const problem = toProblem(error);
+      this.notifier.error(problem.detail);
+      if (problem.code === 'CONCURRENT_MODIFICATION') {
+        this.facade.reload();
+      }
+    }
+  }
+
   protected async linkPending(): Promise<void> {
     this.linking.set(true);
     try {
       const result = await this.facade.linkPending();
-      this.notifier.success(
-        result.linked === 0
-          ? `Ninguna sesión se pudo vincular; quedan ${this.quantities.count(result.stillPending)} pendientes.`
-          : `${this.quantities.count(result.linked)} sesiones vinculadas; quedan ${this.quantities.count(result.stillPending)} pendientes.`,
-      );
+      const amount = this.quantities.amount.bind(this.quantities);
+      const linked =
+        result.linked + result.awaitingApproval === 0
+          ? 'Ninguna sesión se pudo vincular'
+          : amount(result.linked, 'sesión vinculada', 'sesiones vinculadas');
+      const awaiting =
+        result.awaitingApproval === 0
+          ? ''
+          : `; ${amount(result.awaitingApproval, 'queda', 'quedan')} por aprobar (fuente no preferente)`;
+      const pending = amount(result.stillPending, 'sigue pendiente', 'siguen pendientes');
+      this.notifier.success(`${linked}${awaiting}; ${pending}.`);
     } catch (error) {
       this.notifier.error(toProblem(error).detail);
     } finally {

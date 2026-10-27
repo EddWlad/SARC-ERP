@@ -32,6 +32,7 @@ import {
   ScheduleFormValue,
   toScheduleInput,
 } from './schedule-form';
+import { guardUnsavedChanges } from '../../../../shared/ui/unsaved-changes';
 
 export interface ScheduleDialogData {
   readonly schedule: Schedule;
@@ -61,6 +62,8 @@ const SAME_TIME = { kind: 'sameTime', message: 'La apertura y el cierre no puede
 export class ScheduleDialog {
   private readonly data = inject<ScheduleDialogData>(MAT_DIALOG_DATA);
   private readonly dialogRef = inject<MatDialogRef<ScheduleDialog, Equipment>>(MatDialogRef);
+  /** Esc, clic fuera o Cancelar no descartan cambios sin confirmarlo. */
+  protected readonly unsaved = guardUnsavedChanges(() => this.scheduleForm().dirty());
 
   protected readonly modes = SCHEDULE_MODES;
   protected readonly modeLabels = SCHEDULE_MODE_LABELS;

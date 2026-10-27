@@ -1,0 +1,50 @@
+@use '../../ui/list-page';
+
+:host {
+  display: block;
+}
+
+.page-header {
+  align-items: flex-start;
+
+  h1 {
+    overflow-wrap: anywhere;
+  }
+
+  .subtitle {
+    margin: var(--sarc-space-1) 0 var(--sarc-space-2);
+  }
+}
+
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sarc-space-2) var(--sarc-space-3);
+  margin-bottom: var(--sarc-space-4);
+  padding: var(--sarc-space-3) var(--sarc-space-4);
+  border-radius: var(--sarc-radius-md);
+
+  p {
+    margin: 0;
+  }
+
+  mat-progress-bar {
+    flex-basis: 100%;
+  }
+}
+
+.info {
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}
+
+.success {
+  background: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+}
+
+.error {
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}

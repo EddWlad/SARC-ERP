@@ -2,6 +2,7 @@ import { httpResource } from '@angular/common/http';
 import { computed, inject, Service, signal } from '@angular/core';
 
 import { FileSaver } from '../../../core/files/file-saver';
+import { refreshWhileVisible } from '../../../core/http/auto-refresh';
 import { LocalDay } from '../../../core/time/local-day';
 import { toProblem } from '../../../core/http/problem';
 import { ReportFormat } from '../../../shared/reports/report-format';
@@ -44,6 +45,11 @@ export class ConsumptionDashboardFacade {
 
   clearFilters(): void {
     this.filters.set(NO_CONSUMPTION_FILTERS);
+  }
+
+  constructor() {
+    // Los datos los cambian tambien otros usuarios: se actualizan solos mientras se miran.
+    refreshWhileVisible(() => this.reload());
   }
 
   reload(): void {

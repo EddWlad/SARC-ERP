@@ -4,6 +4,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
 
 import { PendingLinkResponse } from '../../../core/api/generated';
+import { refreshWhileVisible } from '../../../core/http/auto-refresh';
 import { LocalDay } from '../../../core/time/local-day';
 import { ConsumptionApi } from '../data-access/consumption-api';
 import {
@@ -55,6 +56,11 @@ export class SessionsFacade {
   /** Filtros propios del historico (estado y busqueda), ademas de los compartidos. */
   readonly hasOwnFilters = computed(() => this.state() !== '' || this.text() !== '');
 
+  constructor() {
+    // Los datos los cambian tambien otros usuarios: se actualizan solos mientras se miran.
+    refreshWhileVisible(() => this.reload());
+  }
+
   updateFilters(changes: Partial<ConsumptionFilters>): void {
     this.filters.update((current) => ({ ...current, ...changes }));
     this.pageIndex.set(0);
@@ -87,6 +93,12 @@ export class SessionsFacade {
 
   async markTest(session: Session, test: boolean): Promise<Session> {
     const updated = await firstValueFrom(this.api.markTest(session, test));
+    this.reload();
+    return updated;
+  }
+
+  async approveSource(session: Session): Promise<Session> {
+    const updated = await firstValueFrom(this.api.approveSource(session));
     this.reload();
     return updated;
   }

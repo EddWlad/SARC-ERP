@@ -59,7 +59,7 @@
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    <button matButton type="button" mat-dialog-close [disabled]="busy()">Cancelar</button>
+    <button matButton type="button" [disabled]="busy()" (click)="unsaved.cancel()">Cancelar</button>
     <button matButton="filled" type="submit" [disabled]="busy()">
       {{ busy() ? 'Guardando...' : editing ? 'Guardar cambios' : 'Crear usuario' }}
     </button>

@@ -11,12 +11,16 @@ import { firstValueFrom } from 'rxjs';
 
 import { SpanishPaginatorIntl } from '../../../../core/i18n/spanish-paginator-intl';
 import { QuantityFormat } from '../../../../shared/format/quantity-format';
+import { ImportBatchLike, ORIGIN_LABELS } from '../../../../shared/imports/import-batch';
+import {
+  ImportDialog,
+  ImportDialogData,
+} from '../../../../shared/imports/import-dialog/import-dialog';
+import { ImportStatusBadge } from '../../../../shared/imports/import-status-badge';
 import { injectIsHandset } from '../../../../shared/ui/handset';
 import { EnergyImportsFacade } from '../../application/energy-imports-facade';
-import { SOURCE_LABELS } from '../../domain/consumption';
-import { ImportBatch, ORIGIN_LABELS } from '../../domain/energy-import';
-import { ImportDialog, ImportDialogData } from '../import-dialog/import-dialog';
-import { ImportStatusBadge } from '../import-status-badge/import-status-badge';
+import { SessionSource, SOURCE_LABELS, SOURCES } from '../../domain/consumption';
+import { ImportBatch, SOURCE_COLUMNS } from '../../domain/energy-import';
 
 /** Historial de importaciones de sesiones y punto de entrada para cargar un lote nuevo. */
 @Component({
@@ -58,12 +62,23 @@ export class ImportsPage {
 
   protected async create(): Promise<void> {
     const data: ImportDialogData = {
-      upload: (source, file) => this.facade.upload(source, file),
-      paste: (source, text) => this.facade.paste(source, text),
+      fileHint: 'Reporte original en XLSX, XLS o CSV',
+      pasteHint: 'Incluya la fila de encabezados; las columnas extra se ignoran.',
+      choice: {
+        label: 'Plataforma de origen',
+        requiredMessage: 'Seleccione la plataforma de origen',
+        options: SOURCES.map((source) => ({
+          value: source,
+          label: SOURCE_LABELS[source],
+          hint: `Columnas esperadas: ${SOURCE_COLUMNS[source]}`,
+        })),
+      },
+      upload: (file, source) => this.facade.upload(source as SessionSource, file),
+      paste: (text, source) => this.facade.paste(source as SessionSource, text),
     };
     const batch = await firstValueFrom(
       this.dialog
-        .open<ImportDialog, ImportDialogData, ImportBatch>(ImportDialog, {
+        .open<ImportDialog, ImportDialogData, ImportBatchLike>(ImportDialog, {
           data,
           width: '560px',
           maxWidth: '95vw',

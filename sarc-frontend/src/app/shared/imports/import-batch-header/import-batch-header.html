@@ -1,0 +1,60 @@
+@if (state().batch(); as batch) {
+  <header class="page-header">
+    <div>
+      <h1>{{ batch.fileName }}</h1>
+      <p class="subtitle">
+        {{ kind() }} · {{ originLabels[batch.origin] }} · cargado
+        {{ batch.createdAt | date: 'short' }}
+      </p>
+      <sarc-import-status-badge [status]="batch.status" />
+    </div>
+    <div class="header-actions">
+      @if (canDiscard()) {
+        <button matButton="outlined" type="button" [disabled]="state().busy()" (click)="discard()">
+          Descartar
+        </button>
+      }
+      @if (canRetry()) {
+        <button matButton="filled" type="button" [disabled]="state().busy()" (click)="retry()">
+          Reintentar
+        </button>
+      }
+      @if (state().reviewable()) {
+        <button
+          matButton="filled"
+          type="button"
+          [disabled]="state().busy() || !state().canConfirm()"
+          (click)="confirm()"
+        >
+          Confirmar importación
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (state().inProgress()) {
+    <div class="banner info" role="status">
+      <p>
+        {{
+          batch.status === 'PARSING'
+            ? 'Interpretando el archivo y clasificando las filas...'
+            : applyingMessage()
+        }}
+      </p>
+      <mat-progress-bar mode="indeterminate" aria-label="Procesando el lote" />
+    </div>
+  }
+
+  @if (batch.status === 'FAILED') {
+    <div class="banner error" role="alert">
+      <svg lucideCircleAlert [size]="20" aria-hidden="true"></svg>
+      <p>{{ batch.failureMessage }}</p>
+    </div>
+  }
+
+  @if (batch.status === 'COMPLETED') {
+    <div class="banner success" role="status">
+      <p>{{ completedMessage() }}</p>
+    </div>
+  }
+}

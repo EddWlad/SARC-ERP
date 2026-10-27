@@ -1,0 +1,226 @@
+<a matButton routerLink="/inventario/importaciones" class="back">
+  <svg lucideArrowLeft [size]="18"></svg>
+  Carga masiva
+</a>
+
+@if (facade.notFound()) {
+  <div class="state" role="alert"><p>El lote de importación no existe.</p></div>
+} @else if (facade.failed()) {
+  <div class="state" role="alert">
+    @if (facade.reconnecting()) {
+      <p>Se perdió la conexión con el servidor; reintentando automáticamente...</p>
+    } @else {
+      <p>No se pudo cargar el lote.</p>
+    }
+    <button matButton="tonal" type="button" (click)="facade.reload()">Reintentar ahora</button>
+  </div>
+} @else if (facade.batch(); as batch) {
+  <sarc-import-batch-header
+    [state]="facade"
+    kind="Equipos"
+    [confirmMessage]="confirmMessage"
+    applyingMessage="Registrando y actualizando los equipos aprobados..."
+    [completedMessage]="completedMessage()"
+  />
+
+  @if (batch.status !== 'PARSING' && batch.totalRows > 0) {
+    <sarc-import-classification-filter
+      [options]="classificationOptions()"
+      [total]="batch.totalRows"
+      [selected]="facade.classification()"
+      (selectedChange)="onFilter($event)"
+    />
+
+    @if (facade.reviewable() && pendingApproval().length > 0) {
+      <div class="bulk">
+        <span>
+          {{
+            quantities.amount(
+              pendingApproval().length,
+              'equipo visible espera',
+              'equipos visibles esperan'
+            )
+          }}
+          aprobación.
+        </span>
+        <button matButton="tonal" type="button" (click)="approve(pendingApproval(), true)">
+          Aprobar los visibles
+        </button>
+      </div>
+    }
+
+    <section class="results" aria-label="Filas del lote" [attr.aria-busy]="facade.rowsLoading()">
+      @if (facade.rowsFailed()) {
+        <div class="state" role="alert">
+          <p>No se pudieron cargar las filas; no se puede confirmar sin revisarlas.</p>
+          <button matButton="tonal" type="button" (click)="facade.reloadRows()">Reintentar</button>
+        </div>
+      }
+      @if (facade.rowsLoading()) {
+        <mat-progress-bar mode="indeterminate" aria-label="Cargando filas" />
+      }
+
+      @if (isHandset()) {
+        <ul class="cards">
+          @for (item of facade.rows(); track item.id) {
+            <li class="card">
+              <div class="card-head">
+                <span>
+                  <strong>{{ item.name ?? '—' }}</strong>
+                  <span class="muted"
+                    >Fila {{ item.rowNumber }} · {{ classificationOf(item) }}</span
+                  >
+                </span>
+                <ng-container *ngTemplateOutlet="classification; context: { $implicit: item }" />
+              </div>
+              <span class="mono">{{ item.serial ?? '—' }}</span>
+              <ng-container *ngTemplateOutlet="connectors; context: { $implicit: item }" />
+              <ng-container *ngTemplateOutlet="identities; context: { $implicit: item }" />
+              <ng-container *ngTemplateOutlet="issues; context: { $implicit: item }" />
+              <div class="card-foot">
+                <ng-container *ngTemplateOutlet="existing; context: { $implicit: item }" />
+                <ng-container
+                  *ngTemplateOutlet="
+                    facade.reviewable() ? decision : outcome;
+                    context: { $implicit: item }
+                  "
+                />
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="table-scroll">
+          <table mat-table [dataSource]="facade.rows()" class="table">
+            <ng-container matColumnDef="row">
+              <th mat-header-cell *matHeaderCellDef>Fila</th>
+              <td mat-cell *matCellDef="let row">{{ rowOf(row).rowNumber }}</td>
+            </ng-container>
+            <ng-container matColumnDef="equipment">
+              <th mat-header-cell *matHeaderCellDef>Equipo</th>
+              <td mat-cell *matCellDef="let row">
+                @let item = rowOf(row);
+                <strong>{{ item.name ?? '—' }}</strong>
+                <span class="mono block">{{ item.serial ?? '—' }}</span>
+                <span class="muted block">{{ classificationOf(item) }}</span>
+                <ng-container *ngTemplateOutlet="existing; context: { $implicit: row }" />
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="connectors">
+              <th mat-header-cell *matHeaderCellDef>Conectores</th>
+              <td mat-cell *matCellDef="let row">
+                <ng-container *ngTemplateOutlet="connectors; context: { $implicit: row }" />
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="identities">
+              <th mat-header-cell *matHeaderCellDef>Identidades</th>
+              <td mat-cell *matCellDef="let row">
+                <ng-container *ngTemplateOutlet="identities; context: { $implicit: row }" />
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="classification">
+              <th mat-header-cell *matHeaderCellDef>Clasificación</th>
+              <td mat-cell *matCellDef="let row">
+                <ng-container *ngTemplateOutlet="classification; context: { $implicit: row }" />
+                <ng-container *ngTemplateOutlet="issues; context: { $implicit: row }" />
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="decision">
+              <th mat-header-cell *matHeaderCellDef>Decisión</th>
+              <td mat-cell *matCellDef="let row">
+                <ng-container *ngTemplateOutlet="decision; context: { $implicit: row }" />
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="outcome">
+              <th mat-header-cell *matHeaderCellDef>Resultado</th>
+              <td mat-cell *matCellDef="let row">
+                <ng-container *ngTemplateOutlet="outcome; context: { $implicit: row }" />
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="columns()"></tr>
+            <tr mat-row *matRowDef="let row; columns: columns()"></tr>
+          </table>
+        </div>
+      }
+
+      <mat-paginator
+        [length]="facade.rowsTotal()"
+        [pageIndex]="facade.pageIndex()"
+        [pageSize]="facade.pageSize()"
+        [pageSizeOptions]="pageSizeOptions"
+        (page)="onPage($event)"
+        aria-label="Paginación de filas"
+      />
+    </section>
+
+    <!-- Piezas de una fila, compartidas por la tabla y las tarjetas. -->
+    <ng-template #connectors let-row>
+      @let item = rowOf(row);
+      <span>{{ item.connectors.length > 0 ? item.connectors.join(', ') : 'Sin cambios' }}</span>
+    </ng-template>
+
+    <ng-template #identities let-row>
+      @for (identity of identitiesOf(rowOf(row)); track identity) {
+        <span class="block">{{ identity }}</span>
+      } @empty {
+        <span class="muted">—</span>
+      }
+    </ng-template>
+
+    <ng-template #existing let-row>
+      @let item = rowOf(row);
+      @if (item.equipmentId) {
+        <a class="block" [routerLink]="['/inventario', item.equipmentId]">Ver equipo actual</a>
+      }
+    </ng-template>
+
+    <ng-template #classification let-row>
+      @let item = rowOf(row);
+      <span
+        class="badge"
+        [class.badge-accent]="item.classification === 'NEW'"
+        [class.badge-info]="item.classification === 'MODIFIED'"
+        [class.badge-warn]="
+          item.classification === 'INVALID' ||
+          item.classification === 'CONFLICT' ||
+          item.classification === 'DELETED_EXISTS'
+        "
+        [class.badge-off]="
+          item.classification === 'IDENTICAL' || item.classification === 'DUPLICATE'
+        "
+        [title]="classificationHints[item.classification]"
+        >{{ classificationLabels[item.classification] }}</span
+      >
+    </ng-template>
+
+    <ng-template #issues let-row>
+      @for (issue of rowOf(row).issues; track issue.code) {
+        <span class="issue">{{ issue.message }}</span>
+      }
+    </ng-template>
+
+    <ng-template #decision let-row>
+      @let item = rowOf(row);
+      @if (item.requiresApproval) {
+        <mat-checkbox [checked]="item.approved" (change)="approve([item], $event.checked)">
+          Aprobar
+        </mat-checkbox>
+      } @else {
+        <span class="muted">—</span>
+      }
+    </ng-template>
+
+    <ng-template #outcome let-row>
+      @let item = rowOf(row);
+      <span>
+        {{ item.outcome ? outcomeLabels[item.outcome] : '—' }}
+        @if (item.outcomeDetail) {
+          <span class="muted block">{{ item.outcomeDetail }}</span>
+        }
+      </span>
+    </ng-template>
+  }
+} @else {
+  <mat-progress-bar mode="indeterminate" aria-label="Cargando lote" />
+}

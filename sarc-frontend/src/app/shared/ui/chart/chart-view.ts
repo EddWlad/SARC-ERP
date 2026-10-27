@@ -161,7 +161,7 @@ export class ChartView {
         responsive: true,
         maintainAspectRatio: false,
         indexAxis: this.horizontal() ? 'y' : 'x',
-        animation: { duration: 250 },
+        animation: this.theme.reducedMotion() ? false : { duration: 250 },
         interaction: doughnut
           ? { mode: 'nearest', intersect: true }
           : { mode: 'index', intersect: false },

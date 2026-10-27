@@ -61,6 +61,13 @@ export class ConsumptionApi {
     });
   }
 
+  /** Una fuente no preferente para su equipo suma solo cuando un analista la aprueba. */
+  approveSource(session: Session) {
+    return this.http.post<Session>(`${this.baseUrl}/sessions/${session.id}/source-approval`, {
+      version: session.version,
+    });
+  }
+
   linkPending() {
     return this.http.post<PendingLinkResponse>(`${this.baseUrl}/sessions/link-pending`, null);
   }

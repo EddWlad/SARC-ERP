@@ -1,24 +1,6 @@
 @use '../../../../shared/ui/list-page';
+@use '../../../../shared/imports/import-history';
 
 :host {
   display: block;
-}
-
-.number {
-  text-align: end;
-}
-
-.link {
-  color: inherit;
-  text-decoration: none;
-
-  strong {
-    color: var(--mat-sys-primary);
-    overflow-wrap: anywhere;
-  }
-
-  &:hover strong,
-  &:focus-visible strong {
-    text-decoration: underline;
-  }
 }

@@ -23,6 +23,10 @@
       {{ facade.downloading() === 'XLSX' ? 'Generando...' : 'Excel' }}
     </button>
     @if (canEdit) {
+      <a matButton="tonal" routerLink="/inventario/importaciones">
+        <svg lucideFileUp [size]="18"></svg>
+        Carga masiva
+      </a>
       <a matButton="tonal" routerLink="/inventario/tipos-de-conector">
         <svg lucideCable [size]="18"></svg>
         Tipos de conector

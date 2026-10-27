@@ -26,6 +26,7 @@ export const SOURCE_LABELS: Readonly<Record<SessionSource, string>> = {
 export const SESSION_STATE_LABELS: Readonly<Record<SessionState, string>> = {
   VALIDATED: 'Validada',
   PENDING_LINK: 'Pendiente de vincular',
+  AWAITING_APPROVAL: 'Por aprobar',
   TEST: 'Prueba',
 };
 
@@ -33,6 +34,8 @@ export const SESSION_STATE_LABELS: Readonly<Record<SessionState, string>> = {
 export const SESSION_STATE_HINTS: Readonly<Record<SessionState, string>> = {
   VALIDATED: 'Suma en los indicadores oficiales',
   PENDING_LINK: 'Equipo sin identificar; no suma hasta vincularse',
+  AWAITING_APPROVAL:
+    'Fuente no preferente para su equipo; no suma hasta que un analista la apruebe',
   TEST: 'Transacción de prueba; se conserva pero no suma',
 };
 

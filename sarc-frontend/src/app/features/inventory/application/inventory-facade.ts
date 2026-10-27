@@ -3,6 +3,7 @@ import { computed, inject, Service, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
 
+import { refreshWhileVisible } from '../../../core/http/auto-refresh';
 import { FileSaver } from '../../../core/files/file-saver';
 import { EquipmentApi } from '../data-access/equipment-api';
 import { InventoryApi } from '../data-access/inventory-api';
@@ -70,6 +71,11 @@ export class InventoryFacade {
   readonly hasFilters = computed(() =>
     Object.values(this.filters()).some((value) => value.trim() !== ''),
   );
+
+  constructor() {
+    // Los datos los cambian tambien otros usuarios: se actualizan solos mientras se miran.
+    refreshWhileVisible(() => this.reload());
+  }
 
   updateFilters(changes: Partial<EquipmentFilters>): void {
     this.filters.update((current) => ({ ...current, ...changes }));

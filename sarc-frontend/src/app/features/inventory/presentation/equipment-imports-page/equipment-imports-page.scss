@@ -1,0 +1,7 @@
+@use '../../../../shared/ui/list-page';
+@use '../../../../shared/imports/import-history';
+@use '../../../../shared/imports/import-rows';
+
+:host {
+  display: block;
+}

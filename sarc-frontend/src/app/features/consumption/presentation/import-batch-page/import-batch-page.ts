@@ -2,23 +2,21 @@ import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatDialog } from '@angular/material/dialog';
 import { MatPaginatorIntl, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
 import { RouterLink } from '@angular/router';
-import { LucideArrowLeft, LucideCircleAlert } from '@lucide/angular';
-import { firstValueFrom } from 'rxjs';
+import { LucideArrowLeft } from '@lucide/angular';
 
 import { toProblem } from '../../../../core/http/problem';
 import { SpanishPaginatorIntl } from '../../../../core/i18n/spanish-paginator-intl';
 import { Notifier } from '../../../../core/notifications/notifier';
 import { QuantityFormat } from '../../../../shared/format/quantity-format';
+import { ImportBatchHeader } from '../../../../shared/imports/import-batch-header/import-batch-header';
 import {
-  ConfirmDialog,
-  ConfirmDialogData,
-} from '../../../../shared/ui/confirm-dialog/confirm-dialog';
+  ClassificationOption,
+  ImportClassificationFilter,
+} from '../../../../shared/imports/import-classification-filter';
 import { injectIsHandset } from '../../../../shared/ui/handset';
 import { NETWORK_LABELS } from '../../../../shared/vocabulary/charging-infrastructure';
 import { ImportBatchFacade } from '../../application/import-batch-facade';
@@ -29,13 +27,17 @@ import {
   classificationCount,
   CLASSIFICATIONS,
   ImportRow,
-  ORIGIN_LABELS,
   OUTCOME_LABELS,
   RowClassification,
+  RowDecision,
 } from '../../domain/energy-import';
-import { ImportStatusBadge } from '../import-status-badge/import-status-badge';
 
-const TESTABLE: ReadonlySet<RowClassification> = new Set(['NEW', 'MODIFIED', 'PENDING_LINK']);
+const TESTABLE: ReadonlySet<RowClassification> = new Set([
+  'NEW',
+  'MODIFIED',
+  'EQUIPMENT_CHANGED',
+  'PENDING_LINK',
+]);
 
 /**
  * Vista previa de un lote (PRD 3.1): conteos por clasificacion, filas con sus observaciones,
@@ -50,39 +52,47 @@ const TESTABLE: ReadonlySet<RowClassification> = new Set(['NEW', 'MODIFIED', 'PE
     RouterLink,
     MatButtonModule,
     MatCheckboxModule,
-    MatChipsModule,
     MatPaginatorModule,
     MatProgressBarModule,
     MatTableModule,
     LucideArrowLeft,
-    LucideCircleAlert,
-    ImportStatusBadge,
+    ImportBatchHeader,
+    ImportClassificationFilter,
   ],
   providers: [ImportBatchFacade, { provide: MatPaginatorIntl, useClass: SpanishPaginatorIntl }],
   templateUrl: './import-batch-page.html',
   styleUrl: './import-batch-page.scss',
 })
 export class ImportBatchPage {
-  private readonly dialog = inject(MatDialog);
   private readonly notifier = inject(Notifier);
 
   protected readonly facade = inject(ImportBatchFacade);
   protected readonly quantities = inject(QuantityFormat);
   protected readonly isHandset = injectIsHandset();
   protected readonly sourceLabels = SOURCE_LABELS;
-  protected readonly originLabels = ORIGIN_LABELS;
   protected readonly networkLabels = NETWORK_LABELS;
   protected readonly classificationLabels = CLASSIFICATION_LABELS;
   protected readonly classificationHints = CLASSIFICATION_HINTS;
   protected readonly outcomeLabels = OUTCOME_LABELS;
   protected readonly pageSizeOptions = [25, 50, 100];
 
-  /** Solo las clasificaciones que tienen filas en este lote. */
-  protected readonly filters = computed(() => {
+  protected readonly classificationOptions = computed<ClassificationOption[]>(() => {
     const batch = this.facade.batch();
     return batch === undefined
       ? []
-      : CLASSIFICATIONS.filter((classification) => classificationCount(batch, classification) > 0);
+      : CLASSIFICATIONS.map((classification) => ({
+          value: classification,
+          label: CLASSIFICATION_LABELS[classification],
+          count: classificationCount(batch, classification),
+          hint: CLASSIFICATION_HINTS[classification],
+        }));
+  });
+  protected readonly completedMessage = computed(() => {
+    const batch = this.facade.batch();
+    return batch === undefined
+      ? ''
+      : `Importación completada: ${this.quantities.amount(batch.appliedRows, 'sesión aplicada', 'sesiones aplicadas')} ` +
+          `(nuevas, corregidas o reasignadas) de ${this.quantities.amount(batch.totalRows, 'fila', 'filas')}.`;
   });
   protected readonly columns = computed(() => [
     'row',
@@ -96,23 +106,12 @@ export class ImportBatchPage {
   protected readonly pendingApproval = computed(() =>
     this.facade.rows().filter((row) => row.requiresApproval && !row.approved),
   );
-  protected readonly canDiscard = computed(() => {
-    const batch = this.facade.batch();
-    return (
-      batch !== undefined &&
-      (batch.status === 'READY' || (batch.status === 'FAILED' && !batch.confirmedAt))
-    );
-  });
-  protected readonly canRetry = computed(() => {
-    const batch = this.facade.batch();
-    return batch !== undefined && batch.status === 'FAILED' && !!batch.confirmedAt;
-  });
-
-  protected count(classification: RowClassification): number {
-    const batch = this.facade.batch();
-    return batch === undefined ? 0 : classificationCount(batch, classification);
-  }
-
+  /** Filas visibles que cambian de cargador y aun no se reasignan. */
+  protected readonly pendingReassign = computed(() =>
+    this.facade
+      .rows()
+      .filter((row) => row.classification === 'EQUIPMENT_CHANGED' && !row.reassigned),
+  );
   /** Solo las filas que se incorporarian pueden marcarse como prueba. */
   protected canMarkTest(row: ImportRow): boolean {
     return TESTABLE.has(row.classification);
@@ -129,71 +128,19 @@ export class ImportBatchPage {
     return row;
   }
 
-  protected onFilter(classification: RowClassification | '' | undefined): void {
-    this.facade.filterBy(classification ?? '');
+  protected onFilter(classification: string): void {
+    this.facade.filterBy(classification as RowClassification | '');
   }
 
   protected onPage(event: PageEvent): void {
     this.facade.changePage(event.pageIndex, event.pageSize);
   }
 
-  protected async decide(
-    rows: readonly ImportRow[],
-    decision: { test?: boolean; approved?: boolean },
-  ) {
+  protected async decide(rows: readonly ImportRow[], decision: RowDecision) {
     try {
       await this.facade.decide(rows, decision);
     } catch (error) {
       this.notifier.error(toProblem(error).detail);
-    }
-  }
-
-  protected async confirm(): Promise<void> {
-    const batch = this.facade.batch();
-    if (batch === undefined) {
-      return;
-    }
-    const confirmed = await this.ask({
-      title: 'Confirmar importación',
-      message:
-        'Se incorporarán las sesiones nuevas y las pendientes de vincular; las modificadas y las de ' +
-        'fuente no preferente solo si las aprobó. Las inválidas, duplicadas e idénticas no se tocan.',
-      confirmLabel: 'Confirmar',
-    });
-    if (confirmed) {
-      await this.run(() => this.facade.confirm(), 'Incorporando las sesiones...');
-    }
-  }
-
-  protected async retry(): Promise<void> {
-    await this.run(() => this.facade.retry(), 'Reanudando la importación...');
-  }
-
-  protected async discard(): Promise<void> {
-    const confirmed = await this.ask({
-      title: 'Descartar importación',
-      message: 'El lote se cierra sin incorporar ninguna sesión. El archivo original se conserva.',
-      confirmLabel: 'Descartar',
-    });
-    if (confirmed) {
-      await this.run(() => this.facade.discard(), 'Importación descartada.');
-    }
-  }
-
-  private async ask(data: ConfirmDialogData): Promise<boolean> {
-    return (await firstValueFrom(this.dialog.open(ConfirmDialog, { data }).afterClosed())) === true;
-  }
-
-  private async run(operation: () => Promise<unknown>, success: string): Promise<void> {
-    try {
-      await operation();
-      this.notifier.success(success);
-    } catch (error) {
-      const problem = toProblem(error);
-      this.notifier.error(problem.detail);
-      if (problem.code === 'CONCURRENT_MODIFICATION') {
-        this.facade.reload();
-      }
     }
   }
 }

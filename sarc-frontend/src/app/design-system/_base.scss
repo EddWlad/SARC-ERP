@@ -35,6 +35,32 @@
     border: 0;
   }
 
+  // Icono y texto de un boton centrados en la misma linea: un SVG en linea se alinea a la linea
+  // base del texto y queda desplazado. Si el texto no cabe, se parte centrado.
+  .mdc-button__label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sarc-space-2);
+    text-align: center;
+
+    > svg {
+      flex-shrink: 0;
+    }
+  }
+
+  // Un <form> que envuelve contenido y acciones de un dialogo no debe romper su columna flex: asi
+  // solo se desplaza el contenido y las acciones quedan siempre a la vista, aun en pantallas bajas.
+  .mat-mdc-dialog-component-host > form {
+    display: contents;
+  }
+
+  // Si el dialogo tiene area de contenido, solo ella se desplaza: Chrome suma su alto natural al de
+  // la superficie y mostraba una segunda barra de desplazamiento en pantallas bajas.
+  .mat-mdc-dialog-surface:has(.mat-mdc-dialog-content) {
+    overflow: hidden;
+  }
+
   // Animaciones de entrada (animate.enter) reutilizables.
   .sarc-fade-in {
     animation: sarc-fade-in var(--sarc-motion-base) var(--sarc-easing);

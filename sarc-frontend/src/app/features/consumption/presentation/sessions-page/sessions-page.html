@@ -73,9 +73,16 @@
           <div class="card-foot">
             <sarc-session-state-badge [state]="session.state" />
             @if (canEdit) {
-              <button matButton type="button" (click)="toggleTest(session)">
-                {{ session.state === 'TEST' ? 'Reincorporar' : 'Marcar prueba' }}
-              </button>
+              <span class="card-actions">
+                @if (session.state === 'AWAITING_APPROVAL') {
+                  <button matButton type="button" (click)="approveSource(session)">
+                    Aprobar fuente
+                  </button>
+                }
+                <button matButton type="button" (click)="toggleTest(session)">
+                  {{ session.state === 'TEST' ? 'Reincorporar' : 'Marcar prueba' }}
+                </button>
+              </span>
             }
           </div>
         </li>
@@ -144,6 +151,11 @@
               <svg lucideEllipsisVertical [size]="20"></svg>
             </button>
             <mat-menu #menu="matMenu" xPosition="before">
+              @if (session.state === 'AWAITING_APPROVAL') {
+                <button mat-menu-item type="button" (click)="approveSource(session)">
+                  Aprobar fuente no preferente
+                </button>
+              }
               <button mat-menu-item type="button" (click)="toggleTest(session)">
                 {{
                   session.state === 'TEST' ? 'Reincorporar a los indicadores' : 'Marcar como prueba'

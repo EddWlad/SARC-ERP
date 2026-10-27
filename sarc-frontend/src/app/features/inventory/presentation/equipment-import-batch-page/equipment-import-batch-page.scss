@@ -1,0 +1,13 @@
+@use '../../../../shared/ui/list-page';
+@use '../../../../shared/ui/badges';
+@use '../../../../shared/imports/import-rows';
+
+:host {
+  display: block;
+}
+
+a.block {
+  margin-top: var(--sarc-space-1);
+  color: var(--mat-sys-primary);
+  font: var(--mat-sys-body-small);
+}

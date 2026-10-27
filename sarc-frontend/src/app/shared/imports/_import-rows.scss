@@ -1,0 +1,65 @@
+// Filas de la vista previa de una importacion (tabla en escritorio, tarjetas en telefono). Cada
+// pagina de lote lo incluye con `@use` junto a list-page y badges.
+
+.back {
+  margin: 0 0 var(--sarc-space-3) calc(-1 * var(--sarc-space-3));
+}
+
+.bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sarc-space-2);
+  margin-bottom: var(--sarc-space-3);
+}
+
+// La tabla de filas tiene muchas columnas: en pantallas angostas se desplaza horizontalmente.
+.table-scroll {
+  overflow-x: auto;
+}
+
+.table {
+  min-width: 860px;
+}
+
+.number {
+  text-align: end;
+  white-space: nowrap;
+}
+
+.mono {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
+.issue {
+  display: block;
+  margin-top: var(--sarc-space-1);
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
+.decision {
+  display: inline-flex;
+  flex-wrap: wrap;
+  white-space: nowrap;
+}
+
+.card-head > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sarc-space-2);
+
+  strong {
+    color: var(--mat-sys-primary);
+  }
+}

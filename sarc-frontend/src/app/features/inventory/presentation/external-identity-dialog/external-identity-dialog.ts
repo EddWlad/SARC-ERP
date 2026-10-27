@@ -15,6 +15,7 @@ import {
   PLATFORM_LABELS,
   PLATFORMS,
 } from '../../domain/external-identity';
+import { guardUnsavedChanges } from '../../../../shared/ui/unsaved-changes';
 
 export interface ExternalIdentityDialogData {
   readonly save: (input: ExternalIdentityInput) => Promise<ExternalIdentity>;
@@ -92,7 +93,9 @@ interface ExternalIdentityFormValue {
       </mat-dialog-content>
 
       <mat-dialog-actions align="end">
-        <button matButton type="button" mat-dialog-close [disabled]="busy()">Cancelar</button>
+        <button matButton type="button" [disabled]="busy()" (click)="unsaved.cancel()">
+          Cancelar
+        </button>
         <button matButton="filled" type="submit" [disabled]="busy()">
           {{ busy() ? 'Guardando...' : 'Agregar' }}
         </button>
@@ -114,6 +117,8 @@ export class ExternalIdentityDialog {
   private readonly data = inject<ExternalIdentityDialogData>(MAT_DIALOG_DATA);
   private readonly dialogRef =
     inject<MatDialogRef<ExternalIdentityDialog, ExternalIdentity>>(MatDialogRef);
+  /** Esc, clic fuera o Cancelar no descartan cambios sin confirmarlo. */
+  protected readonly unsaved = guardUnsavedChanges(() => this.identityForm().dirty());
 
   protected readonly platforms = PLATFORMS;
   protected readonly platformLabels = PLATFORM_LABELS;

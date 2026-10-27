@@ -1,0 +1,131 @@
+<header class="page-header">
+  <div>
+    <h1>Reportes emitidos</h1>
+    <p>
+      Cada PDF o Excel generado queda registrado con su alcance y su huella SHA-256, y se puede
+      volver a descargar tal como se entregó.
+    </p>
+  </div>
+</header>
+
+<div class="filters">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Tipo de reporte</mat-label>
+    <mat-select [value]="facade.kind()" (selectionChange)="onKind($event.value)">
+      <mat-option value="">Todos</mat-option>
+      @for (kind of kinds; track kind) {
+        <mat-option [value]="kind">{{ kindLabels[kind] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</div>
+
+<section class="results" aria-label="Reportes emitidos" [attr.aria-busy]="facade.loading()">
+  @if (facade.loading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando reportes" />
+  }
+
+  @if (facade.failed()) {
+    <div class="state" role="alert">
+      <p>No se pudieron cargar los reportes emitidos.</p>
+      <button matButton="tonal" type="button" (click)="facade.reload()">Reintentar</button>
+    </div>
+  } @else if (!facade.loading() && facade.reports().length === 0) {
+    <div class="state">
+      <p>Aún no se ha emitido ningún reporte con estos filtros.</p>
+    </div>
+  } @else if (isHandset()) {
+    <ul class="cards">
+      @for (report of facade.reports(); track report.id) {
+        <li class="card">
+          <div class="card-head">
+            <span>
+              <strong>{{ kindLabel(report.kind) }} · {{ report.format }}</strong>
+              <span class="muted block">{{ report.issuedAt | date: 'short' }}</span>
+            </span>
+            <ng-container
+              [ngTemplateOutlet]="action"
+              [ngTemplateOutletContext]="{ $implicit: report }"
+            />
+          </div>
+          <span class="scope">{{ report.scope }}</span>
+          <span class="muted mono checksum" [title]="report.checksum">
+            SHA-256 {{ report.checksum }}
+          </span>
+        </li>
+      }
+    </ul>
+  } @else {
+    <table mat-table [dataSource]="facade.reports()" class="table">
+      <ng-container matColumnDef="issued">
+        <th mat-header-cell *matHeaderCellDef>Emitido</th>
+        <td mat-cell *matCellDef="let row">{{ reportOf(row).issuedAt | date: 'short' }}</td>
+      </ng-container>
+      <ng-container matColumnDef="kind">
+        <th mat-header-cell *matHeaderCellDef>Tipo</th>
+        <td mat-cell *matCellDef="let row">
+          @let report = reportOf(row);
+          {{ kindLabel(report.kind) }}
+          <span class="muted block">{{ report.format }} · {{ size(report.sizeBytes) }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="scope">
+        <th mat-header-cell *matHeaderCellDef>Alcance</th>
+        <td mat-cell *matCellDef="let row" class="scope">{{ reportOf(row).scope }}</td>
+      </ng-container>
+      <ng-container matColumnDef="file">
+        <th mat-header-cell *matHeaderCellDef>Archivo y huella</th>
+        <td mat-cell *matCellDef="let row">
+          @let report = reportOf(row);
+          <span class="block">{{ report.fileName }}</span>
+          <span class="muted mono checksum" [title]="report.checksum">
+            {{ report.checksum.slice(0, 16) }}…
+          </span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>
+          <span class="sarc-visually-hidden">Acciones</span>
+        </th>
+        <td mat-cell *matCellDef="let row" class="download-cell">
+          <ng-container
+            [ngTemplateOutlet]="action"
+            [ngTemplateOutletContext]="{ $implicit: row }"
+          />
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    </table>
+  }
+
+  <mat-paginator
+    [length]="facade.totalElements()"
+    [pageIndex]="facade.pageIndex()"
+    [pageSize]="facade.pageSize()"
+    [pageSizeOptions]="pageSizeOptions"
+    (page)="onPage($event)"
+    aria-label="Paginación de reportes"
+  />
+</section>
+
+<ng-template #action let-row>
+  @let report = reportOf(row);
+  @if (report.archived) {
+    <button
+      matButton="tonal"
+      type="button"
+      [disabled]="downloading() === report.id"
+      [attr.aria-label]="'Descargar ' + report.fileName"
+      (click)="download(report)"
+    >
+      <svg lucideDownload [size]="18" aria-hidden="true"></svg>
+      Descargar
+    </button>
+  } @else {
+    <span class="muted" title="Se emitió sin almacenamiento; solo se conserva su huella">
+      Sin copia
+    </span>
+  }
+</ng-template>

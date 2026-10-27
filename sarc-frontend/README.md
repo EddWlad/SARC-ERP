@@ -25,11 +25,14 @@ En desarrollo el proxy hace que navegador, cookies de sesion y CSRF sean del mis
 
 ```
 src/app/
-  core/            api/generated (tipos del contrato OpenAPI, no editar), auth, http, notificaciones, tema,
-                   i18n, archivos (descargas), time (dia local)
+  core/            api/generated (tipos del contrato OpenAPI, no editar), auth, http (y refresco
+                   automatico de pantallas de consulta), notificaciones, tema, i18n, archivos (descargas),
+                   time (dia y hora de operacion en America/Guayaquil)
   layout/          shell (sidebar + barra superior) y menu de navegacion
   shared/ui/       componentes genericos (dialogo de confirmacion, graficas Chart.js en ui/chart), deteccion
-                   de telefono y parciales SCSS de listados, dialogos, etiquetas y tableros
+                   de telefono, guardia de cambios sin guardar en dialogos y parciales SCSS de listados,
+                   dialogos, etiquetas y tableros
+  shared/imports/  ciclo comun de importaciones: historial, vista previa, sondeo con reintento y dialogo
   shared/format/   cifras con Intl (conteos, kWh, porcentajes)
   shared/vocabulary/  vocabulario comun entre modulos (redes, tipos de infraestructura)
   design-system/   tokens, tema Material 3 claro/oscuro y estilos base
@@ -44,7 +47,14 @@ src/app/
 Reglas principales:
 
 - Los tipos de requests y responses salen del contrato generado (`core/api/generated`); no se escriben a mano.
-- Los componentes no llaman a `HttpClient`: usan facades (`application`) o servicios de `core`.
+- Los componentes no llaman a `HttpClient`: usan facades (`application`) o servicios de `core`. ESLint
+  hace cumplir las capas (`presentation -> application -> data-access -> domain`) y que un modulo no
+  importe el interior de otro.
+- Fechas y horas siempre en hora de Ecuador (`DatePipe` con `-0500`, `LocalDay` con America/Guayaquil),
+  aunque el navegador este en otra zona.
+- Los dialogos con formulario usan `guardUnsavedChanges`: Esc, clic fuera y Cancelar piden confirmacion
+  si hay cambios. Las pantallas de consulta usan `refreshWhileVisible` para mostrar cambios de otros
+  usuarios.
 - Formularios con Signal Forms; estado con Signals; rutas de modulos con carga diferida.
 - La sesion vive en el servidor (cookie HttpOnly). Angular reenvia la cookie `XSRF-TOKEN` como cabecera `X-XSRF-TOKEN`; al arrancar se llama a `GET /api/v1/auth/me` para obtenerla.
 - Los permisos en pantalla (menu, guards) son solo de experiencia de usuario; el backend aplica la autorizacion real.

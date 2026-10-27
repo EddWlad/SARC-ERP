@@ -25,8 +25,12 @@
 
   @if (facade.failed()) {
     <div class="state" role="alert">
-      <p>No se pudo cargar el historial.</p>
-      <button matButton="tonal" type="button" (click)="facade.reload()">Reintentar</button>
+      @if (facade.reconnecting()) {
+        <p>Se perdió la conexión con el servidor; reintentando automáticamente...</p>
+      } @else {
+        <p>No se pudo cargar el historial.</p>
+      }
+      <button matButton="tonal" type="button" (click)="facade.reload()">Reintentar ahora</button>
     </div>
   } @else if (!facade.loading() && facade.batches().length === 0) {
     <div class="state">

@@ -27,6 +27,10 @@ export class ChartTheme {
   private readonly document = inject(DOCUMENT);
   private readonly themeMode = inject(ThemeStore).mode;
   private readonly systemDark = signal(false);
+  private readonly prefersReducedMotion = signal(false);
+
+  /** Preferencia del sistema de reducir movimiento (WCAG 2.3.3): las graficas no se animan. */
+  readonly reducedMotion = this.prefersReducedMotion.asReadonly();
 
   readonly revision = computed(() => `${this.themeMode()}-${this.systemDark()}`);
 
@@ -35,6 +39,11 @@ export class ChartTheme {
     if (query) {
       this.systemDark.set(query.matches);
       query.addEventListener('change', (event) => this.systemDark.set(event.matches));
+    }
+    const motion = this.document.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (motion) {
+      this.prefersReducedMotion.set(motion.matches);
+      motion.addEventListener('change', (event) => this.prefersReducedMotion.set(event.matches));
     }
   }
 

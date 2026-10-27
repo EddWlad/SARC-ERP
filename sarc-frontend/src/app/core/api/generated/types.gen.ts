@@ -134,6 +134,7 @@ export type RowDecisionRequest = {
     rowIds: Array<string>;
     test?: boolean | null;
     approved?: boolean | null;
+    reassign?: boolean | null;
 };
 
 export type ImportRowResponse = {
@@ -149,13 +150,15 @@ export type ImportRowResponse = {
     connector?: string | null;
     equipmentId?: string | null;
     network?: 'KIA' | 'JAC' | 'CONECTZ';
-    classification: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'INVALID' | 'DUPLICATE' | 'PENDING_LINK';
+    classification: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'EQUIPMENT_CHANGED' | 'INVALID' | 'DUPLICATE' | 'PENDING_LINK';
     issues: Array<Issue>;
     nonPreferredSource: boolean;
     requiresApproval: boolean;
     test: boolean;
     approved: boolean;
-    outcome?: 'INSERTED' | 'CORRECTED' | 'UNCHANGED' | 'SKIPPED';
+    reassigned: boolean;
+    outcome?: 'INSERTED' | 'CORRECTED' | 'REASSIGNED' | 'UNCHANGED' | 'SKIPPED';
+    outcomeDetail?: string | null;
 };
 
 export type Issue = {
@@ -256,8 +259,36 @@ export type PasteEquipmentImportRequest = {
     text: string;
 };
 
+export type EquipmentRefResponse = {
+    id: string;
+    name: string;
+    assignedCode: string;
+    network: 'KIA' | 'JAC' | 'CONECTZ';
+    type: 'CHARGING_POINT' | 'CHARGING_STATION';
+};
+
+export type SessionResponse = {
+    id: string;
+    source: 'ENERLINK' | 'WALLBOX';
+    externalSessionId: string;
+    startedAt: string;
+    endedAt: string;
+    startDate: string;
+    energyKwh: number;
+    state: 'VALIDATED' | 'PENDING_LINK' | 'AWAITING_APPROVAL' | 'TEST';
+    equipment?: EquipmentRefResponse;
+    site?: string | null;
+    charger?: string | null;
+    serial?: string | null;
+    connector?: string | null;
+    revision: number;
+    importBatchId: string;
+    version: number;
+};
+
 export type PendingLinkResponse = {
     linked: number;
+    awaitingApproval: number;
     stillPending: number;
 };
 
@@ -275,6 +306,7 @@ export type ImportBatchResponse = {
     newRows: number;
     identicalRows: number;
     modifiedRows: number;
+    equipmentChangedRows: number;
     invalidRows: number;
     duplicateRows: number;
     pendingLinkRows: number;
@@ -338,33 +370,6 @@ export type MarkTestRequest = {
     test: boolean;
 };
 
-export type EquipmentRefResponse = {
-    id: string;
-    name: string;
-    assignedCode: string;
-    network: 'KIA' | 'JAC' | 'CONECTZ';
-    type: 'CHARGING_POINT' | 'CHARGING_STATION';
-};
-
-export type SessionResponse = {
-    id: string;
-    source: 'ENERLINK' | 'WALLBOX';
-    externalSessionId: string;
-    startedAt: string;
-    endedAt: string;
-    startDate: string;
-    energyKwh: number;
-    state: 'VALIDATED' | 'PENDING_LINK' | 'TEST';
-    equipment?: EquipmentRefResponse;
-    site?: string | null;
-    charger?: string | null;
-    serial?: string | null;
-    connector?: string | null;
-    revision: number;
-    importBatchId: string;
-    version: number;
-};
-
 export type UpdateConnectorTypeRequest = {
     version: number;
     name?: string;
@@ -377,6 +382,31 @@ export type PageResultUserResponse = {
     size: number;
     totalElements: number;
     totalPages: number;
+};
+
+export type IssuedReportResponse = {
+    id: string;
+    kind: string;
+    format: 'PDF' | 'XLSX';
+    fileName: string;
+    scope: string;
+    checksum: string;
+    sizeBytes: number;
+    archived: boolean;
+    issuedAt: string;
+    issuedBy?: string | null;
+};
+
+export type PageResultIssuedReportResponse = {
+    content: Array<IssuedReportResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type DownloadResponse = {
+    url: string;
 };
 
 export type InventorySummaryResponse = {
@@ -454,6 +484,7 @@ export type ConsumptionSummaryResponse = {
     bySource: Array<SourceShare>;
     byType: Array<TypeShare>;
     pendingLink: Totals;
+    awaitingApproval: Totals;
     test: Totals;
     generatedAt: string;
 };
@@ -908,6 +939,24 @@ export type PasteEquipmentImportResponses = {
 
 export type PasteEquipmentImportResponse = PasteEquipmentImportResponses[keyof PasteEquipmentImportResponses];
 
+export type ApproveSourceData = {
+    body: VersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/energy/sessions/{id}/source-approval';
+};
+
+export type ApproveSourceResponses = {
+    /**
+     * OK
+     */
+    200: SessionResponse;
+};
+
+export type ApproveSourceResponse = ApproveSourceResponses[keyof ApproveSourceResponses];
+
 export type LinkPendingData = {
     body?: never;
     path?: never;
@@ -1170,6 +1219,44 @@ export type Update2Responses = {
 
 export type Update2Response = Update2Responses[keyof Update2Responses];
 
+export type IssuedReportsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        kind?: string;
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/reports/issued';
+};
+
+export type IssuedReportsResponses = {
+    /**
+     * OK
+     */
+    200: PageResultIssuedReportResponse;
+};
+
+export type IssuedReportsResponse = IssuedReportsResponses[keyof IssuedReportsResponses];
+
+export type IssuedReportDownloadData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/reports/issued/{id}/download';
+};
+
+export type IssuedReportDownloadResponses = {
+    /**
+     * OK
+     */
+    200: DownloadResponse;
+};
+
+export type IssuedReportDownloadResponse = IssuedReportDownloadResponses[keyof IssuedReportDownloadResponses];
+
 export type SummaryData = {
     body?: never;
     path?: never;
@@ -1326,7 +1413,7 @@ export type SearchData = {
         type?: 'CHARGING_POINT' | 'CHARGING_STATION';
         source?: 'ENERLINK' | 'WALLBOX';
         equipmentId?: string;
-        state?: 'VALIDATED' | 'PENDING_LINK' | 'TEST';
+        state?: 'VALIDATED' | 'PENDING_LINK' | 'AWAITING_APPROVAL' | 'TEST';
         text?: string;
         page?: number;
         size?: number;
@@ -1391,7 +1478,7 @@ export type RowsData = {
         id: string;
     };
     query?: {
-        classification?: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'INVALID' | 'DUPLICATE' | 'PENDING_LINK';
+        classification?: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'EQUIPMENT_CHANGED' | 'INVALID' | 'DUPLICATE' | 'PENDING_LINK';
         page?: number;
         size?: number;
     };

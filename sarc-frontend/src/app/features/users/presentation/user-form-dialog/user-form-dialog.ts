@@ -19,6 +19,7 @@ import { LucideTriangleAlert } from '@lucide/angular';
 import { Role, ROLE_LABELS, ROLES } from '../../../../core/auth/role';
 import { toProblem } from '../../../../core/http/problem';
 import { User, USER_STATUS_LABELS, USER_STATUSES, UserStatus } from '../../domain/user';
+import { guardUnsavedChanges } from '../../../../shared/ui/unsaved-changes';
 
 export interface UserFormValue {
   email: string;
@@ -51,6 +52,8 @@ export interface UserFormDialogData<T> {
 export class UserFormDialog<T> {
   private readonly data = inject<UserFormDialogData<T>>(MAT_DIALOG_DATA);
   private readonly dialogRef = inject<MatDialogRef<UserFormDialog<T>, T>>(MatDialogRef);
+  /** Esc, clic fuera o Cancelar no descartan cambios sin confirmarlo. */
+  protected readonly unsaved = guardUnsavedChanges(() => this.userForm().dirty());
 
   protected readonly editing = this.data.user !== undefined;
   protected readonly roles = ROLES;
