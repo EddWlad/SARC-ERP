@@ -24,4 +24,10 @@ public interface FileStorage {
 	 * entorno. La autorizacion de quien la pide la decide el backend.
 	 */
 	Optional<String> accessUrl(String reference);
+
+	/**
+	 * URL firmada, temporal y de descarga (adjunto) de un documento guardado con {@link #storeDocument}, o
+	 * vacio si no hay almacenamiento.
+	 */
+	Optional<String> documentUrl(String reference);
 }

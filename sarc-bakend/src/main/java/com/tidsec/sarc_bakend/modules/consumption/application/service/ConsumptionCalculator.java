@@ -64,6 +64,7 @@ class ConsumptionCalculator {
 				complete(SessionSource.class, sessions.bySource(official)),
 				complete(InfrastructureType.class, sessions.byType(official)),
 				sessions.totals(criteria.withState(SessionState.PENDING_LINK)),
+				sessions.totals(criteria.withState(SessionState.AWAITING_APPROVAL)),
 				sessions.totals(criteria.withState(SessionState.TEST)), Instant.now(clock));
 	}
 

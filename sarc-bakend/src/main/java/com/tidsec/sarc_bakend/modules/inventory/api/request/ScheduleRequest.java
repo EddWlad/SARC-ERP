@@ -22,8 +22,8 @@ import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.WeeklyInt
 public record ScheduleRequest(
 		@NotNull Long version,
 		@NotNull ScheduleMode mode,
-		@NotNull @Size(max = 50) List<@Valid IntervalRequest> intervals,
-		@NotNull @Size(max = 366) List<@Valid ExceptionRequest> exceptions) {
+		@NotNull @Size(max = 50) List<@NotNull @Valid IntervalRequest> intervals,
+		@NotNull @Size(max = 366) List<@NotNull @Valid ExceptionRequest> exceptions) {
 
 	public record IntervalRequest(@NotNull DayOfWeek day, @NotNull LocalTime opensAt, @NotNull LocalTime closesAt) {
 	}

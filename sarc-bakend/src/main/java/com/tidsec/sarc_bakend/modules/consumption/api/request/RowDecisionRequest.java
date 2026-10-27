@@ -14,9 +14,10 @@ import jakarta.validation.constraints.Size;
 public record RowDecisionRequest(
 		@NotEmpty @Size(max = 1000) List<@NotNull UUID> rowIds,
 		@Schema(nullable = true) Boolean test,
-		@Schema(nullable = true) Boolean approved) {
+		@Schema(nullable = true) Boolean approved,
+		@Schema(nullable = true) Boolean reassign) {
 
 	public RowDecisionCommand toCommand(UUID batchId) {
-		return new RowDecisionCommand(batchId, rowIds, test, approved);
+		return new RowDecisionCommand(batchId, rowIds, test, approved, reassign);
 	}
 }

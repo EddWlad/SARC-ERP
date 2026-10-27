@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -21,12 +22,19 @@ import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.http.Cookie;
+
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.ThrowableProxyUtil;
+import ch.qos.logback.core.read.ListAppender;
 
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -37,6 +45,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
@@ -47,6 +56,7 @@ import com.tidsec.sarc_bakend.modules.identity.domain.model.Email;
 import com.tidsec.sarc_bakend.modules.identity.domain.model.Role;
 import com.tidsec.sarc_bakend.modules.identity.domain.model.UserAccount;
 import com.tidsec.sarc_bakend.modules.identity.domain.repository.UserRepository;
+import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentRepository;
 import com.tidsec.sarc_bakend.shared.storage.FileStorage;
 
 @SpringBootTest(properties = "sarc.security.bcrypt-strength=4")
@@ -66,6 +76,7 @@ class InventoryApiTest {
 	@Autowired PasswordEncoder encoder;
 	@Autowired JdbcTemplate jdbc;
 	@MockitoBean FileStorage fileStorage;
+	@MockitoSpyBean EquipmentRepository equipmentRepository;
 
 	private Cookie analyst;
 	private Cookie manager;
@@ -74,7 +85,7 @@ class InventoryApiTest {
 	void setUp() throws Exception {
 		jdbc.execute("TRUNCATE spring_session, spring_session_attributes, audit_event, auth_user_role, auth_user, "
 				+ "asset_external_identity, asset_schedule_interval, asset_schedule_exception, asset_connector, "
-				+ "asset_equipment CASCADE");
+				+ "asset_equipment, report_issued CASCADE");
 		jdbc.update("DELETE FROM asset_connector_type WHERE id::text NOT LIKE '00000000-0000-0000-0000-000000000c%'");
 		seedUser("analista@eos.com", Role.ANALISTA);
 		seedUser("gerente@eos.com", Role.GERENTE);
@@ -417,6 +428,66 @@ class InventoryApiTest {
 		}
 		assertThat(jdbc.queryForObject("select count(*) from audit_event where action = 'INVENTORY_REPORT_GENERATED'",
 				Long.class)).isEqualTo(2);
+	}
+
+	// ---- regresiones de la revision QA del 26-oct-2026
+
+	@Test
+	void aNullScheduleEntryIsRejectedAsInvalidInput() throws Exception {
+		// QA-08: un elemento nulo en la lista llegaba al dominio y respondia 500.
+		String id = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-001", "123456", "U1")));
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id + "/schedule",
+				"{\"version\":0,\"mode\":\"WEEKLY\",\"intervals\":[null],\"exceptions\":[null]}")
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+	}
+
+	@Test
+	void editsAreAuditedWithPreviousAndNewValuesButNeverRestrictedOnes() throws Exception {
+		// QA-09: la auditoria conserva que cambio; UID/PUK y URL OCPP solo como hecho, sin su valor.
+		String id = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-001", "123456", "U1")));
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id, """
+				{"version":0,"brand":"WALLBOX","name":"Punto renombrado","serial":"KIA-001","assignedCode":"123456",
+				 "uidPuk":"UID-NUEVO","usageStatus":"FREE","connectorTypeIds":["%s"]}
+				""".formatted(CCS2)).andExpect(status().isOk());
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id + "/schedule", """
+				{"version":1,"mode":"WEEKLY","intervals":[{"day":"MONDAY","opensAt":"08:00","closesAt":"18:00"}],
+				 "exceptions":[{"date":"2026-12-25","closed":true}]}
+				""").andExpect(status().isOk());
+
+		String edit = jdbc.queryForObject("select details::text from audit_event where entity_id = ?::uuid "
+				+ "and action = 'EQUIPMENT_UPDATED'", String.class, id);
+		assertThat(edit).contains("\"nameFrom\": \"Punto KIA-001\"", "\"nameTo\": \"Punto renombrado\"",
+				"\"connectorsFrom\": \"TYPE2\"", "\"connectorsTo\": \"CCS2\"", "\"uidPukChanged\": \"true\"")
+				.doesNotContain("U1", "UID-NUEVO", "serialFrom");
+		String schedule = jdbc.queryForObject("select details::text from audit_event where entity_id = ?::uuid "
+				+ "and action = 'EQUIPMENT_SCHEDULE_DEFINED'", String.class, id);
+		assertThat(schedule).contains("\"modeFrom\": \"NOT_DEFINED\"", "\"intervalsTo\": \"MONDAY 08:00-18:00\"",
+				"\"exceptionsTo\": \"2026-12-25 cerrado\"");
+	}
+
+	@Test
+	void anIntegrityViolationNeverWritesRestrictedValuesToTheLog() throws Exception {
+		// QA-10: dos altas simultaneas con el mismo UID/PUK; la segunda la rechaza PostgreSQL.
+		send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-001", "123456", "PUK-SECRETO"))
+				.andExpect(status().isCreated());
+		doReturn(List.of()).when(equipmentRepository).findHoldersOf(anyString(), anyString(), anyString());
+		Logger root = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+		ListAppender<ILoggingEvent> appender = new ListAppender<>();
+		appender.start();
+		root.addAppender(appender);
+		try {
+			send(analyst, HttpMethod.POST, "/api/v1/equipment", kiaPoint("KIA-002", "654321", "PUK-SECRETO"))
+					.andExpect(status().isConflict())
+					.andExpect(jsonPath("$.code").value("DATA_INTEGRITY_VIOLATION"));
+		}
+		finally {
+			root.detachAppender(appender);
+		}
+		String logged = appender.list.stream().map(event -> event.getFormattedMessage()
+				+ (event.getThrowableProxy() == null ? "" : ThrowableProxyUtil.asString(event.getThrowableProxy())))
+				.collect(Collectors.joining("\n"));
+		assertThat(logged).contains("Violacion de integridad de datos").doesNotContain("PUK-SECRETO");
 	}
 
 	// ---- helpers

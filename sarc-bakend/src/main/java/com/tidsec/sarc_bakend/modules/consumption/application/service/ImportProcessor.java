@@ -6,6 +6,7 @@ import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -26,6 +27,7 @@ import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowClassifi
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowCounts;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowOutcome;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergySession;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionReading;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
 import com.tidsec.sarc_bakend.modules.consumption.domain.policy.PreferredSourcePolicy;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergySessionRepository;
@@ -143,11 +145,19 @@ class ImportProcessor {
 		if (!seen.add(id)) {
 			issues.add(new RowIssue("DUPLICATED_IN_BATCH", "La sesion " + id + " ya aparece antes en este lote"));
 			return ImportRow.classified(batch.getId(), parsed.rowNumber(), id, parsed.reading(), found,
-					RowClassification.DUPLICATE, false, null, issues);
+					RowClassification.DUPLICATE, false, null, null, issues);
 		}
 		EnergySession current = existing.get(id);
 		RowClassification classification;
-		if (current != null) {
+		if (current != null && !current.identifiesSameCharger(parsed.reading())) {
+			classification = RowClassification.EQUIPMENT_CHANGED;
+			issues.add(new RowIssue("SESSION_EQUIPMENT_CHANGED", "La sesion estaba en "
+					+ chargerOf(batch.getSource(), current.reading()) + " y ahora llega en "
+					+ chargerOf(batch.getSource(), parsed.reading())
+					+ (found == null ? ", que no esta identificado en el inventario" : "")
+					+ ". Reasignela solo si es la misma carga mal registrada; aprobar no basta"));
+		}
+		else if (current != null) {
 			classification = current.hasSameReading(parsed.reading()) ? RowClassification.IDENTICAL
 					: RowClassification.MODIFIED;
 			if (classification == RowClassification.MODIFIED) {
@@ -170,7 +180,17 @@ class ImportProcessor {
 					+ "; apruebe solo si esta sesion no la reporta tambien esa plataforma"));
 		}
 		return ImportRow.classified(batch.getId(), parsed.rowNumber(), id, parsed.reading(), found, classification,
-				nonPreferred, current == null ? null : current.getId(), issues);
+				nonPreferred, current == null ? null : current.getId(), current == null ? null : current.getRevision(),
+				issues);
+	}
+
+	/** Como identifica la fuente al cargador: serie en Wallbox, ACTIVO / CARGADOR en Enerlink. */
+	private static String chargerOf(SessionSource source, SessionReading reading) {
+		return switch (source) {
+			case WALLBOX -> "la serie " + Objects.requireNonNullElse(reading.serial(), "(vacia)");
+			case ENERLINK -> Objects.requireNonNullElse(reading.site(), "(sin activo)") + " / "
+					+ Objects.requireNonNullElse(reading.charger(), "(sin cargador)");
+		};
 	}
 
 	private static String unidentified(SessionSource source, EquipmentLookup lookup) {
@@ -194,29 +214,56 @@ class ImportProcessor {
 				.collect(Collectors.toMap(EnergySession::getExternalSessionId, Function.identity()));
 		UUID actorId = currentActor.id().orElse(null);
 		for (ImportRow row : next) {
-			row.recordOutcome(applyRow(batch, row, current.get(row.getExternalSessionId()), actorId));
+			Outcome outcome = applyRow(batch, row, current.get(row.getExternalSessionId()), actorId);
+			row.recordOutcome(outcome.result(), outcome.detail());
 		}
 		return true;
 	}
 
-	private RowOutcome applyRow(ImportBatch batch, ImportRow row, EnergySession session, UUID actorId) {
+	private record Outcome(RowOutcome result, String detail) {
+
+		static Outcome of(RowOutcome result) {
+			return new Outcome(result, null);
+		}
+
+		static Outcome skipped(String detail) {
+			return new Outcome(RowOutcome.SKIPPED, detail);
+		}
+	}
+
+	private Outcome applyRow(ImportBatch batch, ImportRow row, EnergySession session, UUID actorId) {
 		if (session == null) {
 			sessions.save(EnergySession.record(batch.getSource(), batch.getSourceScope(), row.getExternalSessionId(),
-					row.reading(), row.equipment(), row.isTest(), batch.getId(), zone));
-			return RowOutcome.INSERTED;
+					row.reading(), row.equipment(), row.isApproved(), row.isTest(), batch.getId(), zone));
+			return Outcome.of(RowOutcome.INSERTED);
+		}
+		if (row.getExistingSessionRevision() != null && row.getExistingSessionRevision() != session.getRevision()) {
+			// La decision se tomo sobre otra version: aplicarla seria corregir algo que nadie reviso.
+			return Outcome.skipped("La sesion cambio despues de la vista previa; vuelva a cargar el archivo para revisarla");
 		}
 		if (session.hasSameReading(row.reading())) {
-			return RowOutcome.UNCHANGED;
+			return Outcome.of(RowOutcome.UNCHANGED);
+		}
+		if (row.getClassification() == RowClassification.EQUIPMENT_CHANGED) {
+			sessions.saveRevision(session.reassign(row.reading(), row.equipment(), row.isApproved(), batch.getId(),
+					zone, actorId, clock.instant()));
+			if (row.isTest()) {
+				session.markTest(true);
+			}
+			return Outcome.of(RowOutcome.REASSIGNED);
 		}
 		if (row.getClassification() != RowClassification.MODIFIED || !row.isApproved()) {
-			// La sesion cambio despues de la vista previa: no se corrige sin una aprobacion explicita.
-			return RowOutcome.SKIPPED;
+			// Otra importacion trajo la sesion despues de la vista previa: no se corrige sin aprobacion.
+			return Outcome.skipped("La sesion ya existe con otros datos; no se corrige sin una aprobacion explicita");
+		}
+		if (!session.identifiesSameCharger(row.reading())) {
+			return Outcome.skipped("La correccion cambia el cargador de la sesion; debe reasignarse");
 		}
 		sessions.saveRevision(session.correct(row.reading(), batch.getId(), zone, actorId, clock.instant()));
 		if (row.isTest()) {
 			session.markTest(true);
 		}
-		return RowOutcome.CORRECTED;
+		return Outcome.of(RowOutcome.CORRECTED);
 	}
 
 	private void complete(UUID batchId) {

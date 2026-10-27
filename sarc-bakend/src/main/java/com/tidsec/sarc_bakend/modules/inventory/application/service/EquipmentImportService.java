@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -185,9 +186,14 @@ public class EquipmentImportService {
 		});
 	}
 
-	/** Si la cola de trabajos esta llena el lote falla de inmediato y el analista lo reintenta luego. */
+	/**
+	 * Si la cola de trabajos esta llena el lote falla de inmediato y el analista lo reintenta luego. Corre
+	 * despues del commit del lote, cuando ya no hay transaccion activa: necesita una propia.
+	 */
 	private Runnable failWhenBusy(UUID id) {
-		return () -> transactions.executeWithoutResult(status -> batches.findById(id).ifPresent(batch -> {
+		TransactionTemplate independent = new TransactionTemplate(transactions.getTransactionManager());
+		independent.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+		return () -> independent.executeWithoutResult(status -> batches.findById(id).ifPresent(batch -> {
 			batch.failBecauseBusy();
 			batches.save(batch);
 		}));

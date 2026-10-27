@@ -44,6 +44,11 @@ class StorageConfig {
 			public Optional<String> accessUrl(String reference) {
 				return Optional.empty();
 			}
+
+			@Override
+			public Optional<String> documentUrl(String reference) {
+				return Optional.empty();
+			}
 		};
 	}
 

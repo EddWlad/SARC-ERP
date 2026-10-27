@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -15,9 +16,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import jakarta.servlet.http.Cookie;
 
@@ -36,15 +43,19 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 import com.jayway.jsonpath.JsonPath;
 import com.tidsec.sarc_bakend.TestcontainersConfiguration;
+import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergySessionRepository;
+import com.tidsec.sarc_bakend.modules.consumption.domain.repository.SessionCriteria;
 import com.tidsec.sarc_bakend.modules.identity.domain.model.Email;
 import com.tidsec.sarc_bakend.modules.identity.domain.model.Role;
 import com.tidsec.sarc_bakend.modules.identity.domain.model.UserAccount;
 import com.tidsec.sarc_bakend.modules.identity.domain.repository.UserRepository;
+import com.tidsec.sarc_bakend.shared.importing.batch.ImportJobs;
 import com.tidsec.sarc_bakend.shared.storage.FileStorage;
 
 /** Flujo completo de RF-003 contra PostgreSQL: cargar, revisar, confirmar, consultar e informar. */
@@ -59,12 +70,17 @@ class ConsumptionApiTest {
 	private static final String WALLBOX_HEADER = "Serial number\tCharger\tSession id\tStart\tEnd\tEnergy (kWh)\n";
 	private static final String ENERLINK_HEADER = "ID\tINICIO (UTC-05:00)\tTÉRMINO (UTC-05:00)\tACTIVO\tCARGADOR\t"
 			+ "CONECTOR\tSOC FINAL (%)\tENERGIA CARGADA (kWh)\n";
+	/** Tamano del pool y de la cola de {@link ImportJobs}. */
+	private static final int IMPORT_THREADS = 2;
+	private static final int IMPORT_QUEUE = 10;
 
 	@Autowired MockMvc mvc;
 	@Autowired UserRepository users;
 	@Autowired PasswordEncoder encoder;
 	@Autowired JdbcTemplate jdbc;
+	@Autowired ImportJobs importJobs;
 	@MockitoBean FileStorage fileStorage;
+	@MockitoSpyBean EnergySessionRepository sessionRepository;
 
 	private Cookie analyst;
 	private Cookie manager;
@@ -75,7 +91,7 @@ class ConsumptionApiTest {
 		jdbc.execute("TRUNCATE spring_session, spring_session_attributes, audit_event, auth_user_role, auth_user, "
 				+ "energy_import_row, energy_session_revision, energy_session, energy_import_batch, "
 				+ "asset_external_identity, asset_schedule_interval, asset_schedule_exception, asset_connector, "
-				+ "asset_equipment CASCADE");
+				+ "asset_equipment, report_issued CASCADE");
 		when(fileStorage.storeDocument(anyString(), anyString(), any())).thenReturn("sarc/imports/original");
 		seedUser("analista@eos.com", Role.ANALISTA);
 		seedUser("gerente@eos.com", Role.GERENTE);
@@ -272,7 +288,193 @@ class ConsumptionApiTest {
 				.andExpect(jsonPath("$.code").value("INVALID_PERIOD"));
 	}
 
+	// ---- regresiones de la revision QA del 26-oct-2026
+
+	@Test
+	void aSessionThatChangesChargerIsOnlyMovedByAnExplicitReassignment() throws Exception {
+		// QA-01: aprobar la correccion no basta; mover la sesion a otro equipo es una decision aparte.
+		String secondPoint = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", """
+				{"network":"KIA","type":"CHARGING_POINT","brand":"WALLBOX","name":"Punto Norte","serial":"WB-2002",
+				 "assignedCode":"204519","uidPuk":"PUK-2","usageStatus":"FREE","connectorTypeIds":["%s"]}
+				""".formatted(TYPE2)));
+		confirm(upload("WALLBOX", "r1.csv", wallbox("WB-1001", "S-1", "10,00")));
+
+		String ignored = upload("WALLBOX", "r2.csv", wallbox("WB-2002", "S-1", "12,00"));
+		assertThat(batch(ignored)).containsEntry("equipmentChangedRows", 1).containsEntry("modifiedRows", 0);
+		decide(ignored, "S-1", "\"approved\":true").andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code").value("ROW_APPROVAL_NOT_REQUIRED"));
+		assertThat(confirm(ignored)).containsEntry("appliedRows", 0);
+		assertThat(jdbc.queryForObject("select source_serial from energy_session", String.class)).isEqualTo("WB-1001");
+
+		String reassigned = upload("WALLBOX", "r3.csv", wallbox("WB-2002", "S-1", "12,00"));
+		decide(reassigned, "S-1", "\"reassign\":true").andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].reassigned").value(true));
+		assertThat(confirm(reassigned)).containsEntry("appliedRows", 1);
+		assertThat(jdbc.queryForMap("select source_serial, equipment_id::text as equipment, revision from energy_session"))
+				.containsEntry("source_serial", "WB-2002").containsEntry("equipment", secondPoint)
+				.containsEntry("revision", 2);
+		assertThat(jdbc.queryForObject("select equipment_id::text from energy_session_revision", String.class))
+				.isEqualTo(kiaPoint);
+		assertThat(jdbc.queryForObject("select outcome from energy_import_row where batch_id = ?::uuid",
+				String.class, reassigned)).isEqualTo("REASSIGNED");
+	}
+
+	@Test
+	void anApprovalGivenAgainstAnOlderRevisionDoesNotOverwriteANewerCorrection() throws Exception {
+		// QA-02: dos lotes revisados sobre la revision 1; el segundo no puede pisar lo que aplico el primero.
+		confirm(upload("WALLBOX", "r1.csv", wallbox("WB-1001", "S-1", "10,00")));
+		String first = upload("WALLBOX", "a.csv", wallbox("WB-1001", "S-1", "12,00"));
+		String second = upload("WALLBOX", "b.csv", wallbox("WB-1001", "S-1", "15,00"));
+		decide(first, "S-1", "\"approved\":true").andExpect(status().isOk());
+		decide(second, "S-1", "\"approved\":true").andExpect(status().isOk());
+
+		assertThat(confirm(first)).containsEntry("appliedRows", 1);
+		assertThat(confirm(second)).containsEntry("appliedRows", 0);
+
+		assertOfficial("2026-10-21", "2026-10-22", 1, 12.0);
+		assertThat(jdbc.queryForMap("select outcome, outcome_detail from energy_import_row where batch_id = ?::uuid",
+				second)).containsEntry("outcome", "SKIPPED").extractingByKey("outcome_detail").asString()
+				.contains("vista previa");
+	}
+
+	@Test
+	void aNonPreferredSourceLinkedLaterWaitsForApproval() throws Exception {
+		// QA-03: Wallbox de una estacion Conectz queda pendiente; al vincularla tampoco suma sin aprobacion.
+		confirm(upload("WALLBOX", "pending.csv", wallbox("WB-LATE", "S-1", "10,00")));
+		createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", conectzStation("WB-LATE")));
+
+		send(analyst, HttpMethod.POST, "/api/v1/energy/sessions/link-pending", "")
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.linked").value(0))
+				.andExpect(jsonPath("$.awaitingApproval").value(1))
+				.andExpect(jsonPath("$.stillPending").value(0));
+		mvc.perform(summary("2026-10-21", "2026-10-22").cookie(manager))
+				.andExpect(jsonPath("$.official.sessions").value(0))
+				.andExpect(jsonPath("$.awaitingApproval.sessions").value(1))
+				.andExpect(jsonPath("$.awaitingApproval.energyKwh").value(10.0));
+
+		String session = mvc.perform(get("/api/v1/energy/sessions").cookie(analyst))
+				.andExpect(jsonPath("$.content[0].state").value("AWAITING_APPROVAL"))
+				.andReturn().getResponse().getContentAsString();
+		String id = JsonPath.read(session, "$.content[0].id");
+		int version = JsonPath.read(session, "$.content[0].version");
+		send(manager, HttpMethod.POST, "/api/v1/energy/sessions/" + id + "/source-approval",
+				"{\"version\":" + version + "}").andExpect(status().isForbidden());
+		send(analyst, HttpMethod.POST, "/api/v1/energy/sessions/" + id + "/source-approval",
+				"{\"version\":" + version + "}")
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.state").value("VALIDATED"));
+		assertOfficial("2026-10-21", "2026-10-22", 1, 10.0);
+	}
+
+	@Test
+	void anOverlongValueInvalidatesOnlyItsRow() throws Exception {
+		// QA-07: la serie va en VARCHAR(80); antes de esta validacion abortaba todo el lote al guardar.
+		String id = upload("WALLBOX", "long.csv", wallbox("X".repeat(81), "S-1", "10,00")
+				+ "WB-1001\tPlaza\t" + "Y".repeat(101) + "\t2026-10-21 08:00:00\t2026-10-21 09:00:00\t5,00\n"
+				+ "WB-1001\tPlaza\tVALID\t2026-10-21 08:00:00\t2026-10-21 09:00:00\t5,00\n");
+
+		assertThat(batch(id)).containsEntry("invalidRows", 2).containsEntry("newRows", 1);
+		assertThat(confirm(id)).containsEntry("appliedRows", 1);
+	}
+
+	@Test
+	void reportSummaryAndDetailComeFromTheSameSnapshot() throws Exception {
+		// QA-05: una correccion confirmada mientras se genera el reporte no puede descuadrarlo.
+		confirm(upload("WALLBOX", "r.csv", wallbox("WB-1001", "S-1", "10,00")));
+		AtomicBoolean injected = new AtomicBoolean();
+		doAnswer(invocation -> {
+			if (injected.compareAndSet(false, true)) {
+				Thread writer = new Thread(() -> jdbc.update("update energy_session set energy_kwh = 20, "
+						+ "revision = revision + 1, version = version + 1"));
+				writer.start();
+				writer.join();
+			}
+			return invocation.callRealMethod();
+		}).when(sessionRepository).findAll(any(SessionCriteria.class));
+
+		byte[] xlsx = mvc.perform(get("/api/v1/energy/report").param("format", "XLSX")
+				.param("from", "2026-10-21").param("to", "2026-10-22").cookie(manager))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+
+		assertThat(injected).isTrue();
+		try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(xlsx))) {
+			assertThat(valueOf(workbook.getSheet("Resumen"), "Energía (kWh)")).isEqualTo(10.0);
+			assertThat(workbook.getSheet("Transacciones").getRow(5).getCell(5).getNumericCellValue()).isEqualTo(10.0);
+		}
+	}
+
+	@Test
+	void everyIssuedReportIsArchivedWithItsChecksumAndCanBeDownloadedAgain() throws Exception {
+		// Lectura-01 (RF-RPT-08): se conserva la copia exacta que se entrego.
+		when(fileStorage.storeDocument(anyString(), anyString(), any())).thenReturn("sarc/reports/copia");
+		when(fileStorage.documentUrl("sarc/reports/copia")).thenReturn(Optional.of("https://files.test/firmada"));
+		byte[] pdf = mvc.perform(get("/api/v1/energy/report").param("format", "PDF")
+				.param("from", "2026-10-01").param("to", "2026-11-01").cookie(manager))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+
+		String issued = mvc.perform(get("/api/v1/reports/issued").param("kind", "CONSUMPTION").cookie(manager))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.content.length()").value(1))
+				.andExpect(jsonPath("$.content[0].format").value("PDF"))
+				.andExpect(jsonPath("$.content[0].archived").value(true))
+				.andExpect(jsonPath("$.content[0].sizeBytes").value(pdf.length))
+				.andExpect(jsonPath("$.content[0].checksum").value(HexFormat.of()
+						.formatHex(MessageDigest.getInstance("SHA-256").digest(pdf))))
+				.andReturn().getResponse().getContentAsString();
+		mvc.perform(get("/api/v1/reports/issued/" + JsonPath.read(issued, "$.content[0].id") + "/download")
+				.cookie(manager))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.url").value("https://files.test/firmada"));
+		assertThat(jdbc.queryForObject("select count(*) from audit_event where action = 'CONSUMPTION_REPORT_GENERATED' "
+				+ "and entity_type = 'ISSUED_REPORT'", Integer.class)).isEqualTo(1);
+	}
+
+	@Test
+	void aBatchRejectedByAFullQueueIsLeftFailedInsteadOfParsingForever() throws Exception {
+		// QA-06: sin trabajador que lo tome, el lote se marca FAILED en una transaccion propia.
+		CountDownLatch busy = new CountDownLatch(IMPORT_THREADS);
+		CountDownLatch release = new CountDownLatch(1);
+		Runnable blocking = () -> {
+			busy.countDown();
+			try {
+				release.await(20, TimeUnit.SECONDS);
+			}
+			catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
+			}
+		};
+		try {
+			for (int i = 0; i < IMPORT_THREADS; i++) {
+				importJobs.submitAfterCommit(blocking, () -> fail("Rechazo inesperado"));
+			}
+			assertThat(busy.await(5, TimeUnit.SECONDS)).isTrue();
+			for (int i = 0; i < IMPORT_QUEUE; i++) {
+				importJobs.submitAfterCommit(() -> { }, () -> fail("Rechazo inesperado"));
+			}
+			mvc.perform(multipart("/api/v1/energy/imports")
+					.file(new MockMultipartFile("file", "cola.csv", "text/csv",
+							wallbox("WB-1001", "S-1", "1,00").getBytes(StandardCharsets.UTF_8)))
+					.param("source", "WALLBOX").with(xsrf()).cookie(analyst));
+
+			assertThat(jdbc.queryForObject("select status from energy_import_batch", String.class)).isEqualTo("FAILED");
+		}
+		finally {
+			release.countDown();
+		}
+	}
+
 	// ---- helpers
+
+	private static String wallbox(String serial, String sessionId, String energy) {
+		return WALLBOX_HEADER + serial + "\tPlaza\t" + sessionId + "\t2026-10-21 08:00:00\t2026-10-21 09:00:00\t"
+				+ energy + "\n";
+	}
+
+	private ResultActions decide(String batchId, String externalSessionId, String decision) throws Exception {
+		return send(analyst, HttpMethod.PUT, "/api/v1/energy/imports/" + batchId + "/rows/decision",
+				"{\"rowIds\":[\"" + rowId(batchId, externalSessionId) + "\"]," + decision + "}");
+	}
 
 	private String upload(String source, String fileName, String content) throws Exception {
 		String id = JsonPath.read(mvc.perform(multipart("/api/v1/energy/imports")

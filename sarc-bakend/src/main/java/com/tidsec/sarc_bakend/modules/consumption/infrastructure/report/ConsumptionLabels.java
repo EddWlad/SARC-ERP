@@ -73,6 +73,7 @@ final class ConsumptionLabels {
 		return switch (state) {
 			case VALIDATED -> "Validada";
 			case PENDING_LINK -> "Pendiente de vincular";
+			case AWAITING_APPROVAL -> "Por aprobar";
 			case TEST -> "Prueba";
 		};
 	}

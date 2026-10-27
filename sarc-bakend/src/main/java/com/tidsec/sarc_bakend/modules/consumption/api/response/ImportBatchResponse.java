@@ -25,6 +25,7 @@ public record ImportBatchResponse(
 		int newRows,
 		int identicalRows,
 		int modifiedRows,
+		int equipmentChangedRows,
 		int invalidRows,
 		int duplicateRows,
 		int pendingLinkRows,
@@ -37,7 +38,7 @@ public record ImportBatchResponse(
 		RowCounts counts = batch.getCounts();
 		return new ImportBatchResponse(batch.getId(), batch.getSource(), batch.getSourceScope(), batch.getOrigin(),
 				batch.getFileName(), batch.getChecksum(), batch.getStatus(), batch.getFailureCode(),
-				batch.getFailureMessage(), counts.total(), counts.newRows(), counts.identical(), counts.modified(),
+				batch.getFailureMessage(), counts.total(), counts.newRows(), counts.identical(), counts.modified(), counts.equipmentChanged(),
 				counts.invalid(), counts.duplicate(), counts.pendingLink(), batch.getAppliedRows(),
 				batch.getCreatedAt(), batch.getConfirmedAt(), batch.getVersion());
 	}

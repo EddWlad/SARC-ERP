@@ -54,6 +54,11 @@ class EquipmentDirectoryService implements EquipmentDirectory {
 	@Override
 	public Map<ExternalKey, EquipmentReference> findByVerifiedIdentities(ExternalPlatform platform,
 			Collection<ExternalKey> keys) {
+		// La comparacion ignora tildes, y PostgreSQL no lo hace sin la extension unaccent: por eso se
+		// cargan las verificadas de la plataforma (cientos), pero solo si hay algo que buscar.
+		if (keys.isEmpty()) {
+			return Map.of();
+		}
 		Map<String, UUID> equipmentByKey = new HashMap<>();
 		for (ExternalIdentity identity : identities.findVerified(platform)) {
 			equipmentByKey.put(new ExternalKey(identity.getScope(), identity.getExternalId()).comparable(),

@@ -30,6 +30,7 @@ public record ConsumptionSummaryResponse(
 		List<SourceShare> bySource,
 		List<TypeShare> byType,
 		Totals pendingLink,
+		Totals awaitingApproval,
 		Totals test,
 		Instant generatedAt) {
 
@@ -77,7 +78,7 @@ public record ConsumptionSummaryResponse(
 						.map(e -> new SourceShare(e.getKey(), e.getValue().sessions(), e.getValue().energyKwh())).toList(),
 				summary.byType().entrySet().stream()
 						.map(e -> new TypeShare(e.getKey(), e.getValue().sessions(), e.getValue().energyKwh())).toList(),
-				Totals.from(summary.pendingLink()),
+				Totals.from(summary.pendingLink()), Totals.from(summary.awaitingApproval()),
 				Totals.from(summary.test()), summary.generatedAt());
 	}
 }

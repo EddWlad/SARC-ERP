@@ -7,8 +7,13 @@ public enum RowClassification {
 	NEW,
 	/** Ya existe con los mismos datos: no se toca (reimportacion idempotente). */
 	IDENTICAL,
-	/** Ya existe con datos distintos: se corrige solo si el analista lo aprueba. */
+	/** Ya existe con datos distintos del mismo cargador: se corrige solo si el analista lo aprueba. */
 	MODIFIED,
+	/**
+	 * Ya existe, pero llega en otro cargador (serie, o ACTIVO y CARGADOR): no es una correccion. Solo
+	 * se aplica si el analista la reasigna de forma explicita; aprobar no basta.
+	 */
+	EQUIPMENT_CHANGED,
 	/** No se pudo interpretar sin adivinar: no se incorpora. */
 	INVALID,
 	/** El mismo ID de sesion aparece antes en el mismo lote: se ignora. */
@@ -18,6 +23,6 @@ public enum RowClassification {
 
 	/** Clasificaciones que pueden terminar escribiendo una sesion. */
 	public boolean writesSession() {
-		return this == NEW || this == MODIFIED || this == PENDING_LINK;
+		return this == NEW || this == MODIFIED || this == EQUIPMENT_CHANGED || this == PENDING_LINK;
 	}
 }

@@ -25,6 +25,7 @@ import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
 import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 import com.tidsec.sarc_bakend.shared.pagination.PageQuery;
 import com.tidsec.sarc_bakend.shared.pagination.PageResult;
+import com.tidsec.sarc_bakend.shared.web.VersionRequest;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -65,6 +66,12 @@ class EnergySessionController {
 	@PatchMapping("/{id}/test")
 	SessionResponse markTest(@PathVariable UUID id, @Valid @RequestBody MarkTestRequest body) {
 		return SessionResponse.from(sessions.markTest(body.toCommand(id)));
+	}
+
+	/** Aprueba que una sesion de fuente no preferente sume en los indicadores oficiales. */
+	@PostMapping("/{id}/source-approval")
+	SessionResponse approveSource(@PathVariable UUID id, @Valid @RequestBody VersionRequest body) {
+		return SessionResponse.from(sessions.approveSource(id, body.version()));
 	}
 
 	/** Reintenta vincular las pendientes con las identidades verificadas del inventario. */

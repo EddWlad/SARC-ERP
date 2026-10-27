@@ -80,17 +80,13 @@ public class EquipmentService {
 
 	public EquipmentView update(UpdateEquipmentCommand command) {
 		Equipment target = loadForChange(command.id(), command.version());
-		String previousSerial = target.getSerial();
+		Map<String, String> before = EquipmentChanges.snapshot(target);
 		target.applyDetails(command.details());
 		target.replaceConnectors(resolveConnectorTypes(command.connectorTypeIds()));
 		identifiers.requireUnique(target, target.getId());
 		equipment.save(target);
-		Map<String, String> details = new HashMap<>();
-		if (!previousSerial.equals(target.getSerial())) {
-			details.put("serialFrom", previousSerial);
-			details.put("serialTo", target.getSerial());
-		}
-		audit.record(details.isEmpty() ? "EQUIPMENT_UPDATED" : "EQUIPMENT_SERIAL_CORRECTED",
+		Map<String, String> details = EquipmentChanges.diff(before, EquipmentChanges.snapshot(target));
+		audit.record(details.containsKey("serialFrom") ? "EQUIPMENT_SERIAL_CORRECTED" : "EQUIPMENT_UPDATED",
 				Equipment.AUDIT_ENTITY_TYPE, target.getId(), details);
 		return views.forCurrentUser(target);
 	}
@@ -108,10 +104,12 @@ public class EquipmentService {
 
 	public EquipmentView defineSchedule(DefineScheduleCommand command) {
 		Equipment target = loadForChange(command.equipmentId(), command.version());
+		Map<String, String> before = EquipmentChanges.schedule(target);
 		target.defineSchedule(command.mode(), command.intervals(), command.exceptions());
 		equipment.save(target);
-		audit.record("EQUIPMENT_SCHEDULE_DEFINED", Equipment.AUDIT_ENTITY_TYPE, target.getId(),
-				Map.of("mode", command.mode().name()));
+		Map<String, String> details = new HashMap<>(EquipmentChanges.diff(before, EquipmentChanges.schedule(target)));
+		details.put("mode", command.mode().name());
+		audit.record("EQUIPMENT_SCHEDULE_DEFINED", Equipment.AUDIT_ENTITY_TYPE, target.getId(), details);
 		return views.forCurrentUser(target);
 	}
 

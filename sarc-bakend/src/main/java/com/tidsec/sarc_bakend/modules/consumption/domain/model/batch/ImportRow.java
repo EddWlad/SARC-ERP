@@ -30,6 +30,9 @@ import jakarta.persistence.Table;
 @Table(name = "energy_import_row")
 public class ImportRow {
 
+	/** Tamano de la columna del ID de sesion de la plataforma. */
+	public static final int MAX_SESSION_ID = 100;
+
 	@Id
 	private UUID id;
 
@@ -94,21 +97,38 @@ public class ImportRow {
 	@Column(updatable = false)
 	private UUID existingSessionId;
 
+	/** Revision de la sesion existente que se reviso; si cambia antes de confirmar, la fila se omite. */
+	@Column(updatable = false)
+	private Integer existingSessionRevision;
+
+	/** Conciliacion explicita de una fila {@link RowClassification#EQUIPMENT_CHANGED}. */
+	@Column(nullable = false)
+	private boolean reassigned;
+
 	@Enumerated(EnumType.STRING)
 	@Column(length = 20)
 	private RowOutcome outcome;
 
+	@Column(length = 500)
+	private String outcomeDetail;
+
 	protected ImportRow() {
 	}
 
-	/** Fila que no se pudo interpretar: solo se guardan sus observaciones y lo que se pudo leer. */
+	/**
+	 * Fila que no se pudo interpretar: solo se guardan sus observaciones y lo que se pudo leer. Un ID
+	 * mas largo que la columna se guarda recortado para mostrarlo; el original sigue en el archivo.
+	 */
 	public static ImportRow invalid(UUID batchId, int rowNumber, String externalSessionId, List<RowIssue> issues) {
-		return new ImportRow(batchId, rowNumber, externalSessionId, RowClassification.INVALID, issues);
+		String shown = externalSessionId == null || externalSessionId.length() <= MAX_SESSION_ID
+				? externalSessionId
+				: externalSessionId.substring(0, MAX_SESSION_ID - 1) + "…";
+		return new ImportRow(batchId, rowNumber, shown, RowClassification.INVALID, issues);
 	}
 
 	public static ImportRow classified(UUID batchId, int rowNumber, String externalSessionId, SessionReading reading,
 			EquipmentReference equipment, RowClassification classification, boolean nonPreferredSource,
-			UUID existingSessionId, List<RowIssue> issues) {
+			UUID existingSessionId, Integer existingSessionRevision, List<RowIssue> issues) {
 		ImportRow row = new ImportRow(batchId, rowNumber, externalSessionId, classification, issues);
 		row.startedAt = reading.startedAt();
 		row.endedAt = reading.endedAt();
@@ -124,6 +144,7 @@ public class ImportRow {
 		}
 		row.nonPreferredSource = nonPreferredSource;
 		row.existingSessionId = existingSessionId;
+		row.existingSessionRevision = existingSessionRevision;
 		return row;
 	}
 
@@ -139,9 +160,17 @@ public class ImportRow {
 
 	/**
 	 * Decision del analista en la vista previa. Prueba: solo en filas que se incorporan. Aprobacion:
-	 * solo en filas que la requieren (correcciones o fuente no preferente).
+	 * solo en filas que la requieren (correcciones o fuente no preferente). Reasignacion: solo en
+	 * filas que cambian de cargador.
 	 */
-	public void decide(Boolean markAsTest, Boolean approve) {
+	public void decide(Boolean markAsTest, Boolean approve, Boolean reassign) {
+		if (reassign != null) {
+			if (classification != RowClassification.EQUIPMENT_CHANGED) {
+				throw new BusinessRuleException("ROW_REASSIGNMENT_NOT_APPLICABLE",
+						"La fila " + rowNumber + " no cambia de cargador; no se reasigna");
+			}
+			this.reassigned = reassign;
+		}
 		if (markAsTest != null) {
 			if (!classification.writesSession()) {
 				throw new BusinessRuleException("ROW_NOT_IMPORTABLE",
@@ -163,9 +192,13 @@ public class ImportRow {
 				|| (classification.writesSession() && nonPreferredSource);
 	}
 
-	/** Se incorpora al confirmar si escribe una sesion y, cuando hace falta, fue aprobada. */
+	/**
+	 * Se incorpora al confirmar si escribe una sesion, fue aprobada cuando hace falta y, si cambia de
+	 * cargador, fue reasignada.
+	 */
 	public boolean isApplicable() {
-		return classification.writesSession() && (!requiresApproval() || approved);
+		return classification.writesSession() && (!requiresApproval() || approved)
+				&& (classification != RowClassification.EQUIPMENT_CHANGED || reassigned);
 	}
 
 	public SessionReading reading() {
@@ -181,8 +214,9 @@ public class ImportRow {
 		return equipmentId == null ? null : new EquipmentReference(equipmentId, network, infrastructureType, null, null);
 	}
 
-	public void recordOutcome(RowOutcome outcome) {
+	public void recordOutcome(RowOutcome outcome, String detail) {
 		this.outcome = outcome;
+		this.outcomeDetail = detail == null || detail.length() <= 500 ? detail : detail.substring(0, 500);
 	}
 
 	public UUID getId() {
@@ -261,7 +295,19 @@ public class ImportRow {
 		return existingSessionId;
 	}
 
+	public Integer getExistingSessionRevision() {
+		return existingSessionRevision;
+	}
+
+	public boolean isReassigned() {
+		return reassigned;
+	}
+
 	public RowOutcome getOutcome() {
 		return outcome;
+	}
+
+	public String getOutcomeDetail() {
+		return outcomeDetail;
 	}
 }

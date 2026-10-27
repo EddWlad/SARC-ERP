@@ -33,6 +33,9 @@ public interface EquipmentRepository {
 	/** Todos los que cumplen el filtro, ordenados por nombre; para reportes. */
 	List<Equipment> findAll(EquipmentSearchCriteria criteria);
 
+	/** Cuantos cumplen el filtro, sin cargarlos (p. ej. para rechazar un reporte desbordado antes de leerlo). */
+	long count(EquipmentSearchCriteria criteria);
+
 	List<EquipmentCount> countByDimensions(EquipmentSearchCriteria criteria);
 
 	/** Conectores activos de los equipos filtrados, agrupados por codigo de tipo. */

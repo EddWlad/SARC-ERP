@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import com.tidsec.sarc_bakend.modules.consumption.domain.policy.PreferredSourcePolicy;
 import com.tidsec.sarc_bakend.modules.consumption.domain.policy.SessionRules;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentReference;
 import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
@@ -78,6 +79,10 @@ public class EnergySession extends BaseAuditableEntity {
 	@Column(nullable = false, length = 20)
 	private SessionState state;
 
+	/** Un analista aprobo que esta fuente, no preferente para su equipo, sume (PRD 7.2). */
+	@Column(nullable = false)
+	private boolean sourceApproved;
+
 	@Column(nullable = false)
 	private int revision;
 
@@ -96,15 +101,19 @@ public class EnergySession extends BaseAuditableEntity {
 		this.revision = 1;
 	}
 
-	/** Sesion nueva: validada si el equipo es conocido, pendiente si no; de prueba si asi se marco. */
+	/**
+	 * Sesion nueva: validada si el equipo es conocido y la fuente es la preferente (o se aprobo),
+	 * pendiente si no; de prueba si asi se marco.
+	 */
 	public static EnergySession record(SessionSource source, String sourceScope, String externalSessionId,
-			SessionReading reading, EquipmentReference equipment, boolean test, UUID importBatchId,
-			OperatingZone zone) {
+			SessionReading reading, EquipmentReference equipment, boolean sourceApproved, boolean test,
+			UUID importBatchId, OperatingZone zone) {
 		EnergySession session = new EnergySession(source, sourceScope, externalSessionId, importBatchId);
 		session.apply(reading, zone);
 		if (equipment != null) {
 			session.attach(equipment);
 		}
+		session.sourceApproved = sourceApproved;
 		session.state = test ? SessionState.TEST : session.officialState();
 		return session;
 	}
@@ -114,11 +123,26 @@ public class EnergySession extends BaseAuditableEntity {
 	}
 
 	/**
+	 * La lectura identifica al mismo cargador que la sesion: la serie en Wallbox, ACTIVO y CARGADOR
+	 * en Enerlink (sin distinguir mayusculas). Si no, no es una correccion sino otro equipo.
+	 */
+	public boolean identifiesSameCharger(SessionReading reading) {
+		return switch (source) {
+			case WALLBOX -> sameText(sourceSerial, reading.serial());
+			case ENERLINK -> sameText(sourceSite, reading.site()) && sameText(sourceCharger, reading.charger());
+		};
+	}
+
+	/**
 	 * Correccion aprobada desde una reimportacion: guarda la version anterior y aplica la nueva. Nunca
 	 * se sobrescribe sin dejar rastro (PRD RF-003.6).
 	 */
 	public SessionRevision correct(SessionReading reading, UUID batchId, OperatingZone zone, UUID actorId,
 			Instant at) {
+		if (!identifiesSameCharger(reading)) {
+			throw new BusinessRuleException("SESSION_EQUIPMENT_CHANGED",
+					"La correccion cambia el cargador de la sesion; debe reasignarse de forma explicita");
+		}
 		SessionRevision previous = SessionRevision.of(this, batchId, actorId, at);
 		apply(reading, zone);
 		this.importBatchId = batchId;
@@ -126,15 +150,50 @@ public class EnergySession extends BaseAuditableEntity {
 		return previous;
 	}
 
-	/** Vincula una sesion pendiente con el equipo ya identificado. */
+	/**
+	 * Conciliacion explicita: la reimportacion trae la sesion en otro cargador y el analista la
+	 * reasigno. Cambia lectura y equipo juntos (nulo = pendiente de vincular) y conserva la version
+	 * anterior con su equipo. {@code sourceApproved}: se aprobo la fuente no preferente del nuevo equipo.
+	 */
+	public SessionRevision reassign(SessionReading reading, EquipmentReference equipment, boolean sourceApproved,
+			UUID batchId, OperatingZone zone, UUID actorId, Instant at) {
+		SessionRevision previous = SessionRevision.of(this, batchId, actorId, at);
+		apply(reading, zone);
+		detach();
+		if (equipment != null) {
+			attach(equipment);
+		}
+		this.sourceApproved = sourceApproved;
+		this.importBatchId = batchId;
+		this.revision++;
+		if (state != SessionState.TEST) {
+			state = officialState();
+		}
+		return previous;
+	}
+
+	/**
+	 * Vincula una sesion pendiente con el equipo ya identificado. Si la fuente no es la preferente
+	 * del equipo queda por aprobar, igual que al importarla con el equipo ya conocido.
+	 */
 	public void link(EquipmentReference equipment) {
 		if (equipmentId != null) {
 			throw new BusinessRuleException("SESSION_ALREADY_LINKED", "La sesion ya esta vinculada a un equipo");
 		}
 		attach(equipment);
 		if (state == SessionState.PENDING_LINK) {
-			state = SessionState.VALIDATED;
+			state = officialState();
 		}
+	}
+
+	/** Un analista aprueba que esta fuente no preferente sume para su equipo. */
+	public void approveSource() {
+		if (state != SessionState.AWAITING_APPROVAL) {
+			throw new BusinessRuleException("SESSION_NOT_AWAITING_APPROVAL",
+					"La sesion no espera aprobacion de fuente");
+		}
+		sourceApproved = true;
+		state = SessionState.VALIDATED;
 	}
 
 	/** Marca o desmarca como prueba; al desmarcar vuelve a su estado segun la vinculacion. */
@@ -165,8 +224,28 @@ public class EnergySession extends BaseAuditableEntity {
 		this.infrastructureType = equipment.type();
 	}
 
+	private void detach() {
+		this.equipmentId = null;
+		this.network = null;
+		this.infrastructureType = null;
+	}
+
+	/**
+	 * Estado que le corresponde fuera de las pruebas: sin equipo, pendiente; con equipo, validada si
+	 * la fuente es la preferente o se aprobo; si no, por aprobar. Es la unica regla para importar,
+	 * vincular, reasignar y reincorporar pruebas.
+	 */
 	private SessionState officialState() {
-		return equipmentId == null ? SessionState.PENDING_LINK : SessionState.VALIDATED;
+		if (equipmentId == null) {
+			return SessionState.PENDING_LINK;
+		}
+		return sourceApproved || PreferredSourcePolicy.isPreferred(source, network, infrastructureType)
+				? SessionState.VALIDATED
+				: SessionState.AWAITING_APPROVAL;
+	}
+
+	private static boolean sameText(String current, String incoming) {
+		return current == null ? incoming == null : incoming != null && current.equalsIgnoreCase(incoming);
 	}
 
 	public SessionSource getSource() {
@@ -211,6 +290,10 @@ public class EnergySession extends BaseAuditableEntity {
 
 	public SessionState getState() {
 		return state;
+	}
+
+	public boolean isSourceApproved() {
+		return sourceApproved;
 	}
 
 	public int getRevision() {

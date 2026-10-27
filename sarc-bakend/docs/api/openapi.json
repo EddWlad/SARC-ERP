@@ -815,6 +815,43 @@
         }
       }
     },
+    "/api/v1/energy/sessions/{id}/source-approval" : {
+      "post" : {
+        "tags" : [ "energy-session-controller" ],
+        "operationId" : "approveSource",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/energy/sessions/link-pending" : {
       "post" : {
         "tags" : [ "energy-session-controller" ],
@@ -1306,6 +1343,81 @@
         }
       }
     },
+    "/api/v1/reports/issued" : {
+      "get" : {
+        "tags" : [ "issued-report-controller" ],
+        "operationId" : "issuedReports",
+        "parameters" : [ {
+          "name" : "kind",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "[A-Z_]{1,30}"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultIssuedReportResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/issued/{id}/download" : {
+      "get" : {
+        "tags" : [ "issued-report-controller" ],
+        "operationId" : "issuedReportDownload",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DownloadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/inventory/summary" : {
       "get" : {
         "tags" : [ "inventory-controller" ],
@@ -1724,7 +1836,7 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "enum" : [ "VALIDATED", "PENDING_LINK", "TEST" ]
+            "enum" : [ "VALIDATED", "PENDING_LINK", "AWAITING_APPROVAL", "TEST" ]
           }
         }, {
           "name" : "text",
@@ -1892,7 +2004,7 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "INVALID", "DUPLICATE", "PENDING_LINK" ]
+            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "EQUIPMENT_CHANGED", "INVALID", "DUPLICATE", "PENDING_LINK" ]
           }
         }, {
           "name" : "page",
@@ -2419,6 +2531,9 @@
           },
           "approved" : {
             "type" : [ "boolean", "null" ]
+          },
+          "reassign" : {
+            "type" : [ "boolean", "null" ]
           }
         },
         "required" : [ "rowIds" ]
@@ -2470,7 +2585,7 @@
           },
           "classification" : {
             "type" : "string",
-            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "INVALID", "DUPLICATE", "PENDING_LINK" ]
+            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "EQUIPMENT_CHANGED", "INVALID", "DUPLICATE", "PENDING_LINK" ]
           },
           "issues" : {
             "type" : "array",
@@ -2490,12 +2605,18 @@
           "approved" : {
             "type" : "boolean"
           },
+          "reassigned" : {
+            "type" : "boolean"
+          },
           "outcome" : {
             "type" : [ "string", "null" ],
-            "enum" : [ "INSERTED", "CORRECTED", "UNCHANGED", "SKIPPED" ]
+            "enum" : [ "INSERTED", "CORRECTED", "REASSIGNED", "UNCHANGED", "SKIPPED" ]
+          },
+          "outcomeDetail" : {
+            "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "approved", "classification", "id", "issues", "nonPreferredSource", "requiresApproval", "rowNumber", "test" ]
+        "required" : [ "approved", "classification", "id", "issues", "nonPreferredSource", "reassigned", "requiresApproval", "rowNumber", "test" ]
       },
       "Issue" : {
         "type" : "object",
@@ -2834,10 +2955,102 @@
         },
         "required" : [ "text" ]
       },
+      "EquipmentRefResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "assignedCode" : {
+            "type" : "string"
+          },
+          "network" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          }
+        },
+        "required" : [ "assignedCode", "id", "name", "network", "type" ]
+      },
+      "SessionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "ENERLINK", "WALLBOX" ]
+          },
+          "externalSessionId" : {
+            "type" : "string"
+          },
+          "startedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "endedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "energyKwh" : {
+            "type" : "number"
+          },
+          "state" : {
+            "type" : "string",
+            "enum" : [ "VALIDATED", "PENDING_LINK", "AWAITING_APPROVAL", "TEST" ]
+          },
+          "equipment" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/EquipmentRefResponse"
+          },
+          "site" : {
+            "type" : [ "string", "null" ]
+          },
+          "charger" : {
+            "type" : [ "string", "null" ]
+          },
+          "serial" : {
+            "type" : [ "string", "null" ]
+          },
+          "connector" : {
+            "type" : [ "string", "null" ]
+          },
+          "revision" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "importBatchId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "endedAt", "energyKwh", "externalSessionId", "id", "importBatchId", "revision", "source", "startDate", "startedAt", "state", "version" ]
+      },
       "PendingLinkResponse" : {
         "type" : "object",
         "properties" : {
           "linked" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "awaitingApproval" : {
             "type" : "integer",
             "format" : "int32"
           },
@@ -2846,7 +3059,7 @@
             "format" : "int32"
           }
         },
-        "required" : [ "linked", "stillPending" ]
+        "required" : [ "awaitingApproval", "linked", "stillPending" ]
       },
       "ImportBatchResponse" : {
         "type" : "object",
@@ -2898,6 +3111,10 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "equipmentChangedRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "invalidRows" : {
             "type" : "integer",
             "format" : "int32"
@@ -2927,7 +3144,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "appliedRows", "checksum", "createdAt", "duplicateRows", "fileName", "id", "identicalRows", "invalidRows", "modifiedRows", "newRows", "origin", "pendingLinkRows", "scope", "source", "status", "totalRows", "version" ]
+        "required" : [ "appliedRows", "checksum", "createdAt", "duplicateRows", "equipmentChangedRows", "fileName", "id", "identicalRows", "invalidRows", "modifiedRows", "newRows", "origin", "pendingLinkRows", "scope", "source", "status", "totalRows", "version" ]
       },
       "PasteImportRequest" : {
         "type" : "object",
@@ -3098,94 +3315,6 @@
         },
         "required" : [ "test", "version" ]
       },
-      "EquipmentRefResponse" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "assignedCode" : {
-            "type" : "string"
-          },
-          "network" : {
-            "type" : "string",
-            "enum" : [ "KIA", "JAC", "CONECTZ" ]
-          },
-          "type" : {
-            "type" : "string",
-            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
-          }
-        },
-        "required" : [ "assignedCode", "id", "name", "network", "type" ]
-      },
-      "SessionResponse" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "source" : {
-            "type" : "string",
-            "enum" : [ "ENERLINK", "WALLBOX" ]
-          },
-          "externalSessionId" : {
-            "type" : "string"
-          },
-          "startedAt" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "endedAt" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "startDate" : {
-            "type" : "string",
-            "format" : "date"
-          },
-          "energyKwh" : {
-            "type" : "number"
-          },
-          "state" : {
-            "type" : "string",
-            "enum" : [ "VALIDATED", "PENDING_LINK", "TEST" ]
-          },
-          "equipment" : {
-            "type" : "null",
-            "$ref" : "#/components/schemas/EquipmentRefResponse"
-          },
-          "site" : {
-            "type" : [ "string", "null" ]
-          },
-          "charger" : {
-            "type" : [ "string", "null" ]
-          },
-          "serial" : {
-            "type" : [ "string", "null" ]
-          },
-          "connector" : {
-            "type" : [ "string", "null" ]
-          },
-          "revision" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "importBatchId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "version" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        },
-        "required" : [ "endedAt", "energyKwh", "externalSessionId", "id", "importBatchId", "revision", "source", "startDate", "startedAt", "state", "version" ]
-      },
       "UpdateConnectorTypeRequest" : {
         "type" : "object",
         "properties" : {
@@ -3232,6 +3361,84 @@
           }
         },
         "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "IssuedReportResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "type" : "string"
+          },
+          "format" : {
+            "type" : "string",
+            "enum" : [ "PDF", "XLSX" ]
+          },
+          "fileName" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "type" : "string"
+          },
+          "checksum" : {
+            "type" : "string"
+          },
+          "sizeBytes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "archived" : {
+            "type" : "boolean"
+          },
+          "issuedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "issuedBy" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "archived", "checksum", "fileName", "format", "id", "issuedAt", "kind", "scope", "sizeBytes" ]
+      },
+      "PageResultIssuedReportResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IssuedReportResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "DownloadResponse" : {
+        "type" : "object",
+        "properties" : {
+          "url" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "url" ]
       },
       "InventorySummaryResponse" : {
         "type" : "object",
@@ -3482,6 +3689,9 @@
           "pendingLink" : {
             "$ref" : "#/components/schemas/Totals"
           },
+          "awaitingApproval" : {
+            "$ref" : "#/components/schemas/Totals"
+          },
           "test" : {
             "$ref" : "#/components/schemas/Totals"
           },
@@ -3490,7 +3700,7 @@
             "format" : "date-time"
           }
         },
-        "required" : [ "averageKwhPerSession", "byNetwork", "bySource", "byType", "daily", "from", "generatedAt", "official", "pendingLink", "test", "to", "top" ]
+        "required" : [ "averageKwhPerSession", "awaitingApproval", "byNetwork", "bySource", "byType", "daily", "from", "generatedAt", "official", "pendingLink", "test", "to", "top" ]
       },
       "Day" : {
         "type" : "object",

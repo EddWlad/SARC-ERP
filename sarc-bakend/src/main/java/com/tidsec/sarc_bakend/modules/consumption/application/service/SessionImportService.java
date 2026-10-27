@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -114,8 +115,9 @@ public class SessionImportService {
 
 	/** Marca filas como prueba o aprueba correcciones mientras la vista previa esta abierta. */
 	public List<ImportRow> decide(RowDecisionCommand command) {
-		if (command.test() == null && command.approved() == null) {
-			throw new BusinessRuleException("ROW_DECISION_EMPTY", "Indique si las filas son de prueba o si se aprueban");
+		if (command.test() == null && command.approved() == null && command.reassign() == null) {
+			throw new BusinessRuleException("ROW_DECISION_EMPTY",
+					"Indique si las filas son de prueba, si se aprueban o si se reasignan");
 		}
 		load(command.batchId()).requireReviewable();
 		Set<UUID> requested = Set.copyOf(command.rowIds());
@@ -123,7 +125,7 @@ public class SessionImportService {
 		if (found.size() != requested.size()) {
 			throw new NotFoundException("IMPORT_ROW_NOT_FOUND", "Alguna fila no pertenece a este lote");
 		}
-		found.forEach(row -> row.decide(command.test(), command.approved()));
+		found.forEach(row -> row.decide(command.test(), command.approved(), command.reassign()));
 		return found;
 	}
 
@@ -186,9 +188,14 @@ public class SessionImportService {
 		return batch;
 	}
 
-	/** Si la cola de trabajos esta llena el lote falla de inmediato y el analista lo reintenta luego. */
+	/**
+	 * Si la cola de trabajos esta llena el lote falla de inmediato y el analista lo reintenta luego. Corre
+	 * despues del commit del lote, cuando ya no hay transaccion activa: necesita una propia.
+	 */
 	private Runnable failWhenBusy(UUID id) {
-		return () -> transactions.executeWithoutResult(status -> batches.findById(id).ifPresent(batch -> {
+		TransactionTemplate independent = new TransactionTemplate(transactions.getTransactionManager());
+		independent.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+		return () -> independent.executeWithoutResult(status -> batches.findById(id).ifPresent(batch -> {
 			batch.failBecauseBusy();
 			batches.save(batch);
 		}));

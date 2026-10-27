@@ -30,6 +30,8 @@ interface ImportRowJpaRepository extends JpaRepository<ImportRow, UUID> {
 			  and (r.approved = true
 			       or (r.classification <> com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowClassification.MODIFIED
 			           and r.nonPreferredSource = false))
+			  and (r.classification <> com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowClassification.EQUIPMENT_CHANGED
+			       or r.reassigned = true)
 			order by r.rowNumber""")
 	List<ImportRow> nextToApply(@Param("batchId") UUID batchId,
 			@Param("writing") Collection<RowClassification> writing, Pageable pageable);
@@ -37,7 +39,8 @@ interface ImportRowJpaRepository extends JpaRepository<ImportRow, UUID> {
 	@Modifying(flushAutomatically = true, clearAutomatically = true)
 	@Query("""
 			update ImportRow r
-			set r.outcome = com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowOutcome.SKIPPED
+			set r.outcome = com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowOutcome.SKIPPED,
+			    r.outcomeDetail = 'Sin aprobar o sin reasignar'
 			where r.batchId = :batchId and r.outcome is null and r.classification in :writing""")
 	void markSkipped(@Param("batchId") UUID batchId, @Param("writing") Collection<RowClassification> writing);
 
@@ -45,6 +48,7 @@ interface ImportRowJpaRepository extends JpaRepository<ImportRow, UUID> {
 			select count(r) from ImportRow r
 			where r.batchId = :batchId
 			  and r.outcome in (com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowOutcome.INSERTED,
-			                    com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowOutcome.CORRECTED)""")
+			                    com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowOutcome.CORRECTED,
+			                    com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowOutcome.REASSIGNED)""")
 	long countWritten(@Param("batchId") UUID batchId);
 }

@@ -47,6 +47,9 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 				.kpis(List.of(
 						new Kpi("Pendientes de vincular", ConsumptionLabels.count(summary.pendingLink().sessions())
 								+ " (" + ConsumptionLabels.kwh(summary.pendingLink().energyKwh()) + " kWh)"),
+						new Kpi("Por aprobar (fuente no preferente)",
+								ConsumptionLabels.count(summary.awaitingApproval().sessions()) + " ("
+										+ ConsumptionLabels.kwh(summary.awaitingApproval().energyKwh()) + " kWh)"),
 						new Kpi("Pruebas", ConsumptionLabels.count(summary.test().sessions()) + " ("
 								+ ConsumptionLabels.kwh(summary.test().energyKwh()) + " kWh)")))
 				.section("Top 5 equipos por energía")

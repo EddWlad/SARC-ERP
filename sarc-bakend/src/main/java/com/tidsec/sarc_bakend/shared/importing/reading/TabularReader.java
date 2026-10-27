@@ -94,6 +94,11 @@ public class TabularReader {
 				addRow(rows, row);
 			}
 		}
+		if (pending != null) {
+			// Un campo abierto que nunca se cierra se tragaria el resto del archivo sin avisar.
+			throw new BusinessRuleException("IMPORT_UNCLOSED_QUOTE", "El archivo tiene comillas sin cerrar desde la "
+					+ "linea " + startLine + "; corrija ese campo y vuelva a cargarlo");
+		}
 		return rows;
 	}
 

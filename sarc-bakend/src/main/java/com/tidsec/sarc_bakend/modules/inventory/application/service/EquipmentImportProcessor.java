@@ -245,11 +245,13 @@ class EquipmentImportProcessor {
 		Equipment target = evaluation.existing();
 		ProposedEquipment proposal = evaluation.proposal();
 		List<ConnectorType> connectors = proposal.connectorTypesOver(target);
+		Map<String, String> before = EquipmentChanges.snapshot(target);
 		target.applyDetails(proposal.detailsOver(target));
 		target.replaceConnectors(connectors);
 		equipment.save(target);
-		audit.record("EQUIPMENT_UPDATED", Equipment.AUDIT_ENTITY_TYPE, target.getId(),
-				Map.of("importBatch", batchId.toString()));
+		Map<String, String> details = new HashMap<>(EquipmentChanges.diff(before, EquipmentChanges.snapshot(target)));
+		details.put("importBatch", batchId.toString());
+		audit.record("EQUIPMENT_UPDATED", Equipment.AUDIT_ENTITY_TYPE, target.getId(), details);
 		return target;
 	}
 

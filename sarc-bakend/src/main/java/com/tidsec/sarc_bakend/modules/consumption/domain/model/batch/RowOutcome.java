@@ -5,6 +5,8 @@ public enum RowOutcome {
 
 	INSERTED,
 	CORRECTED,
+	/** Conciliacion explicita: la sesion paso a otro cargador (o quedo pendiente de vincular). */
+	REASSIGNED,
 	/** La sesion ya tenia esos datos (otra importacion la trajo antes): no hubo cambio. */
 	UNCHANGED,
 	/** La sesion cambio despues de la vista previa y la correccion no estaba aprobada. */

@@ -18,6 +18,12 @@ spring:
         order_inserts: true
         order_updates: true
         default_batch_fetch_size: 50
+  datasource:
+    hikari:
+      data-source-properties:
+        # Sin el "Detail: Key (...)=(...)" de PostgreSQL en los mensajes de error: trae valores de
+        # columnas (UID/PUK, correos) que terminarian en los logs (QA-10).
+        logServerErrorDetail: false
   flyway:
     locations: classpath:db/migration
   servlet:

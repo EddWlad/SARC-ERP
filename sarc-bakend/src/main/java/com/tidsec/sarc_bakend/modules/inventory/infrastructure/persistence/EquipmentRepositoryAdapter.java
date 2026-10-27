@@ -107,6 +107,11 @@ class EquipmentRepositoryAdapter implements EquipmentRepository {
 	}
 
 	@Override
+	public long count(EquipmentSearchCriteria criteria) {
+		return jpa.count(matching(criteria));
+	}
+
+	@Override
 	public List<EquipmentCount> countByDimensions(EquipmentSearchCriteria criteria) {
 		CriteriaBuilder cb = entityManager.getCriteriaBuilder();
 		CriteriaQuery<Tuple> query = cb.createTupleQuery();

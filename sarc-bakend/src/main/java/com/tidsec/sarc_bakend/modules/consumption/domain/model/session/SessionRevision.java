@@ -44,6 +44,10 @@ public class SessionRevision {
 	@Column(updatable = false, length = 150)
 	private String sourceConnector;
 
+	/** Equipo al que estaba vinculada esa version (cambia al reasignar). */
+	@Column(updatable = false)
+	private UUID equipmentId;
+
 	@Column(nullable = false, updatable = false)
 	private UUID importBatchId;
 
@@ -72,6 +76,7 @@ public class SessionRevision {
 		revision.sourceCharger = reading.charger();
 		revision.sourceSerial = reading.serial();
 		revision.sourceConnector = reading.connector();
+		revision.equipmentId = session.getEquipmentId();
 		revision.importBatchId = session.getImportBatchId();
 		revision.supersededAt = at;
 		revision.supersededBy = actorId;
@@ -89,5 +94,9 @@ public class SessionRevision {
 
 	public BigDecimal getEnergyKwh() {
 		return energyKwh;
+	}
+
+	public UUID getEquipmentId() {
+		return equipmentId;
 	}
 }

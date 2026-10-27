@@ -44,6 +44,15 @@ class TabularReaderTest {
 	}
 
 	@Test
+	void anUnclosedQuoteFailsWithItsLineInsteadOfSwallowingTheRest() {
+		// QA-04: antes se descartaban en silencio la fila abierta y todas las siguientes.
+		assertThatThrownBy(() -> reader.readText("id,name\n1,ok\n2,\"sin cerrar\n3,perdida\n"))
+				.extracting("code", "message")
+				.containsExactly("IMPORT_UNCLOSED_QUOTE",
+						"El archivo tiene comillas sin cerrar desde la linea 3; corrija ese campo y vuelva a cargarlo");
+	}
+
+	@Test
 	void fallsBackToWindows1252ForSpanishExcelExports() {
 		byte[] content = "ACTIVO,CARGADOR\nEstación,Peñón\n".getBytes(Charset.forName("windows-1252"));
 

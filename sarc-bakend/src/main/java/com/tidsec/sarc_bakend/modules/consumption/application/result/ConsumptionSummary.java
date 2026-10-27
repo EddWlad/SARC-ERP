@@ -21,6 +21,7 @@ import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 public record ConsumptionSummary(LocalDate from, LocalDate to, EnergyTotals official,
 		BigDecimal averageKwhPerSession, List<RankedEquipment> top, List<DailyEnergy> daily,
 		Map<ChargingNetwork, EnergyTotals> byNetwork, Map<SessionSource, EnergyTotals> bySource,
-		Map<InfrastructureType, EnergyTotals> byType, EnergyTotals pendingLink, EnergyTotals test,
+		Map<InfrastructureType, EnergyTotals> byType, EnergyTotals pendingLink, EnergyTotals awaitingApproval,
+		EnergyTotals test,
 		Instant generatedAt) {
 }

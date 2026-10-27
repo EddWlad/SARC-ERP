@@ -1,6 +1,8 @@
 package com.tidsec.sarc_bakend.shared.storage;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
@@ -19,6 +21,7 @@ class CloudinaryFileStorage implements FileStorage {
 
 	private static final Logger log = LoggerFactory.getLogger(CloudinaryFileStorage.class);
 	private static final String DELIVERY_TYPE = "authenticated";
+	private static final Duration DOCUMENT_URL_TTL = Duration.ofMinutes(5);
 
 	private final Cloudinary cloudinary;
 	private final String rootFolder;
@@ -83,6 +86,24 @@ class CloudinaryFileStorage implements FileStorage {
 	public Optional<String> accessUrl(String reference) {
 		return Optional.of(cloudinary.url().type(DELIVERY_TYPE).resourceType("image").secure(true).signed(true)
 				.generate(reference));
+	}
+
+	/**
+	 * Firmada y con vencimiento: quien la obtiene no puede reutilizarla indefinidamente. Se entrega como
+	 * adjunto, para que el navegador la descargue sin reemplazar la pagina de SARC.
+	 */
+	@Override
+	public Optional<String> documentUrl(String reference) {
+		try {
+			long expiresAt = Instant.now().plus(DOCUMENT_URL_TTL).getEpochSecond();
+			return Optional.of(cloudinary.privateDownload(reference, null,
+					ObjectUtils.asMap("type", DELIVERY_TYPE, "resource_type", "raw", "expires_at", expiresAt,
+							"attachment", true)));
+		}
+		catch (Exception ex) {
+			log.error("No se pudo firmar la descarga del documento {}", reference, ex);
+			throw unavailable();
+		}
 	}
 
 	private static ServiceUnavailableException unavailable() {

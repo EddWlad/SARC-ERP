@@ -33,7 +33,9 @@ public record ImportRowResponse(
 		boolean requiresApproval,
 		boolean test,
 		boolean approved,
-		@Schema(nullable = true) RowOutcome outcome) {
+		boolean reassigned,
+		@Schema(nullable = true) RowOutcome outcome,
+		@Schema(nullable = true) String outcomeDetail) {
 
 	public record Issue(String code, String message) {
 
@@ -47,6 +49,6 @@ public record ImportRowResponse(
 				row.getEndedAt(), row.getEnergyKwh(), row.getSourceSite(), row.getSourceCharger(), row.getSourceSerial(),
 				row.getSourceConnector(), row.getEquipmentId(), row.getNetwork(), row.getClassification(),
 				row.getIssues().stream().map(Issue::from).toList(), row.isNonPreferredSource(), row.requiresApproval(),
-				row.isTest(), row.isApproved(), row.getOutcome());
+				row.isTest(), row.isApproved(), row.isReassigned(), row.getOutcome(), row.getOutcomeDetail());
 	}
 }

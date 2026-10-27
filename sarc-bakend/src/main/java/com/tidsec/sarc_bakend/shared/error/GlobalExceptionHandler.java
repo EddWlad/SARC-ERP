@@ -1,7 +1,9 @@
 package com.tidsec.sarc_bakend.shared.error;
 
+import java.sql.SQLException;
 import java.util.List;
 
+import org.hibernate.exception.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -70,7 +72,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
 	@ExceptionHandler(DataIntegrityViolationException.class)
 	ResponseEntity<Object> handleDataIntegrity(DataIntegrityViolationException ex, WebRequest request) {
-		log.warn("Violacion de integridad de datos", ex);
+		// Solo la restriccion y el SQLSTATE: el mensaje completo puede traer valores de columnas.
+		String constraint = null;
+		String sqlState = null;
+		for (Throwable cause = ex; cause != null && constraint == null; cause = cause.getCause()) {
+			if (cause instanceof ConstraintViolationException violation) {
+				constraint = violation.getConstraintName();
+				sqlState = violation.getSQLState();
+			}
+			else if (cause instanceof SQLException sql && sqlState == null) {
+				sqlState = sql.getSQLState();
+			}
+		}
+		log.warn("Violacion de integridad de datos: restriccion={}, sqlState={}, traceId={}", constraint, sqlState,
+				MDC.get(RequestTraceFilter.TRACE_ID_KEY));
 		return problem(HttpStatus.CONFLICT, "DATA_INTEGRITY_VIOLATION",
 				"La operacion viola una restriccion de integridad de datos", request);
 	}

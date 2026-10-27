@@ -34,6 +34,8 @@ abstract class TabularSessionParser implements SessionReportParser {
 
 	private static final int MAX_ID_LENGTH = 100;
 	private static final int MAX_NAME_LENGTH = 150;
+	/** La serie se guarda en una columna mas corta que los nombres (VARCHAR(80)). */
+	private static final int MAX_SERIAL_LENGTH = 80;
 
 	/** Lo que cada fuente aporta sobre el equipo y la ubicacion de la sesion. */
 	protected record SourceFields(String site, String charger, String serial, String connector,
@@ -75,11 +77,10 @@ abstract class TabularSessionParser implements SessionReportParser {
 		if (fields.lookup() == null) {
 			issues.add(new RowIssue("EQUIPMENT_REFERENCE_REQUIRED", "Falta el identificador del cargador"));
 		}
-		for (String text : new String[] { fields.site(), fields.charger(), fields.serial(), fields.connector() }) {
-			if (text != null && text.length() > MAX_NAME_LENGTH) {
-				issues.add(new RowIssue("TEXT_TOO_LONG", "\"" + text + "\" supera 150 caracteres"));
-			}
+		for (String text : new String[] { fields.site(), fields.charger(), fields.connector() }) {
+			checkLength(text, MAX_NAME_LENGTH, issues);
 		}
+		checkLength(fields.serial(), MAX_SERIAL_LENGTH, issues);
 		if (!issues.isEmpty()) {
 			return new ParsedSession(row.number(), blankToNull(id), null, fields.lookup(), issues);
 		}
@@ -87,6 +88,14 @@ abstract class TabularSessionParser implements SessionReportParser {
 				fields.serial(), fields.connector());
 		issues.addAll(SessionRules.check(reading));
 		return new ParsedSession(row.number(), id, issues.isEmpty() ? reading : null, fields.lookup(), issues);
+	}
+
+	/** Se cita solo el comienzo del texto: un valor desbordado no debe inflar el mensaje de la fila. */
+	private static void checkLength(String text, int max, List<RowIssue> issues) {
+		if (text != null && text.length() > max) {
+			String start = text.length() > 40 ? text.substring(0, 40) + "…" : text;
+			issues.add(new RowIssue("TEXT_TOO_LONG", "\"" + start + "\" supera " + max + " caracteres"));
+		}
 	}
 
 	private static <T> T read(String field, Supplier<T> parser, List<RowIssue> issues) {

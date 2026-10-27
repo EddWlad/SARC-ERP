@@ -77,6 +77,8 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 				List.of("kWh por sesión", summary.averageKwhPerSession()),
 				List.of("Pendientes de vincular (sesiones)", summary.pendingLink().sessions()),
 				List.of("Pendientes de vincular (kWh)", summary.pendingLink().energyKwh()),
+				List.of("Por aprobar (sesiones)", summary.awaitingApproval().sessions()),
+				List.of("Por aprobar (kWh)", summary.awaitingApproval().energyKwh()),
 				List.of("Pruebas (sesiones)", summary.test().sessions()),
 				List.of("Pruebas (kWh)", summary.test().energyKwh()));
 	}
