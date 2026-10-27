@@ -8,6 +8,9 @@ import java.util.Optional;
  */
 public interface FileStorage {
 
+	/** Codigo del error cuando el entorno no tiene almacenamiento (desarrollo sin credenciales). */
+	String NOT_CONFIGURED = "STORAGE_NOT_CONFIGURED";
+
 	/** Guarda el contenido dentro de la carpeta logica indicada y devuelve su referencia. */
 	String store(String folder, byte[] content);
 

@@ -53,7 +53,7 @@ class StorageConfig {
 	}
 
 	private static ServiceUnavailableException notConfigured() {
-		return new ServiceUnavailableException("STORAGE_NOT_CONFIGURED",
+		return new ServiceUnavailableException(FileStorage.NOT_CONFIGURED,
 				"El almacenamiento de archivos no esta configurado en este entorno");
 	}
 }

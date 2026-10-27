@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -55,6 +56,7 @@ import com.tidsec.sarc_bakend.modules.identity.domain.model.Email;
 import com.tidsec.sarc_bakend.modules.identity.domain.model.Role;
 import com.tidsec.sarc_bakend.modules.identity.domain.model.UserAccount;
 import com.tidsec.sarc_bakend.modules.identity.domain.repository.UserRepository;
+import com.tidsec.sarc_bakend.shared.error.ServiceUnavailableException;
 import com.tidsec.sarc_bakend.shared.importing.batch.ImportJobs;
 import com.tidsec.sarc_bakend.shared.storage.FileStorage;
 
@@ -428,6 +430,26 @@ class ConsumptionApiTest {
 				.andExpect(jsonPath("$.url").value("https://files.test/firmada"));
 		assertThat(jdbc.queryForObject("select count(*) from audit_event where action = 'CONSUMPTION_REPORT_GENERATED' "
 				+ "and entity_type = 'ISSUED_REPORT'", Integer.class)).isEqualTo(1);
+	}
+
+	@Test
+	void aReportIsNotDeliveredWhenItsCopyCannotBeStored() throws Exception {
+		// Un documento emitido debe poder recuperarse; solo un entorno sin almacenamiento emite sin copia.
+		doThrow(new ServiceUnavailableException("STORAGE_UNAVAILABLE", "Almacenamiento caido")).when(fileStorage)
+				.storeDocument(anyString(), anyString(), any());
+		mvc.perform(get("/api/v1/energy/report").param("format", "PDF")
+				.param("from", "2026-10-01").param("to", "2026-11-01").cookie(manager))
+				.andExpect(status().isServiceUnavailable())
+				.andExpect(jsonPath("$.code").value("REPORT_ARCHIVE_UNAVAILABLE"));
+		assertThat(jdbc.queryForObject("select count(*) from report_issued", Integer.class)).isZero();
+
+		doThrow(new ServiceUnavailableException(FileStorage.NOT_CONFIGURED, "Sin almacenamiento")).when(fileStorage)
+				.storeDocument(anyString(), anyString(), any());
+		mvc.perform(get("/api/v1/energy/report").param("format", "PDF")
+				.param("from", "2026-10-01").param("to", "2026-11-01").cookie(manager))
+				.andExpect(status().isOk());
+		assertThat(jdbc.queryForObject("select count(*) from report_issued where file_ref is null", Integer.class))
+				.isEqualTo(1);
 	}
 
 	@Test

@@ -63,14 +63,23 @@ class ReportArchiveService implements ReportArchive {
 		return id;
 	}
 
-	/** Sin almacenamiento, el reporte se entrega igual y la emision queda con su huella. */
+	/**
+	 * Solo un entorno sin almacenamiento (desarrollo) emite el reporte con su huella y sin copia. Si
+	 * el almacenamiento existe pero falla, el reporte no se entrega: un documento emitido siempre debe
+	 * poder recuperarse tal como se entrego (RF-RPT-08).
+	 */
 	private String store(UUID id, IssuedReportFile issued) {
 		try {
 			return fileStorage.storeDocument(STORAGE_FOLDER + issued.kind().toLowerCase() + "/" + id,
 					issued.file().filename(), issued.file().content());
 		}
 		catch (ServiceUnavailableException ex) {
-			log.warn("No se pudo archivar el reporte {} ({}): queda registrada solo su huella", id, ex.code());
+			if (!FileStorage.NOT_CONFIGURED.equals(ex.code())) {
+				throw new ServiceUnavailableException("REPORT_ARCHIVE_UNAVAILABLE",
+						"No se pudo guardar la copia del reporte; no se entrego para no emitir un documento sin "
+								+ "respaldo. Intente de nuevo en unos minutos");
+			}
+			log.warn("Almacenamiento no configurado: el reporte {} queda registrado solo con su huella", id);
 			return null;
 		}
 	}

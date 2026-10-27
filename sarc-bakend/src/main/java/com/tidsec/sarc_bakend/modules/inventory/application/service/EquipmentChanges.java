@@ -76,9 +76,10 @@ final class EquipmentChanges {
 		return interval.dayOfWeek() + " " + interval.opensAt() + "-" + interval.closesAt();
 	}
 
+	/** Fecha, horario y nota: cambiar solo la nota tambien es un cambio auditable. */
 	private static String exception(ScheduleException exception) {
 		String hours = exception.closed() ? "cerrado" : exception.opensAt() + "-" + exception.closesAt();
-		return exception.date() + " " + hours;
+		return exception.date() + " " + hours + (exception.note() == null ? "" : " (" + exception.note() + ")");
 	}
 
 	private static String text(Enum<?> value) {

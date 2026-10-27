@@ -42,7 +42,7 @@ public class IssuedReportService {
 					"Este reporte se emitio sin copia archivada; solo se conserva su huella");
 		}
 		return fileStorage.documentUrl(report.getFileRef())
-				.orElseThrow(() -> new ServiceUnavailableException("STORAGE_NOT_CONFIGURED",
+				.orElseThrow(() -> new ServiceUnavailableException(FileStorage.NOT_CONFIGURED,
 						"El almacenamiento de archivos no esta configurado en este entorno"));
 	}
 }

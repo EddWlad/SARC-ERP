@@ -464,6 +464,20 @@ class InventoryApiTest {
 				+ "and action = 'EQUIPMENT_SCHEDULE_DEFINED'", String.class, id);
 		assertThat(schedule).contains("\"modeFrom\": \"NOT_DEFINED\"", "\"intervalsTo\": \"MONDAY 08:00-18:00\"",
 				"\"exceptionsTo\": \"2026-12-25 cerrado\"");
+
+		// Cambiar solo la nota de una excepcion tambien deja su valor anterior y el nuevo.
+		String noted = """
+				{"version":%d,"mode":"WEEKLY","intervals":[{"day":"MONDAY","opensAt":"08:00","closesAt":"18:00"}],
+				 "exceptions":[{"date":"2026-12-25","closed":true,"note":"%s"}]}
+				""";
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id + "/schedule", noted.formatted(2, "Navidad"))
+				.andExpect(status().isOk());
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id + "/schedule", noted.formatted(3, "Mantenimiento"))
+				.andExpect(status().isOk());
+		assertThat(jdbc.queryForObject("select details::text from audit_event where entity_id = ?::uuid "
+				+ "and action = 'EQUIPMENT_SCHEDULE_DEFINED' order by occurred_at desc limit 1", String.class, id))
+				.contains("\"exceptionsFrom\": \"2026-12-25 cerrado (Navidad)\"",
+						"\"exceptionsTo\": \"2026-12-25 cerrado (Mantenimiento)\"");
 	}
 
 	@Test
