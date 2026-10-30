@@ -180,7 +180,9 @@
       <span
         class="badge"
         [class.badge-accent]="item.classification === 'NEW'"
-        [class.badge-info]="item.classification === 'MODIFIED'"
+        [class.badge-info]="
+          item.classification === 'MODIFIED' || item.classification === 'IDENTITY_COMPLETED'
+        "
         [class.badge-warn]="
           item.classification === 'INVALID' ||
           item.classification === 'CONFLICT' ||

@@ -19,6 +19,7 @@ export const EQUIPMENT_CLASSIFICATION_LABELS: Readonly<Record<EquipmentRowClassi
     NEW: 'Nuevos',
     IDENTICAL: 'Sin cambios',
     MODIFIED: 'Modificados',
+    IDENTITY_COMPLETED: 'Completan identidad',
     INVALID: 'Inválidos',
     DUPLICATE: 'Duplicados',
     DELETED_EXISTS: 'Eliminados',
@@ -30,7 +31,10 @@ export const EQUIPMENT_CLASSIFICATION_HINTS: Readonly<Record<EquipmentRowClassif
   {
     NEW: 'Se registran al confirmar, con sus identidades externas verificadas',
     IDENTICAL: 'El equipo ya tiene esos datos; no se toca',
-    MODIFIED: 'El equipo existe con otros datos; se actualiza solo si lo aprueba',
+    MODIFIED:
+      'El equipo existe con otros datos; se actualiza solo si lo aprueba. Sin aprobar no se registra tampoco su identidad',
+    IDENTITY_COMPLETED:
+      'Solo agregan la identidad Enerlink a un equipo existente; se aplican al confirmar, sin aprobación',
     INVALID: 'Faltan datos o no cumplen las reglas del equipo; no se registran',
     DUPLICATE: 'Repiten la serie, el código, el UID/PUK o una identidad de una fila anterior',
     DELETED_EXISTS: 'La serie es de un equipo eliminado: recupérelo desde el inventario',
@@ -44,6 +48,7 @@ export const EQUIPMENT_CLASSIFICATIONS = Object.keys(
 export const EQUIPMENT_OUTCOME_LABELS: Readonly<Record<EquipmentRowOutcome, string>> = {
   CREATED: 'Registrado',
   UPDATED: 'Actualizado',
+  IDENTITY_ADDED: 'Identidad añadida',
   UNCHANGED: 'Sin cambios',
   SKIPPED: 'Omitido',
 };
@@ -60,6 +65,8 @@ export function equipmentClassificationCount(
       return batch.identicalRows;
     case 'MODIFIED':
       return batch.modifiedRows;
+    case 'IDENTITY_COMPLETED':
+      return batch.identityCompletedRows;
     case 'INVALID':
       return batch.invalidRows;
     case 'DUPLICATE':

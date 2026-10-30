@@ -30,9 +30,10 @@ import {
 } from '../../domain/equipment-import';
 
 const CONFIRM_MESSAGE =
-  'Se registrarán los equipos nuevos y se actualizarán los modificados que aprobó, con sus ' +
-  'identidades externas verificadas. Las filas inválidas, duplicadas, en conflicto o de equipos ' +
-  'eliminados no se tocan.';
+  'Se registrarán los equipos nuevos, se completarán las identidades Enerlink y se actualizarán ' +
+  'los modificados que aprobó, con sus identidades externas verificadas. Los modificados sin ' +
+  'aprobar se omiten completos, también su identidad. Las filas inválidas, duplicadas, en ' +
+  'conflicto o de equipos eliminados no se tocan.';
 
 /**
  * Vista previa de una carga masiva de equipos (ADR 0007): conteos por clasificacion, filas con sus

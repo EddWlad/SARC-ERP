@@ -77,7 +77,9 @@ interface ExternalIdentityFormValue {
         <mat-form-field appearance="outline">
           <mat-label>Ámbito</mat-label>
           <input matInput autocomplete="off" [formField]="identityForm.scope" />
-          <mat-hint>Organización o cuenta dentro de la plataforma, si aplica.</mat-hint>
+          <mat-hint
+            >En Enerlink es el ACTIVO; en otras plataformas, organización o cuenta.</mat-hint
+          >
           @for (error of identityForm.scope().errors(); track error.kind) {
             <mat-error>{{ error.message }}</mat-error>
           }
@@ -133,6 +135,10 @@ export class ExternalIdentityDialog {
     required(path.platform, { message: 'Seleccione la plataforma' });
     required(path.externalId, { message: 'Ingrese el identificador' });
     maxLength(path.externalId, 150, { message: 'Máximo 150 caracteres' });
+    required(path.scope, {
+      when: ({ valueOf }) => valueOf(path.platform) === 'ENERLINK',
+      message: 'Enerlink exige ACTIVO y CARGADOR',
+    });
     maxLength(path.scope, 100, { message: 'Máximo 100 caracteres' });
     maxLength(path.alias, 150, { message: 'Máximo 150 caracteres' });
   });
