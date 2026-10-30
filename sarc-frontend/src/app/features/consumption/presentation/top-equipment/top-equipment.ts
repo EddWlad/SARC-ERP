@@ -23,7 +23,9 @@ import { RankedEquipment } from '../../domain/consumption';
           <span class="position">{{ index + 1 }}</span>
           <span class="name">
             {{ item.equipment?.name ?? 'Sin nombre' }}
-            <span class="muted">· {{ item.equipment?.assignedCode }}</span>
+            @if (item.equipment?.assignedCode) {
+              <span class="muted">· {{ item.equipment.assignedCode }}</span>
+            }
           </span>
           <span class="muted sessions">{{ quantities.count(item.sessions) }} sesiones</span>
           <strong>{{ quantities.kwh(item.energyKwh) }} kWh</strong>

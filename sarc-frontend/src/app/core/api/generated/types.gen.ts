@@ -33,7 +33,7 @@ export type EquipmentResponse = {
     brand: 'BENNY' | 'WALLBOX';
     name: string;
     serial: string;
-    assignedCode: string;
+    assignedCode?: string | null;
     uidPuk?: string | null;
     location?: string | null;
     mapsUrl?: string | null;
@@ -262,7 +262,7 @@ export type PasteEquipmentImportRequest = {
 export type EquipmentRefResponse = {
     id: string;
     name: string;
-    assignedCode: string;
+    assignedCode?: string | null;
     network: 'KIA' | 'JAC' | 'CONECTZ';
     type: 'CHARGING_POINT' | 'CHARGING_STATION';
 };
@@ -436,7 +436,7 @@ export type InventorySummaryResponse = {
 export type EquipmentSummaryResponse = {
     id: string;
     name: string;
-    assignedCode: string;
+    assignedCode?: string | null;
     serial: string;
     network: 'KIA' | 'JAC' | 'CONECTZ';
     type: 'CHARGING_POINT' | 'CHARGING_STATION';

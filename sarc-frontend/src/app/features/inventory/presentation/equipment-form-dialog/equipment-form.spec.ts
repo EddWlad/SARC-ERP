@@ -40,6 +40,19 @@ describe('equipment form', () => {
     });
   });
 
+  it('keeps a preloaded code in an update after changing usage', () => {
+    const equipment = {
+      assignedCode: '654321',
+      usageStatus: 'BLOCKED',
+      connectors: [],
+      version: 3,
+    } as unknown as Equipment;
+    expect(initialFormValue(equipment).assignedCode).toBe('654321');
+    expect(
+      toUpdateInput(toEquipmentDraft({ ...BASE, assignedCode: '654321', usageStatus: 'FREE' })),
+    ).toEqual(expect.objectContaining({ assignedCode: '654321', usageStatus: 'FREE' }));
+  });
+
   it('omits code and usage status on stations and sends their connectors in order', () => {
     const draft = toEquipmentDraft({ ...BASE, network: 'JAC', type: 'CHARGING_STATION' });
 

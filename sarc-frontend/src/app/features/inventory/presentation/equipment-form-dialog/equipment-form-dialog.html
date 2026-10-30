@@ -18,8 +18,11 @@
 
     @if (replaces; as old) {
       <p class="note">
-        Reemplaza a <strong>{{ old.name }}</strong> ({{ old.assignedCode }}). Es un equipo nuevo con
-        su propio histórico; no se usa para corregir la serie del anterior.
+        Reemplaza a <strong>{{ old.name }}</strong>
+        @if (old.assignedCode) {
+          ({{ old.assignedCode }})
+        }
+        . Es un equipo nuevo con su propio histórico; no se usa para corregir la serie del anterior.
       </p>
     }
 
@@ -111,7 +114,7 @@
             autocomplete="off"
             [formField]="equipmentForm.assignedCode"
           />
-          <mat-hint>Código KIA de 6 dígitos.</mat-hint>
+          <mat-hint>Opcional en Libre; si se informa, 6 dígitos sin cero inicial.</mat-hint>
           @for (error of equipmentForm.assignedCode().errors(); track error.kind) {
             <mat-error>{{ error.message }}</mat-error>
           }

@@ -36,6 +36,7 @@ import {
   isPoint,
   KIA_POINT_CODE,
   maxConnectors,
+  requiresAssignedCode,
   usesSerialAsCode,
 } from '../../domain/equipment-rules';
 import {
@@ -136,11 +137,14 @@ export class EquipmentFormDialog {
     hidden(path.assignedCode, { when: () => !this.ownCode() });
     required(path.assignedCode, {
       message: 'Ingrese el código asignado',
-      when: () => this.ownCode(),
+      when: () => {
+        const { network, type, usageStatus } = this.model();
+        return network !== '' && type !== '' && requiresAssignedCode(network, type, usageStatus);
+      },
     });
     pattern(path.assignedCode, KIA_POINT_CODE, {
       message: '6 dígitos y no puede empezar en 0',
-      when: () => this.ownCode(),
+      when: () => this.ownCode() && this.model().assignedCode.trim() !== '',
     });
 
     required(path.uidPuk, {

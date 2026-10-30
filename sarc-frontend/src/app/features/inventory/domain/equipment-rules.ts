@@ -1,9 +1,9 @@
-import { ChargingNetwork, InfrastructureType } from './equipment';
+import { ChargingNetwork, InfrastructureType, UsageStatus } from './equipment';
 
 /**
  * Reglas de identificacion por red y tipo (PRD 6.2), iguales a `EquipmentClassification` del
  * backend. Aqui solo guian el formulario; el backend es quien las hace cumplir.
- * - Punto KIA: 1 conector, codigo de 6 digitos sin cero inicial, UID/PUK obligatorio.
+ * - Punto KIA: codigo opcional solo en FREE; si existe, 6 digitos sin cero inicial; UID/PUK obligatorio.
  * - Punto JAC o CONECTZ: 1 conector, codigo igual a la serie, UID/PUK obligatorio.
  * - Electrolinera: 1 a 3 conectores de tipos distintos, codigo igual a la serie, UID/PUK opcional.
  */
@@ -20,4 +20,13 @@ export function maxConnectors(type: InfrastructureType): number {
 /** El codigo asignado lo elige el usuario solo en puntos KIA; en el resto es la serie. */
 export function usesSerialAsCode(network: ChargingNetwork, type: InfrastructureType): boolean {
   return !(isPoint(type) && network === 'KIA');
+}
+
+/** Un codigo propio es opcional solo para puntos KIA libres. */
+export function requiresAssignedCode(
+  network: ChargingNetwork,
+  type: InfrastructureType,
+  usage: UsageStatus | '',
+): boolean {
+  return !usesSerialAsCode(network, type) && usage !== 'FREE';
 }

@@ -94,6 +94,57 @@ describe('EquipmentFormDialog', () => {
     expect(text()).toContain('Tipos de conector');
   });
 
+  it.each(['', '   '])('allows FREE without code (%j) and submits absence', async (code) => {
+    await open({ equipment: { ...KIA_POINT, assignedCode: null } });
+    fixture.componentInstance['model'].update((value) => ({ ...value, assignedCode: code }));
+    await fixture.whenStable();
+    expect(fixture.componentInstance['equipmentForm']().valid()).toBe(true);
+    await submit();
+    expect(save).toHaveBeenCalledWith(expect.objectContaining({ assignedCode: undefined }));
+  });
+
+  it.each(['BLOCKED', 'DISCONNECTED'] as const)('requires a code for %s', async (usageStatus) => {
+    await open({ equipment: { ...KIA_POINT, assignedCode: null, usageStatus } });
+    await submit();
+    expect(save).not.toHaveBeenCalled();
+    expect(text()).toContain('Ingrese el código asignado');
+  });
+
+  it.each(['012345', '12345', '1234567', '12A456'])(
+    'rejects informed invalid code %s even FREE',
+    async (assignedCode) => {
+      await open({ equipment: { ...KIA_POINT, assignedCode } });
+      await submit();
+      expect(save).not.toHaveBeenCalled();
+    },
+  );
+
+  it('retains the preloaded code while switching BLOCKED to FREE and back', async () => {
+    await open({ equipment: { ...KIA_POINT, assignedCode: '654321', usageStatus: 'BLOCKED' } });
+    for (const usageStatus of ['FREE', 'BLOCKED'] as const) {
+      fixture.componentInstance['model'].update((value) => ({ ...value, usageStatus }));
+      await fixture.whenStable();
+      expect(fixture.componentInstance['model']().assignedCode).toBe('654321');
+      expect(fixture.componentInstance['equipmentForm']().valid()).toBe(true);
+    }
+    await submit();
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({ assignedCode: '654321', usageStatus: 'BLOCKED' }),
+    );
+  });
+
+  it('blocks FREE without code when switched to BLOCKED until a valid code is supplied', async () => {
+    await open({ equipment: { ...KIA_POINT, assignedCode: null } });
+    fixture.componentInstance['model'].update((value) => ({ ...value, usageStatus: 'BLOCKED' }));
+    await submit();
+    expect(save).not.toHaveBeenCalled();
+    fixture.componentInstance['model'].update((value) => ({ ...value, assignedCode: '654321' }));
+    await submit();
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({ assignedCode: '654321', usageStatus: 'BLOCKED' }),
+    );
+  });
+
   it('offers to open the equipment that already uses the identifiers', async () => {
     save.mockRejectedValue(
       new HttpErrorResponse({

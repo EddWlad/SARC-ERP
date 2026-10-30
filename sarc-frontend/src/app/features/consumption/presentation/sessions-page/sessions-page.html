@@ -105,7 +105,10 @@
           @if (session.equipment; as equipment) {
             <strong>{{ equipment.name }}</strong>
             <span class="muted block">
-              {{ equipment.assignedCode }} · {{ networkLabels[equipment.network] }}
+              @if (equipment.assignedCode) {
+                {{ equipment.assignedCode }} ·
+              }
+              {{ networkLabels[equipment.network] }}
             </span>
           } @else {
             <strong>Sin vincular</strong>

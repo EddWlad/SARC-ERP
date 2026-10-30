@@ -41,7 +41,10 @@ import { EquipmentOptions } from '../../application/equipment-options';
       <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onSelect($event)">
         @for (option of options.options(); track option.id) {
           <mat-option [value]="option">
-            {{ option.name }} <span class="code">· {{ option.assignedCode }}</span>
+            {{ option.name }}
+            @if (option.assignedCode) {
+              <span class="code">· {{ option.assignedCode }}</span>
+            }
           </mat-option>
         }
       </mat-autocomplete>
@@ -80,7 +83,9 @@ export class EquipmentFilter {
 
   protected onSelect(event: MatAutocompleteSelectedEvent): void {
     const equipment = event.option.value as EquipmentSummaryResponse;
-    this.label.set(`${equipment.name} · ${equipment.assignedCode}`);
+    this.label.set(
+      equipment.assignedCode ? `${equipment.name} · ${equipment.assignedCode}` : equipment.name,
+    );
     this.equipmentChange.emit(equipment.id);
   }
 
