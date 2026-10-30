@@ -1,0 +1,60 @@
+Reglas que no se negocian en SARC:
+
+Método
+- Toda feature nueva o cambio de comportamiento entra por una spec en
+  specs/. Nada de cambios de producto por prompt suelto.
+- Ninguna regla de negocio vive solo en un trigger, una función SQL o el
+  código: si está ahí, está también en una spec que la explique.
+- Todo cambio de esquema vive en una migración nueva; las migraciones ya
+  aplicadas no se reescriben.
+
+D01. El correo de una cuenta no puede cambiar
+- Permitir al administrador cambiarlo conservando UUID, autoría e históricos, con comprobación de unicidad, auditoría y revocación de sesiones.
+- Si una persona cambia de correo continuara con la misma cuenta.
+
+D02. «Contraseña temporal» significa cambio obligatorio, sin plazo propio de vencimiento
+- Hacer que la credencial expire después de un plazo aprobado; tras vencer, otro restablecimiento administrativo sería necesario.
+- La contraseña temporal permanecerá 60 minutos utilizable
+
+D03. Un administrador siempre necesita a otro para desactivarse o quitarse su rol
+- Permitir la autodesactivación o renuncia al rol cuando otro administrador activo conserve el acceso, con una confirmación explícita; bloquear únicamente la pérdida del último administrador.
+- Solo garantizar que quede administración disponible
+
+D04. Serie y UID/PUK se consideran equivalentes sin distinguir mayúsculas
+- Conservar el valor original y aplicar una comparación definida por clase de identificador o proveedor; por ejemplo, serie sin distinción de mayúsculas y credencial UID/PUK literal cuando corresponda.
+- El UID/PUK es el que se debe conservar literalmente
+
+D05. Las identidades externas se concilian ignorando tildes y espacios repetidos
+- Usar la equivalencia flexible solo para sugerir candidatos y exigir confirmación si la clave literal no coincide; registrar después un alias verificado.
+- Una coincidencia por normalización autoriza la vinculación automática
+
+D06. La posición del conector determina su continuidad histórica, incluso al cambiar tipo o reactivarse
+- Queda como esta al momento sin cambios.
+
+D07. La relación de reemplazo permite varios sucesores para el mismo equipo
+- Exigir una cadena lineal de sustituciones; si existen divisiones o ampliaciones, representarlas con una operación diferente y una relación específica. Esto solo se aplica a equipos que van ha ser reemplazados
+- Reemplazar siempre es un equipo por otro ósea uno a uno
+
+D08. Una excepción de calendario permite cerrar el día o definir un único intervalo
+- Queda como esta al momento sin cambios
+
+D09. En un Excel, solo la primera hoja cuenta como entrada
+- Queda como esta al momento sin cambios.
+
+D10. Una sesión de más de 1.000 kWh se rechaza como dato inválido
+- Convertirlo en observación revisable o aplicar umbrales configurables por clase de equipo, dejando trazabilidad de las excepciones admitidas.
+- Permitir revisión humana
+
+D11. Se redondea cada lectura antes de comparar correcciones y sumar indicadores
+- Queda como esta al momento sin cambios.
+
+D12. El histórico vivo muestra el nombre y código actuales del equipo
+- Mostrar etiqueta de la fecha del hecho junto al nombre actual, o permitir escoger entre vista histórica y catálogo vigente.
+- En el informe nuevo debe utilizar los nombres actuales
+
+D13. El período ejecutivo inicial es el mes en curso, incluido hoy
+- Queda como esta al momento sin cambios
+
+D14. El Top 5 corta los empates usando el UUID del equipo
+- Incluir todos los empatados en el quinto puesto, indicando que hay más de cinco equipos; o aprobar un desempate con significado, como número de sesiones y después código visible.
+- Pueden contener empates si así lo amerita
