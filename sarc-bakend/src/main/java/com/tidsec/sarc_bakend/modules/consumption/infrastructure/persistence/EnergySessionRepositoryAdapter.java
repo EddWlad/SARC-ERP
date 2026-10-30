@@ -110,10 +110,11 @@ class EnergySessionRepositoryAdapter implements EnergySessionRepository {
 		CriteriaBuilder cb = entityManager.getCriteriaBuilder();
 		CriteriaQuery<Tuple> query = cb.createTupleQuery();
 		Root<EnergySession> root = query.from(EnergySession.class);
-		query.multiselect(cb.count(root), energySum(root, cb), cb.countDistinct(root.get("equipmentId")))
-				.where(SessionPredicates.of(criteria, root, cb));
+		query.multiselect(cb.count(root), energySum(root, cb), readings(root, cb),
+				cb.countDistinct(root.get("equipmentId"))).where(SessionPredicates.of(criteria, root, cb));
 		Tuple row = entityManager.createQuery(query).getSingleResult();
-		return new EnergyTotals(row.get(0, Long.class), row.get(1, BigDecimal.class), row.get(2, Long.class));
+		return EnergyTotals.of(row.get(0, Long.class), row.get(1, BigDecimal.class), row.get(2, Long.class),
+				row.get(3, Long.class));
 	}
 
 	@Override
@@ -122,13 +123,13 @@ class EnergySessionRepositoryAdapter implements EnergySessionRepository {
 		CriteriaQuery<Tuple> query = cb.createTupleQuery();
 		Root<EnergySession> root = query.from(EnergySession.class);
 		Expression<LocalDate> date = root.get("startDate");
-		query.multiselect(date, cb.count(root), energySum(root, cb))
+		query.multiselect(date, cb.count(root), energySum(root, cb), readings(root, cb))
 				.where(SessionPredicates.of(criteria, root, cb))
 				.groupBy(date)
 				.orderBy(cb.asc(date));
 		return entityManager.createQuery(query).getResultList().stream()
-				.map(row -> new DailyEnergy(row.get(0, LocalDate.class), row.get(1, Long.class),
-						row.get(2, BigDecimal.class)))
+				.map(row -> DailyEnergy.of(row.get(0, LocalDate.class), row.get(1, Long.class),
+						row.get(2, BigDecimal.class), row.get(3, Long.class)))
 				.toList();
 	}
 
@@ -154,13 +155,14 @@ class EnergySessionRepositoryAdapter implements EnergySessionRepository {
 		CriteriaQuery<Tuple> query = cb.createTupleQuery();
 		Root<EnergySession> root = query.from(EnergySession.class);
 		Expression<K> key = root.get(attribute);
-		query.multiselect(key, cb.count(root), energySum(root, cb), cb.countDistinct(root.get("equipmentId")))
+		query.multiselect(key, cb.count(root), energySum(root, cb), readings(root, cb),
+				cb.countDistinct(root.get("equipmentId")))
 				.where(cb.and(SessionPredicates.of(criteria, root, cb)), cb.isNotNull(key))
 				.groupBy(key);
 		Map<K, EnergyTotals> totals = new EnumMap<>(keyType);
 		for (Tuple row : entityManager.createQuery(query).getResultList()) {
-			totals.put(row.get(0, keyType), new EnergyTotals(row.get(1, Long.class), row.get(2, BigDecimal.class),
-					row.get(3, Long.class)));
+			totals.put(row.get(0, keyType), EnergyTotals.of(row.get(1, Long.class), row.get(2, BigDecimal.class),
+					row.get(3, Long.class), row.get(4, Long.class)));
 		}
 		return totals;
 	}
@@ -175,6 +177,7 @@ class EnergySessionRepositoryAdapter implements EnergySessionRepository {
 		query.multiselect(equipment, cb.count(root), energy)
 				.where(cb.and(SessionPredicates.of(criteria, root, cb)), cb.isNotNull(equipment))
 				.groupBy(equipment)
+				.having(cb.greaterThan(readings(root, cb), 0L))
 				.orderBy(cb.desc(energy), cb.asc(equipment));
 		var typed = entityManager.createQuery(query);
 		if (limit > 0) {
@@ -187,12 +190,27 @@ class EnergySessionRepositoryAdapter implements EnergySessionRepository {
 	}
 
 	@Override
+	public long countEquipmentWithEnergy(SessionCriteria criteria) {
+		CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+		CriteriaQuery<Long> query = cb.createQuery(Long.class);
+		Root<EnergySession> root = query.from(EnergySession.class);
+		query.select(cb.countDistinct(root.get("equipmentId")))
+				.where(cb.and(SessionPredicates.of(criteria, root, cb)), cb.isNotNull(root.get("energyKwh")));
+		return entityManager.createQuery(query).getSingleResult();
+	}
+
+	@Override
 	public List<EnergySession> findPendingLink(UUID afterId, int limit) {
 		return jpa.findPendingLink(afterId, PageRequest.of(0, limit));
 	}
 
-	/** Suma de energia que vale 0 (no nulo) cuando no hay sesiones. */
+	/** Suma de la energia conocida; nula si ninguna sesion informa energia, nunca cero por ausencia. */
 	private static Expression<BigDecimal> energySum(Root<EnergySession> root, CriteriaBuilder cb) {
-		return cb.coalesce(cb.sum(root.<BigDecimal>get("energyKwh")), BigDecimal.ZERO);
+		return cb.sum(root.<BigDecimal>get("energyKwh"));
+	}
+
+	/** Sesiones con lectura de energia, incluidas las de 0 kWh. */
+	private static Expression<Long> readings(Root<EnergySession> root, CriteriaBuilder cb) {
+		return cb.count(root.get("energyKwh"));
 	}
 }

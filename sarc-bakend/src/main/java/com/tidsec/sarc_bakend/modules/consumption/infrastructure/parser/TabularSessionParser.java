@@ -60,6 +60,11 @@ abstract class TabularSessionParser implements SessionReportParser {
 
 	protected abstract SourceFields sourceFields(HeaderLayout layout, TabularRow row);
 
+	/** Si energia y termino pueden faltar sin invalidar la fila; solo una fuente que lo reporte asi. */
+	protected boolean admitsMissingMeasurements() {
+		return false;
+	}
+
 	private ParsedSession parseRow(HeaderLayout layout, TabularRow row, ZoneId zone) {
 		List<RowIssue> issues = new ArrayList<>();
 		String id = layout.value(row, ID);
@@ -70,9 +75,10 @@ abstract class TabularSessionParser implements SessionReportParser {
 			issues.add(new RowIssue("SESSION_ID_TOO_LONG", "El identificador de la sesion supera 100 caracteres"));
 		}
 		Instant start = read("Inicio", () -> DateTimeText.parse(layout.value(row, START), dateFormats(), zone), issues);
-		Instant end = read("Termino", () -> DateTimeText.parse(layout.value(row, END), dateFormats(), zone), issues);
-		BigDecimal energy = read("Energia",
-				() -> DecimalText.parse(layout.value(row, ENERGY), decimalSeparator()), issues);
+		Instant end = isAbsent(layout.value(row, END)) ? null
+				: read("Termino", () -> DateTimeText.parse(layout.value(row, END), dateFormats(), zone), issues);
+		BigDecimal energy = isAbsent(layout.value(row, ENERGY)) ? null
+				: read("Energia", () -> DecimalText.parse(layout.value(row, ENERGY), decimalSeparator()), issues);
 		SourceFields fields = sourceFields(layout, row);
 		if (fields.lookup() == null) {
 			issues.add(new RowIssue("EQUIPMENT_REFERENCE_REQUIRED", "Falta el identificador del cargador"));
@@ -88,6 +94,10 @@ abstract class TabularSessionParser implements SessionReportParser {
 				fields.serial(), fields.connector());
 		issues.addAll(SessionRules.check(reading));
 		return new ParsedSession(row.number(), id, issues.isEmpty() ? reading : null, fields.lookup(), issues);
+	}
+
+	private boolean isAbsent(String text) {
+		return admitsMissingMeasurements() && text.replace('\u00A0', ' ').isBlank();
 	}
 
 	/** Se cita solo el comienzo del texto: un valor desbordado no debe inflar el mensaje de la fila. */

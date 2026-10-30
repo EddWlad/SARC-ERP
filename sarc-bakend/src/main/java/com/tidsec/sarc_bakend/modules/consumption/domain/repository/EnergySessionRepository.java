@@ -52,8 +52,11 @@ public interface EnergySessionRepository {
 	/** Distribucion por tipo de infraestructura; solo los tipos con sesiones. */
 	Map<InfrastructureType, EnergyTotals> byType(SessionCriteria criteria);
 
-	/** Equipos ordenados por energia descendente; {@code limit} <= 0 devuelve todos. */
+	/** Equipos con energia conocida, de mayor a menor; {@code limit} <= 0 devuelve todos. */
 	List<EquipmentEnergy> byEquipment(SessionCriteria criteria, int limit);
+
+	/** Equipos distintos con al menos una lectura de energia. */
+	long countEquipmentWithEnergy(SessionCriteria criteria);
 
 	/** Pendientes de vincular en orden de ID, a partir de {@code afterId} (exclusivo, null = desde el inicio). */
 	List<EnergySession> findPendingLink(UUID afterId, int limit);

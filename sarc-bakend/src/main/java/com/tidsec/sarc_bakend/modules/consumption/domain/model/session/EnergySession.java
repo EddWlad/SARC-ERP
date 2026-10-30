@@ -8,6 +8,7 @@ import java.util.UUID;
 import com.tidsec.sarc_bakend.modules.consumption.domain.policy.PreferredSourcePolicy;
 import com.tidsec.sarc_bakend.modules.consumption.domain.policy.SessionRules;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentReference;
+import com.tidsec.sarc_bakend.shared.catalog.ExternalKey;
 import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
 import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
@@ -66,13 +67,12 @@ public class EnergySession extends BaseAuditableEntity {
 	@Column(nullable = false)
 	private Instant startedAt;
 
-	@Column(nullable = false)
 	private Instant endedAt;
 
 	@Column(nullable = false)
 	private LocalDate startDate;
 
-	@Column(nullable = false, precision = 12, scale = SessionReading.ENERGY_SCALE)
+	@Column(precision = 12, scale = SessionReading.ENERGY_SCALE)
 	private BigDecimal energyKwh;
 
 	@Enumerated(EnumType.STRING)
@@ -82,6 +82,11 @@ public class EnergySession extends BaseAuditableEntity {
 	/** Un analista aprobo que esta fuente, no preferente para su equipo, sume (PRD 7.2). */
 	@Column(nullable = false)
 	private boolean sourceApproved;
+
+	/** Motivo de una sesion Enerlink sin equipo; nulo si esta vinculada. */
+	@Enumerated(EnumType.STRING)
+	@Column(length = 30)
+	private LinkIssue linkIssue;
 
 	@Column(nullable = false)
 	private int revision;
@@ -123,14 +128,20 @@ public class EnergySession extends BaseAuditableEntity {
 	}
 
 	/**
-	 * La lectura identifica al mismo cargador que la sesion: la serie en Wallbox, ACTIVO y CARGADOR
-	 * en Enerlink (sin distinguir mayusculas). Si no, no es una correccion sino otro equipo.
+	 * La lectura identifica al mismo cargador que la sesion: la serie en Wallbox, sin distinguir
+	 * mayusculas; ACTIVO y CARGADOR en Enerlink, por su forma normalizada (D05).
 	 */
 	public boolean identifiesSameCharger(SessionReading reading) {
 		return switch (source) {
 			case WALLBOX -> sameText(sourceSerial, reading.serial());
-			case ENERLINK -> sameText(sourceSite, reading.site()) && sameText(sourceCharger, reading.charger());
+			case ENERLINK -> new ExternalKey(sourceSite, sourceCharger).comparable()
+					.equals(new ExternalKey(reading.site(), reading.charger()).comparable());
 		};
+	}
+
+	/** Solo una sesion vinculada cambia de cargador; sin equipo no hay vinculo que proteger. */
+	public boolean changesCharger(SessionReading reading) {
+		return equipmentId != null && !identifiesSameCharger(reading);
 	}
 
 	/**
@@ -139,7 +150,7 @@ public class EnergySession extends BaseAuditableEntity {
 	 */
 	public SessionRevision correct(SessionReading reading, UUID batchId, OperatingZone zone, UUID actorId,
 			Instant at) {
-		if (!identifiesSameCharger(reading)) {
+		if (changesCharger(reading)) {
 			throw new BusinessRuleException("SESSION_EQUIPMENT_CHANGED",
 					"La correccion cambia el cargador de la sesion; debe reasignarse de forma explicita");
 		}
@@ -177,12 +188,25 @@ public class EnergySession extends BaseAuditableEntity {
 	 * del equipo queda por aprobar, igual que al importarla con el equipo ya conocido.
 	 */
 	public void link(EquipmentReference equipment) {
+		link(equipment, false);
+	}
+
+	/** {@code sourceApproved}: en la vista previa se aprobo la fuente no preferente del equipo. */
+	public void link(EquipmentReference equipment, boolean sourceApproved) {
 		if (equipmentId != null) {
 			throw new BusinessRuleException("SESSION_ALREADY_LINKED", "La sesion ya esta vinculada a un equipo");
 		}
 		attach(equipment);
+		this.sourceApproved = this.sourceApproved || sourceApproved;
 		if (state == SessionState.PENDING_LINK) {
 			state = officialState();
+		}
+	}
+
+	/** Registra por que la sesion sigue sin equipo; no afecta a una sesion vinculada. */
+	public void markUnlinkable(LinkIssue issue) {
+		if (equipmentId == null) {
+			this.linkIssue = issue;
 		}
 	}
 
@@ -222,6 +246,7 @@ public class EnergySession extends BaseAuditableEntity {
 		this.equipmentId = equipment.id();
 		this.network = equipment.network();
 		this.infrastructureType = equipment.type();
+		this.linkIssue = null;
 	}
 
 	private void detach() {
@@ -294,6 +319,10 @@ public class EnergySession extends BaseAuditableEntity {
 
 	public boolean isSourceApproved() {
 		return sourceApproved;
+	}
+
+	public LinkIssue getLinkIssue() {
+		return linkIssue;
 	}
 
 	public int getRevision() {

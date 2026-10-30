@@ -10,7 +10,8 @@ import com.tidsec.sarc_bakend.shared.importing.batch.RowIssue;
 
 /**
  * Coherencia minima de una sesion. Una sesion de 0 kWh es valida (PRD RF-003.11); una que termina
- * antes de empezar o con energia imposible no se incorpora.
+ * antes de empezar o con energia imposible no se incorpora. Energia y termino solo se evaluan si
+ * estan informados: que falten no es incoherente.
  */
 public final class SessionRules {
 
@@ -22,13 +23,13 @@ public final class SessionRules {
 
 	public static List<RowIssue> check(SessionReading reading) {
 		List<RowIssue> issues = new ArrayList<>();
-		if (reading.endedAt().isBefore(reading.startedAt())) {
+		if (reading.endedAt() != null && reading.endedAt().isBefore(reading.startedAt())) {
 			issues.add(new RowIssue("END_BEFORE_START", "El termino es anterior al inicio"));
 		}
-		if (reading.energyKwh().signum() < 0) {
+		if (reading.energyKwh() != null && reading.energyKwh().signum() < 0) {
 			issues.add(new RowIssue("NEGATIVE_ENERGY", "La energia no puede ser negativa"));
 		}
-		if (reading.energyKwh().compareTo(MAX_ENERGY_KWH) > 0) {
+		if (reading.energyKwh() != null && reading.energyKwh().compareTo(MAX_ENERGY_KWH) > 0) {
 			issues.add(new RowIssue("ENERGY_OUT_OF_RANGE",
 					"La energia supera " + MAX_ENERGY_KWH.toPlainString() + " kWh por sesion"));
 		}
@@ -36,8 +37,8 @@ public final class SessionRules {
 	}
 
 	public static void requireValid(SessionReading reading) {
-		if (reading.startedAt() == null || reading.endedAt() == null || reading.energyKwh() == null) {
-			throw new BusinessRuleException("INVALID_SESSION", "La sesion necesita inicio, termino y energia");
+		if (reading.startedAt() == null) {
+			throw new BusinessRuleException("INVALID_SESSION", "La sesion necesita fecha de inicio");
 		}
 		List<RowIssue> issues = check(reading);
 		if (!issues.isEmpty()) {

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportRow;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowClassification;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergySession;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.LinkIssue;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionReading;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionRevision;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
@@ -168,6 +169,83 @@ class EnergySessionTest {
 				reading("2026-10-21T15:00:00Z", "2026-10-21T15:30:00Z", "4"), CONECTZ_STATION, true, false, BATCH,
 				ECUADOR);
 		assertThat(approvedAtImport.getState()).isEqualTo(SessionState.VALIDATED);
+	}
+
+	private static SessionReading partial(String end, String kwh, String site, String charger) {
+		return new SessionReading(Instant.parse("2026-10-21T15:00:00Z"), end == null ? null : Instant.parse(end),
+				kwh == null ? null : new BigDecimal(kwh), site, charger, null, null);
+	}
+
+	@Test
+	void absentEnergyAndEndStayAbsentAndZeroIsAKnownReading() {
+		EnergySession absent = EnergySession.record(SessionSource.ENERLINK, "", "20",
+				partial(null, null, "Conectz", "ESTACION 4"), CONECTZ_STATION, false, false, BATCH, ECUADOR);
+
+		assertThat(absent.getEnergyKwh()).isNull();
+		assertThat(absent.getEndedAt()).isNull();
+		assertThat(absent.getStartDate()).isEqualTo(LocalDate.of(2026, 10, 21));
+		assertThat(absent.getState()).isEqualTo(SessionState.VALIDATED);
+		assertThat(absent.hasSameReading(partial(null, null, "Conectz", "ESTACION 4"))).isTrue();
+		assertThat(absent.hasSameReading(partial(null, "0", "Conectz", "ESTACION 4"))).isFalse();
+		assertThat(partial(null, "1.0005", "A", "B").energyKwh()).isEqualByComparingTo("1.001");
+	}
+
+	@Test
+	void anEndEqualToTheStartIsAcceptedAndOneBeforeItIsNot() {
+		assertThat(EnergySession.record(SessionSource.ENERLINK, "", "21",
+				partial("2026-10-21T15:00:00Z", "1", "A", "B"), null, false, false, BATCH, ECUADOR).getEndedAt())
+				.isNotNull();
+		assertThatThrownBy(() -> EnergySession.record(SessionSource.ENERLINK, "", "22",
+				partial("2026-10-21T14:00:00Z", null, "A", "B"), null, false, false, BATCH, ECUADOR))
+				.extracting("code").isEqualTo("INVALID_SESSION");
+	}
+
+	@Test
+	void aCorrectionCanRemoveKnownDataAndKeepsThePreviousVersion() {
+		EnergySession session = EnergySession.record(SessionSource.ENERLINK, "", "23",
+				partial("2026-10-21T15:30:00Z", "4", "Conectz", "ESTACION 4"), CONECTZ_STATION, false, false, BATCH,
+				ECUADOR);
+
+		SessionRevision previous = session.correct(partial(null, null, "Conectz", "ESTACION 4"), BATCH, ECUADOR, null,
+				Instant.parse("2026-10-22T00:00:00Z"));
+
+		assertThat(previous.getEnergyKwh()).isEqualByComparingTo("4");
+		assertThat(session.getEnergyKwh()).isNull();
+	}
+
+	@Test
+	void writingDifferencesInThePairAreNotAChangeOfCharger() {
+		EnergySession session = EnergySession.record(SessionSource.ENERLINK, "", "24",
+				partial(null, "1", "Estación Norte", "Cargador 1"), CONECTZ_STATION, false, false, BATCH, ECUADOR);
+
+		assertThat(session.identifiesSameCharger(partial(null, "1", "ESTACION  NORTE", " cargador 1 "))).isTrue();
+		assertThat(session.changesCharger(partial(null, "1", "ESTACION NORTE", "CARGADOR 2"))).isTrue();
+	}
+
+	@Test
+	void anUnlinkedSessionMayReceiveItsPairInACorrection() {
+		EnergySession session = EnergySession.record(SessionSource.ENERLINK, "", "25", partial(null, "1", null, null),
+				null, false, false, BATCH, ECUADOR);
+		session.markUnlinkable(LinkIssue.IDENTITY_INCOMPLETE);
+
+		assertThat(session.changesCharger(partial(null, "1", "A", "B"))).isFalse();
+		session.correct(partial(null, "1", "A", "B"), BATCH, ECUADOR, null, Instant.parse("2026-10-22T00:00:00Z"));
+		assertThat(session.reading().charger()).isEqualTo("B");
+
+		session.link(CONECTZ_STATION);
+		assertThat(session.getLinkIssue()).isNull();
+		session.markUnlinkable(LinkIssue.IDENTITY_AMBIGUOUS);
+		assertThat(session.getLinkIssue()).isNull();
+	}
+
+	@Test
+	void anApprovalGivenInThePreviewCarriesOverWhenLinking() {
+		EnergySession wallbox = EnergySession.record(SessionSource.WALLBOX, "", "26", partial(null, "1", null, null),
+				null, false, false, BATCH, ECUADOR);
+
+		wallbox.link(CONECTZ_STATION, true);
+
+		assertThat(wallbox.getState()).isEqualTo(SessionState.VALIDATED);
 	}
 
 	@Test

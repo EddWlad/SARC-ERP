@@ -77,6 +77,59 @@ class SessionParsersTest {
 		assertThat(parsed.get(1).issues()).extracting(RowIssue::code).containsExactly("END_BEFORE_START");
 	}
 
+	private static final String ENERLINK_HEADER = "ID\tINICIO\tTERMINO\tACTIVO\tCARGADOR\tCONECTOR\tENERGIA CARGADA\n";
+
+	@Test
+	void enerlinkAdmitsMissingEnergyAndEndWithoutInventingThem() {
+		List<ParsedSession> parsed = enerlink.parse(reader.readText(ENERLINK_HEADER
+				+ "1\t22-10-2026 10:00:00\t\tA\tB\tC1\t\n"
+				+ "2\t22-10-2026 10:00:00\t   \tA\tB\tC1\t   \n"
+				+ "3\t22-10-2026 10:00:00\t\tA\tB\tC1\t0\n"));
+
+		assertThat(parsed).allMatch(ParsedSession::isValid);
+		assertThat(parsed.getFirst().reading().endedAt()).isNull();
+		assertThat(parsed.getFirst().reading().energyKwh()).isNull();
+		assertThat(parsed.get(1).reading().energyKwh()).isNull();
+		assertThat(parsed.get(2).reading().energyKwh()).isEqualByComparingTo("0");
+	}
+
+	@Test
+	void toleratingAbsenceDoesNotAuthorizeUnreadableOrIncoherentValues() {
+		List<ParsedSession> parsed = enerlink.parse(reader.readText(ENERLINK_HEADER
+				+ "1\t\t22-10-2026 11:00:00\tA\tB\tC1\t1\n"
+				+ "2\t22-10-2026 10:00:00\tmas tarde\tA\tB\tC1\t1\n"
+				+ "3\t22-10-2026 10:00:00\t\tA\tB\tC1\tmucho\n"
+				+ "4\t22-10-2026 10:00:00\t\tA\tB\tC1\t-1\n"
+				+ "5\t22-10-2026 10:00:00\t22-10-2026 09:00:00\tA\tB\tC1\t\n"));
+
+		assertThat(parsed.stream().map(row -> row.issues().getFirst().code())).containsExactly("DATE_REQUIRED",
+				"INVALID_DATE", "INVALID_NUMBER", "NEGATIVE_ENERGY", "END_BEFORE_START");
+	}
+
+	@Test
+	void anEnerlinkRowWithoutThePairIsNotInvalidAndItsKeyIsIncomplete() {
+		List<ParsedSession> parsed = enerlink.parse(reader.readText(ENERLINK_HEADER
+				+ "1\t22-10-2026 10:00:00\t22-10-2026 11:00:00\t\tSOLO CARGADOR\tC1\t1\n"
+				+ "2\t22-10-2026 10:00:00\t22-10-2026 11:00:00\t\t\tC1\t1\n"));
+
+		assertThat(parsed).allMatch(ParsedSession::isValid);
+		assertThat(parsed).allSatisfy(row -> assertThat(row.lookup()).isInstanceOfSatisfying(
+				EquipmentLookup.ByIdentity.class, lookup -> assertThat(lookup.key().isComplete()).isFalse()));
+	}
+
+	@Test
+	void wallboxKeepsRequiringEnergyEndAndReference() {
+		List<ParsedSession> parsed = wallbox.parse(reader.readText("""
+				Serial number\tCharger\tSession id\tStart\tEnd\tEnergy (kWh)
+				1172071\tPlaza\tS-1\t2026-10-21 05:44:53\t\t8,07
+				1172071\tPlaza\tS-2\t2026-10-21 05:44:53\t2026-10-21 06:56:27\t
+				\tPlaza\tS-3\t2026-10-21 05:44:53\t2026-10-21 06:56:27\t1,00
+				"""));
+
+		assertThat(parsed.stream().map(row -> row.issues().getFirst().code())).containsExactly("DATE_REQUIRED",
+				"NUMBER_REQUIRED", "EQUIPMENT_REFERENCE_REQUIRED");
+	}
+
 	@Test
 	void aFileFromTheOtherPlatformIsRejectedAsAWhole() {
 		assertThatThrownBy(() -> enerlink.parse(reader.readText("""

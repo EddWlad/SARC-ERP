@@ -84,6 +84,12 @@ class EnerlinkSessionParser extends TabularSessionParser {
 		String site = blankToNull(layout.value(row, SITE));
 		String charger = blankToNull(layout.value(row, CHARGER));
 		return new SourceFields(site, charger, null, blankToNull(layout.value(row, CONNECTOR)),
-				charger == null ? null : new EquipmentLookup.ByIdentity(new ExternalKey(site, charger)));
+				new EquipmentLookup.ByIdentity(new ExternalKey(site, charger)));
+	}
+
+	/** Enerlink reporta sesiones iniciadas sin energia ni termino: la ausencia no invalida la fila. */
+	@Override
+	protected boolean admitsMissingMeasurements() {
+		return true;
 	}
 }

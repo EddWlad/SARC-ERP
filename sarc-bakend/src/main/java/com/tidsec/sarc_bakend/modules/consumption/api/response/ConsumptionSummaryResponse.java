@@ -23,8 +23,9 @@ public record ConsumptionSummaryResponse(
 		LocalDate from,
 		LocalDate to,
 		Totals official,
-		BigDecimal averageKwhPerSession,
+		@Schema(nullable = true) BigDecimal averageKwhPerSession,
 		List<Ranked> top,
+		long equipmentWithoutEnergy,
 		List<Day> daily,
 		List<NetworkShare> byNetwork,
 		List<SourceShare> bySource,
@@ -34,10 +35,12 @@ public record ConsumptionSummaryResponse(
 		Totals test,
 		Instant generatedAt) {
 
-	public record Totals(long sessions, BigDecimal energyKwh, long equipment) {
+	public record Totals(long sessions, @Schema(nullable = true) BigDecimal energyKwh, long equipment,
+			long sessionsWithoutEnergy) {
 
 		static Totals from(EnergyTotals totals) {
-			return new Totals(totals.sessions(), totals.energyKwh(), totals.equipment());
+			return new Totals(totals.sessions(), totals.energyKwh(), totals.equipment(),
+					totals.sessionsWithoutEnergy());
 		}
 	}
 
@@ -49,28 +52,30 @@ public record ConsumptionSummaryResponse(
 		}
 	}
 
-	public record Day(LocalDate date, long sessions, BigDecimal energyKwh) {
+	public record Day(LocalDate date, long sessions, @Schema(nullable = true) BigDecimal energyKwh,
+			long sessionsWithoutEnergy) {
 
 		static Day from(DailyEnergy day) {
-			return new Day(day.date(), day.sessions(), day.energyKwh());
+			return new Day(day.date(), day.sessions(), day.energyKwh(), day.sessionsWithoutEnergy());
 		}
 	}
 
 	/** Participacion de una red en la energia oficial del periodo. */
-	public record NetworkShare(ChargingNetwork network, long sessions, BigDecimal energyKwh) {
+	public record NetworkShare(ChargingNetwork network, long sessions, @Schema(nullable = true) BigDecimal energyKwh) {
 	}
 
 	/** Participacion de una plataforma de origen. */
-	public record SourceShare(SessionSource source, long sessions, BigDecimal energyKwh) {
+	public record SourceShare(SessionSource source, long sessions, @Schema(nullable = true) BigDecimal energyKwh) {
 	}
 
 	/** Participacion de un tipo de infraestructura. */
-	public record TypeShare(InfrastructureType type, long sessions, BigDecimal energyKwh) {
+	public record TypeShare(InfrastructureType type, long sessions, @Schema(nullable = true) BigDecimal energyKwh) {
 	}
 
 	public static ConsumptionSummaryResponse from(ConsumptionSummary summary) {
 		return new ConsumptionSummaryResponse(summary.from(), summary.to(), Totals.from(summary.official()),
 				summary.averageKwhPerSession(), summary.top().stream().map(Ranked::from).toList(),
+				summary.equipmentWithoutEnergy(),
 				summary.daily().stream().map(Day::from).toList(),
 				summary.byNetwork().entrySet().stream()
 						.map(e -> new NetworkShare(e.getKey(), e.getValue().sessions(), e.getValue().energyKwh())).toList(),

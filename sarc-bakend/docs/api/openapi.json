@@ -1654,7 +1654,7 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "INVALID", "DUPLICATE", "DELETED_EXISTS", "CONFLICT" ]
+            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "IDENTITY_COMPLETED", "INVALID", "DUPLICATE", "DELETED_EXISTS", "CONFLICT" ]
           }
         }, {
           "name" : "page",
@@ -2004,7 +2004,7 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "EQUIPMENT_CHANGED", "INVALID", "DUPLICATE", "PENDING_LINK" ]
+            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "EQUIPMENT_CHANGED", "LINKABLE", "INVALID", "DUPLICATE", "PENDING_LINK" ]
           }
         }, {
           "name" : "page",
@@ -2474,7 +2474,7 @@
           },
           "classification" : {
             "type" : "string",
-            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "INVALID", "DUPLICATE", "DELETED_EXISTS", "CONFLICT" ]
+            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "IDENTITY_COMPLETED", "INVALID", "DUPLICATE", "DELETED_EXISTS", "CONFLICT" ]
           },
           "issues" : {
             "type" : "array",
@@ -2494,7 +2494,7 @@
           },
           "outcome" : {
             "type" : [ "string", "null" ],
-            "enum" : [ "CREATED", "UPDATED", "UNCHANGED", "SKIPPED" ]
+            "enum" : [ "CREATED", "UPDATED", "IDENTITY_ADDED", "UNCHANGED", "SKIPPED" ]
           },
           "outcomeDetail" : {
             "type" : [ "string", "null" ]
@@ -2585,7 +2585,7 @@
           },
           "classification" : {
             "type" : "string",
-            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "EQUIPMENT_CHANGED", "INVALID", "DUPLICATE", "PENDING_LINK" ]
+            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "EQUIPMENT_CHANGED", "LINKABLE", "INVALID", "DUPLICATE", "PENDING_LINK" ]
           },
           "issues" : {
             "type" : "array",
@@ -2610,7 +2610,7 @@
           },
           "outcome" : {
             "type" : [ "string", "null" ],
-            "enum" : [ "INSERTED", "CORRECTED", "REASSIGNED", "UNCHANGED", "SKIPPED" ]
+            "enum" : [ "INSERTED", "CORRECTED", "REASSIGNED", "LINKED", "UNCHANGED", "SKIPPED" ]
           },
           "outcomeDetail" : {
             "type" : [ "string", "null" ]
@@ -2909,6 +2909,10 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "identityCompletedRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "invalidRows" : {
             "type" : "integer",
             "format" : "int32"
@@ -2942,7 +2946,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "appliedRows", "checksum", "conflictRows", "createdAt", "deletedExistsRows", "duplicateRows", "fileName", "id", "identicalRows", "invalidRows", "modifiedRows", "newRows", "origin", "status", "totalRows", "version" ]
+        "required" : [ "appliedRows", "checksum", "conflictRows", "createdAt", "deletedExistsRows", "duplicateRows", "fileName", "id", "identicalRows", "identityCompletedRows", "invalidRows", "modifiedRows", "newRows", "origin", "status", "totalRows", "version" ]
       },
       "PasteEquipmentImportRequest" : {
         "type" : "object",
@@ -2998,7 +3002,7 @@
             "format" : "date-time"
           },
           "endedAt" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time"
           },
           "startDate" : {
@@ -3006,11 +3010,15 @@
             "format" : "date"
           },
           "energyKwh" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "state" : {
             "type" : "string",
             "enum" : [ "VALIDATED", "PENDING_LINK", "AWAITING_APPROVAL", "TEST" ]
+          },
+          "linkIssue" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "IDENTITY_INCOMPLETE", "IDENTITY_NOT_REGISTERED", "IDENTITY_NOT_VERIFIED", "IDENTITY_AMBIGUOUS" ]
           },
           "equipment" : {
             "type" : "null",
@@ -3041,7 +3049,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "endedAt", "energyKwh", "externalSessionId", "id", "importBatchId", "revision", "source", "startDate", "startedAt", "state", "version" ]
+        "required" : [ "externalSessionId", "id", "importBatchId", "revision", "source", "startDate", "startedAt", "state", "version" ]
       },
       "PendingLinkResponse" : {
         "type" : "object",
@@ -3127,6 +3135,10 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "linkableRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "appliedRows" : {
             "type" : "integer",
             "format" : "int32"
@@ -3144,7 +3156,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "appliedRows", "checksum", "createdAt", "duplicateRows", "equipmentChangedRows", "fileName", "id", "identicalRows", "invalidRows", "modifiedRows", "newRows", "origin", "pendingLinkRows", "scope", "source", "status", "totalRows", "version" ]
+        "required" : [ "appliedRows", "checksum", "createdAt", "duplicateRows", "equipmentChangedRows", "fileName", "id", "identicalRows", "invalidRows", "linkableRows", "modifiedRows", "newRows", "origin", "pendingLinkRows", "scope", "source", "status", "totalRows", "version" ]
       },
       "PasteImportRequest" : {
         "type" : "object",
@@ -3654,13 +3666,17 @@
             "$ref" : "#/components/schemas/Totals"
           },
           "averageKwhPerSession" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "top" : {
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/Ranked"
             }
+          },
+          "equipmentWithoutEnergy" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "daily" : {
             "type" : "array",
@@ -3700,7 +3716,7 @@
             "format" : "date-time"
           }
         },
-        "required" : [ "averageKwhPerSession", "awaitingApproval", "byNetwork", "bySource", "byType", "daily", "from", "generatedAt", "official", "pendingLink", "test", "to", "top" ]
+        "required" : [ "awaitingApproval", "byNetwork", "bySource", "byType", "daily", "equipmentWithoutEnergy", "from", "generatedAt", "official", "pendingLink", "test", "to", "top" ]
       },
       "Day" : {
         "type" : "object",
@@ -3714,10 +3730,14 @@
             "format" : "int64"
           },
           "energyKwh" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
+          },
+          "sessionsWithoutEnergy" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         },
-        "required" : [ "date", "energyKwh", "sessions" ]
+        "required" : [ "date", "sessions", "sessionsWithoutEnergy" ]
       },
       "NetworkShare" : {
         "type" : "object",
@@ -3731,10 +3751,10 @@
             "format" : "int64"
           },
           "energyKwh" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           }
         },
-        "required" : [ "energyKwh", "network", "sessions" ]
+        "required" : [ "network", "sessions" ]
       },
       "Ranked" : {
         "type" : "object",
@@ -3765,10 +3785,10 @@
             "format" : "int64"
           },
           "energyKwh" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           }
         },
-        "required" : [ "energyKwh", "sessions", "source" ]
+        "required" : [ "sessions", "source" ]
       },
       "Totals" : {
         "type" : "object",
@@ -3778,14 +3798,18 @@
             "format" : "int64"
           },
           "energyKwh" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "equipment" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "sessionsWithoutEnergy" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         },
-        "required" : [ "energyKwh", "equipment", "sessions" ]
+        "required" : [ "equipment", "sessions", "sessionsWithoutEnergy" ]
       },
       "TypeShare" : {
         "type" : "object",
@@ -3799,10 +3823,10 @@
             "format" : "int64"
           },
           "energyKwh" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           }
         },
-        "required" : [ "energyKwh", "sessions", "type" ]
+        "required" : [ "sessions", "type" ]
       },
       "PageResultSessionResponse" : {
         "type" : "object",

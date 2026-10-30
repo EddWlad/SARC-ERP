@@ -13,6 +13,7 @@ import com.tidsec.sarc_bakend.modules.consumption.application.command.MarkSessio
 import com.tidsec.sarc_bakend.modules.consumption.application.port.EquipmentLookup;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.PendingLinkResult;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.SessionView;
+import com.tidsec.sarc_bakend.modules.consumption.application.service.EquipmentResolver.Resolution;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergySession;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState;
@@ -83,16 +84,20 @@ public class SessionService {
 			Map<SessionSource, List<EnergySession>> bySource = chunk.stream()
 					.collect(Collectors.groupingBy(EnergySession::getSource));
 			for (var entry : bySource.entrySet()) {
-				Map<EquipmentLookup, EquipmentReference> found = resolver.resolve(entry.getKey(),
+				Map<EquipmentLookup, Resolution> found = resolver.resolve(entry.getKey(),
 						entry.getValue().stream().map(EquipmentResolver::lookupOf).distinct().toList());
 				for (EnergySession session : entry.getValue()) {
-					EquipmentReference equipment = found.get(EquipmentResolver.lookupOf(session));
-					if (equipment == null) {
+					Resolution resolution = found.get(EquipmentResolver.lookupOf(session));
+					if (resolution.equipment() == null) {
+						session.markUnlinkable(resolution.issue());
+						sessions.save(session);
 						stillPending++;
 					}
 					else {
-						session.link(equipment);
+						session.link(resolution.equipment());
 						sessions.save(session);
+						audit.record("ENERGY_SESSION_LINKED", EnergySession.AUDIT_ENTITY_TYPE, session.getId(),
+								EquipmentResolver.linkDetails(session, "PENDING_LINK_OPERATION"));
 						if (session.getState() == SessionState.AWAITING_APPROVAL) {
 							awaitingApproval++;
 						}

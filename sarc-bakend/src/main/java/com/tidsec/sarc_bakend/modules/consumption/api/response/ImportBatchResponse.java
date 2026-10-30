@@ -29,6 +29,7 @@ public record ImportBatchResponse(
 		int invalidRows,
 		int duplicateRows,
 		int pendingLinkRows,
+		int linkableRows,
 		int appliedRows,
 		Instant createdAt,
 		@Schema(nullable = true) Instant confirmedAt,
@@ -39,7 +40,7 @@ public record ImportBatchResponse(
 		return new ImportBatchResponse(batch.getId(), batch.getSource(), batch.getSourceScope(), batch.getOrigin(),
 				batch.getFileName(), batch.getChecksum(), batch.getStatus(), batch.getFailureCode(),
 				batch.getFailureMessage(), counts.total(), counts.newRows(), counts.identical(), counts.modified(), counts.equipmentChanged(),
-				counts.invalid(), counts.duplicate(), counts.pendingLink(), batch.getAppliedRows(),
+				counts.invalid(), counts.duplicate(), counts.pendingLink(), counts.linkable(), batch.getAppliedRows(),
 				batch.getCreatedAt(), batch.getConfirmedAt(), batch.getVersion());
 	}
 }

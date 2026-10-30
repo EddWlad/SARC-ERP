@@ -37,6 +37,7 @@ public class ImportBatch extends BaseImportBatch {
 	private int invalidRows;
 	private int duplicateRows;
 	private int pendingLinkRows;
+	private int linkableRows;
 
 	protected ImportBatch() {
 	}
@@ -63,6 +64,7 @@ public class ImportBatch extends BaseImportBatch {
 		this.invalidRows = counts.invalid();
 		this.duplicateRows = counts.duplicate();
 		this.pendingLinkRows = counts.pendingLink();
+		this.linkableRows = counts.linkable();
 	}
 
 	public SessionSource getSource() {
@@ -75,6 +77,6 @@ public class ImportBatch extends BaseImportBatch {
 
 	public RowCounts getCounts() {
 		return new RowCounts(totalRows, newRows, identicalRows, modifiedRows, equipmentChangedRows, invalidRows,
-				duplicateRows, pendingLinkRows);
+				duplicateRows, pendingLinkRows, linkableRows);
 	}
 }

@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -21,14 +22,17 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.tidsec.sarc_bakend.modules.consumption.application.port.EquipmentLookup;
 import com.tidsec.sarc_bakend.modules.consumption.application.port.ParsedSession;
 import com.tidsec.sarc_bakend.modules.consumption.application.port.SessionReportParser;
+import com.tidsec.sarc_bakend.modules.consumption.application.service.EquipmentResolver.Resolution;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportBatch;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportRow;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowClassification;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowCounts;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowOutcome;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergySession;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.LinkIssue;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionReading;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState;
 import com.tidsec.sarc_bakend.modules.consumption.domain.policy.PreferredSourcePolicy;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergySessionRepository;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.ImportBatchRepository;
@@ -113,7 +117,7 @@ class ImportProcessor {
 			throw new BusinessRuleException("IMPORT_NO_ROWS", "El archivo no tiene filas de sesiones");
 		}
 		List<ParsedSession> valid = parsed.stream().filter(ParsedSession::isValid).toList();
-		Map<EquipmentLookup, EquipmentReference> equipment = resolver.resolve(batch.getSource(),
+		Map<EquipmentLookup, Resolution> equipment = resolver.resolve(batch.getSource(),
 				valid.stream().map(ParsedSession::lookup).distinct().toList());
 		Map<String, EnergySession> existing = sessions.findByKeys(batch.getSource(), batch.getSourceScope(),
 				valid.stream().map(ParsedSession::externalSessionId).distinct().toList()).stream()
@@ -131,16 +135,18 @@ class ImportProcessor {
 				"new", String.valueOf(counts.newRows()),
 				"modified", String.valueOf(counts.modified()),
 				"invalid", String.valueOf(counts.invalid()),
-				"pendingLink", String.valueOf(counts.pendingLink())));
+				"pendingLink", String.valueOf(counts.pendingLink()),
+				"linkable", String.valueOf(counts.linkable())));
 	}
 
 	private ImportRow classifyRow(ImportBatch batch, ParsedSession parsed,
-			Map<EquipmentLookup, EquipmentReference> equipment, Map<String, EnergySession> existing, Set<String> seen) {
+			Map<EquipmentLookup, Resolution> equipment, Map<String, EnergySession> existing, Set<String> seen) {
 		if (!parsed.isValid()) {
 			return ImportRow.invalid(batch.getId(), parsed.rowNumber(), parsed.externalSessionId(), parsed.issues());
 		}
 		String id = parsed.externalSessionId();
-		EquipmentReference found = equipment.get(parsed.lookup());
+		Resolution resolution = equipment.get(parsed.lookup());
+		EquipmentReference found = resolution.equipment();
 		List<RowIssue> issues = new ArrayList<>();
 		if (!seen.add(id)) {
 			issues.add(new RowIssue("DUPLICATED_IN_BATCH", "La sesion " + id + " ya aparece antes en este lote"));
@@ -149,7 +155,7 @@ class ImportProcessor {
 		}
 		EnergySession current = existing.get(id);
 		RowClassification classification;
-		if (current != null && !current.identifiesSameCharger(parsed.reading())) {
+		if (current != null && current.changesCharger(parsed.reading())) {
 			classification = RowClassification.EQUIPMENT_CHANGED;
 			issues.add(new RowIssue("SESSION_EQUIPMENT_CHANGED", "La sesion estaba en "
 					+ chargerOf(batch.getSource(), current.reading()) + " y ahora llega en "
@@ -158,16 +164,16 @@ class ImportProcessor {
 					+ ". Reasignela solo si es la misma carga mal registrada; aprobar no basta"));
 		}
 		else if (current != null) {
-			classification = current.hasSameReading(parsed.reading()) ? RowClassification.IDENTICAL
-					: RowClassification.MODIFIED;
+			classification = classifyExisting(current, parsed.reading(), found);
 			if (classification == RowClassification.MODIFIED) {
 				issues.add(new RowIssue("SESSION_CHANGED",
 						"Los datos difieren de los ya importados; apruebe para corregir (se conserva la version anterior)"));
+				removedValue(current.reading(), parsed.reading()).ifPresent(issues::add);
 			}
 		}
 		else if (found == null) {
 			classification = RowClassification.PENDING_LINK;
-			issues.add(new RowIssue("EQUIPMENT_NOT_IDENTIFIED", unidentified(batch.getSource(), parsed.lookup())));
+			issues.add(unidentified(batch.getSource(), parsed, resolution.issue()));
 		}
 		else {
 			classification = RowClassification.NEW;
@@ -184,6 +190,29 @@ class ImportProcessor {
 				issues);
 	}
 
+	private static RowClassification classifyExisting(EnergySession current, SessionReading reading,
+			EquipmentReference found) {
+		if (!current.hasSameReading(reading)) {
+			return RowClassification.MODIFIED;
+		}
+		return current.getState() == SessionState.PENDING_LINK && found != null ? RowClassification.LINKABLE
+				: RowClassification.IDENTICAL;
+	}
+
+	/** Quitar un dato conocido debe verse al revisar: nunca se pierde en silencio (FR-016). */
+	private static Optional<RowIssue> removedValue(SessionReading current, SessionReading incoming) {
+		List<String> removed = new ArrayList<>();
+		if (current.energyKwh() != null && incoming.energyKwh() == null) {
+			removed.add("energia");
+		}
+		if (current.endedAt() != null && incoming.endedAt() == null) {
+			removed.add("termino");
+		}
+		return removed.isEmpty() ? Optional.empty()
+				: Optional.of(new RowIssue("SESSION_VALUE_REMOVED",
+						"La reimportacion quita datos conocidos: " + String.join(" y ", removed)));
+	}
+
 	/** Como identifica la fuente al cargador: serie en Wallbox, ACTIVO / CARGADOR en Enerlink. */
 	private static String chargerOf(SessionSource source, SessionReading reading) {
 		return switch (source) {
@@ -193,14 +222,14 @@ class ImportProcessor {
 		};
 	}
 
-	private static String unidentified(SessionSource source, EquipmentLookup lookup) {
-		return switch (lookup) {
-			case EquipmentLookup.BySerial serial -> "No hay en el inventario un equipo con la serie " + serial.serial()
-					+ " ni una identidad " + source + " verificada con ese valor";
-			case EquipmentLookup.ByIdentity identity -> "Registre ACTIVO \"" + identity.key().scope()
-					+ "\" y CARGADOR \"" + identity.key().externalId() + "\" como identidad " + source
-					+ " verificada del equipo; quedara pendiente de vincular";
-		};
+	private static RowIssue unidentified(SessionSource source, ParsedSession parsed, LinkIssue issue) {
+		if (issue != null) {
+			return new RowIssue(issue.name(), issue.label() + ": " + chargerOf(source, parsed.reading())
+					+ "; quedara pendiente de vincular");
+		}
+		String serial = parsed.lookup() instanceof EquipmentLookup.BySerial bySerial ? bySerial.serial() : "";
+		return new RowIssue("EQUIPMENT_NOT_IDENTIFIED", "No hay en el inventario un equipo con la serie " + serial
+				+ " ni una identidad " + source + " verificada con ese valor");
 	}
 
 	private boolean applyNextChunk(UUID batchId) {
@@ -212,12 +241,35 @@ class ImportProcessor {
 		Map<String, EnergySession> current = sessions.findByKeys(batch.getSource(), batch.getSourceScope(),
 				next.stream().map(ImportRow::getExternalSessionId).toList()).stream()
 				.collect(Collectors.toMap(EnergySession::getExternalSessionId, Function.identity()));
+		Map<EquipmentLookup, Resolution> resolved = resolveAgain(batch, next);
 		UUID actorId = currentActor.id().orElse(null);
 		for (ImportRow row : next) {
-			Outcome outcome = applyRow(batch, row, current.get(row.getExternalSessionId()), actorId);
+			Outcome outcome = applyRow(batch, row, current.get(row.getExternalSessionId()),
+					resolutionAtApply(batch, row, resolved), actorId);
 			row.recordOutcome(outcome.result(), outcome.detail());
 		}
 		return true;
+	}
+
+	/** El inventario puede cambiar tras la vista previa: Enerlink revalida sus pares al aplicar (FR-005). */
+	private Map<EquipmentLookup, Resolution> resolveAgain(ImportBatch batch, List<ImportRow> rows) {
+		if (batch.getSource() != SessionSource.ENERLINK) {
+			return Map.of();
+		}
+		return resolver.resolve(batch.getSource(), rows.stream()
+				.map(row -> EquipmentResolver.lookupOf(batch.getSource(), row.reading())).distinct().toList());
+	}
+
+	/** Un equipo revisado que dejo de ser la coincidencia unica no se aplica; la sesion queda pendiente. */
+	private static Resolution resolutionAtApply(ImportBatch batch, ImportRow row,
+			Map<EquipmentLookup, Resolution> resolved) {
+		if (batch.getSource() != SessionSource.ENERLINK) {
+			return new Resolution(row.equipment(), null);
+		}
+		Resolution now = resolved.get(EquipmentResolver.lookupOf(batch.getSource(), row.reading()));
+		EquipmentReference reviewed = row.equipment();
+		boolean stale = reviewed != null && (now.equipment() == null || !reviewed.id().equals(now.equipment().id()));
+		return stale ? new Resolution(null, now.issue()) : now;
 	}
 
 	private record Outcome(RowOutcome result, String detail) {
@@ -231,22 +283,31 @@ class ImportProcessor {
 		}
 	}
 
-	private Outcome applyRow(ImportBatch batch, ImportRow row, EnergySession session, UUID actorId) {
+	private Outcome applyRow(ImportBatch batch, ImportRow row, EnergySession session, Resolution resolution,
+			UUID actorId) {
 		if (session == null) {
-			sessions.save(EnergySession.record(batch.getSource(), batch.getSourceScope(), row.getExternalSessionId(),
-					row.reading(), row.equipment(), row.isApproved(), row.isTest(), batch.getId(), zone));
-			return Outcome.of(RowOutcome.INSERTED);
+			EnergySession created = EnergySession.record(batch.getSource(), batch.getSourceScope(),
+					row.getExternalSessionId(), row.reading(), resolution.equipment(), row.isApproved(), row.isTest(),
+					batch.getId(), zone);
+			created.markUnlinkable(resolution.issue());
+			sessions.save(created);
+			return new Outcome(RowOutcome.INSERTED, row.equipment() != null && resolution.equipment() == null
+					? "El inventario cambio despues de la vista previa; la sesion queda pendiente de vincular" : null);
 		}
 		if (row.getExistingSessionRevision() != null && row.getExistingSessionRevision() != session.getRevision()) {
 			// La decision se tomo sobre otra version: aplicarla seria corregir algo que nadie reviso.
 			return Outcome.skipped("La sesion cambio despues de la vista previa; vuelva a cargar el archivo para revisarla");
 		}
+		if (row.getClassification() == RowClassification.LINKABLE) {
+			return linkPending(batch, row, session, resolution);
+		}
 		if (session.hasSameReading(row.reading())) {
 			return Outcome.of(RowOutcome.UNCHANGED);
 		}
 		if (row.getClassification() == RowClassification.EQUIPMENT_CHANGED) {
-			sessions.saveRevision(session.reassign(row.reading(), row.equipment(), row.isApproved(), batch.getId(),
-					zone, actorId, clock.instant()));
+			sessions.saveRevision(session.reassign(row.reading(), resolution.equipment(), row.isApproved(),
+					batch.getId(), zone, actorId, clock.instant()));
+			session.markUnlinkable(resolution.issue());
 			if (row.isTest()) {
 				session.markTest(true);
 			}
@@ -256,14 +317,42 @@ class ImportProcessor {
 			// Otra importacion trajo la sesion despues de la vista previa: no se corrige sin aprobacion.
 			return Outcome.skipped("La sesion ya existe con otros datos; no se corrige sin una aprobacion explicita");
 		}
-		if (!session.identifiesSameCharger(row.reading())) {
+		if (session.changesCharger(row.reading())) {
 			return Outcome.skipped("La correccion cambia el cargador de la sesion; debe reasignarse");
 		}
 		sessions.saveRevision(session.correct(row.reading(), batch.getId(), zone, actorId, clock.instant()));
+		if (session.getEquipmentId() == null) {
+			linkOrKeepPending(batch, row, session, resolution);
+		}
 		if (row.isTest()) {
 			session.markTest(true);
 		}
 		return Outcome.of(RowOutcome.CORRECTED);
+	}
+
+	private Outcome linkPending(ImportBatch batch, ImportRow row, EnergySession session, Resolution resolution) {
+		if (session.getEquipmentId() != null) {
+			return Outcome.of(RowOutcome.UNCHANGED);
+		}
+		if (!linkOrKeepPending(batch, row, session, resolution)) {
+			return Outcome.skipped("El inventario cambio despues de la vista previa; la sesion sigue pendiente");
+		}
+		if (row.isTest()) {
+			session.markTest(true);
+		}
+		return Outcome.of(RowOutcome.LINKED);
+	}
+
+	/** Vincula si el par sigue resolviendo un unico equipo; si no, actualiza el motivo de la pendiente. */
+	private boolean linkOrKeepPending(ImportBatch batch, ImportRow row, EnergySession session, Resolution resolution) {
+		if (resolution.equipment() == null) {
+			session.markUnlinkable(resolution.issue());
+			return false;
+		}
+		session.link(resolution.equipment(), row.isApproved());
+		audit.record("ENERGY_SESSION_LINKED", EnergySession.AUDIT_ENTITY_TYPE, session.getId(),
+				EquipmentResolver.linkDetails(session, "batch:" + batch.getId()));
+		return true;
 	}
 
 	private void complete(UUID batchId) {

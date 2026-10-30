@@ -39,7 +39,8 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 		CorporatePdf pdf = CorporatePdf.create(branding, "Consumo de energía", report.scope(), report.cutOff())
 				.section("Resumen")
 				.kpis(List.of(
-						new Kpi("Energía (kWh)", ConsumptionLabels.kwh(summary.official().energyKwh())),
+						new Kpi(ConsumptionLabels.energyTitle(summary.official()),
+								ConsumptionLabels.kwh(summary.official().energyKwh())),
 						new Kpi("Sesiones", ConsumptionLabels.count(summary.official().sessions())),
 						new Kpi("Equipos con actividad", ConsumptionLabels.count(summary.official().equipment())),
 						new Kpi("kWh por sesión", ConsumptionLabels.kwh(summary.averageKwhPerSession()))))
@@ -65,14 +66,22 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 					.table(List.of("#", "Equipo", "Código", "Red", "Sesiones", "kWh"), ranked(report.ranking()),
 							new float[] { 0.5f, 4, 2, 1.5f, 1.5f, 1.5f });
 		}
-		return pdf.section("Notas de metodología")
+		pdf.section("Notas de metodología")
 				.note("Fuente: sesiones importadas de Enerlink y Wallbox en SARC (RF-003). Cada sesión se cuenta "
 						+ "una vez, en el día de su inicio (hora de Ecuador), aunque termine al día siguiente.")
 				.note("Solo suman las sesiones validadas. Las pendientes de vincular y las de prueba se informan "
 						+ "aparte y no se incluyen en los totales.")
 				.note("La red y el tipo de cada sesión provienen del equipo del inventario, no del archivo de "
-						+ "origen. Los equipos con actividad se cuentan por su identificador interno.")
-				.finish();
+						+ "origen. Los equipos con actividad se cuentan por su identificador interno.");
+		if (summary.official().sessionsWithoutEnergy() > 0) {
+			pdf.note(ConsumptionLabels.count(summary.official().sessionsWithoutEnergy()) + " sesiones oficiales no "
+					+ "informan energía: cuentan como sesiones, no como 0 kWh, y el total es solo energía conocida.");
+		}
+		if (summary.equipmentWithoutEnergy() > 0) {
+			pdf.note(ConsumptionLabels.count(summary.equipmentWithoutEnergy()) + " equipos quedan fuera del ranking "
+					+ "por no tener energía informada en el período.");
+		}
+		return pdf.finish();
 	}
 
 	private static List<List<String>> ranked(List<RankedEquipment> ranking) {

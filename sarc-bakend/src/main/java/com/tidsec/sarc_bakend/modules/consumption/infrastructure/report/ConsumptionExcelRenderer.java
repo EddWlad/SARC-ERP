@@ -1,5 +1,6 @@
 package com.tidsec.sarc_bakend.modules.consumption.infrastructure.report;
 
+import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,12 +54,12 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 						List.of("Dimensión", "Categoría", "Sesiones", "kWh"),
 						ConsumptionLabels.distribution(report.summary()).stream()
 								.map(share -> List.<Object>of(share.dimension(), share.category(), share.sessions(),
-										share.energyKwh()))
+										energy(share.energyKwh())))
 								.toList())
 				.sheet("Diario", "Consumo por día de inicio", List.of("Fecha", "Sesiones", "kWh"),
 						report.summary().daily().stream()
 								.map(day -> List.<Object>of(ConsumptionLabels.DAY.format(day.date()), day.sessions(),
-										day.energyKwh()))
+										energy(day.energyKwh())))
 								.toList())
 				.sheet("Por equipo", "Consumo por equipo", List.of("#", "Equipo", "Código", "Red", "Tipo", "Sesiones",
 						"kWh", "Id interno"), ranking(report.ranking()))
@@ -71,16 +72,18 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 
 	private static List<List<Object>> summary(ConsumptionSummary summary) {
 		return List.of(
-				List.of("Energía (kWh)", summary.official().energyKwh()),
+				List.of(ConsumptionLabels.energyTitle(summary.official()), energy(summary.official().energyKwh())),
 				List.of("Sesiones", summary.official().sessions()),
+				List.of("Sesiones sin energía informada", summary.official().sessionsWithoutEnergy()),
 				List.of("Equipos con actividad", summary.official().equipment()),
-				List.of("kWh por sesión", summary.averageKwhPerSession()),
+				List.of("Equipos fuera del ranking sin energía informada", summary.equipmentWithoutEnergy()),
+				List.of("kWh por sesión con lectura", energy(summary.averageKwhPerSession())),
 				List.of("Pendientes de vincular (sesiones)", summary.pendingLink().sessions()),
-				List.of("Pendientes de vincular (kWh)", summary.pendingLink().energyKwh()),
+				List.of("Pendientes de vincular (kWh)", energy(summary.pendingLink().energyKwh())),
 				List.of("Por aprobar (sesiones)", summary.awaitingApproval().sessions()),
-				List.of("Por aprobar (kWh)", summary.awaitingApproval().energyKwh()),
+				List.of("Por aprobar (kWh)", energy(summary.awaitingApproval().energyKwh())),
 				List.of("Pruebas (sesiones)", summary.test().sessions()),
-				List.of("Pruebas (kWh)", summary.test().energyKwh()));
+				List.of("Pruebas (kWh)", energy(summary.test().energyKwh())));
 	}
 
 	private static List<List<Object>> ranking(List<RankedEquipment> ranking) {
@@ -99,8 +102,8 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 		EnergySession session = view.session();
 		SessionReading reading = session.reading();
 		List<Object> row = new ArrayList<>(List.of(session.getExternalSessionId(), ConsumptionLabels.of(session.getSource()),
-				dateTime.format(session.getStartedAt()), dateTime.format(session.getEndedAt()),
-				ConsumptionLabels.DAY.format(session.getStartDate()), session.getEnergyKwh(),
+				dateTime.format(session.getStartedAt()), ended(session),
+				ConsumptionLabels.DAY.format(session.getStartDate()), reported(session.getEnergyKwh()),
 				ConsumptionLabels.name(view.equipment()), ConsumptionLabels.code(view.equipment()),
 				ConsumptionLabels.network(view.equipment()), DomainLabels.of(session.getInfrastructureType()),
 				text(reading.site()), text(reading.charger()), text(reading.serial()), text(reading.connector())));
@@ -108,6 +111,19 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 			row.add(ConsumptionLabels.of(session.getState()));
 		}
 		return row;
+	}
+
+	/** Una cifra se escribe como numero; la falta de lecturas, como texto, nunca como 0. */
+	private static Object energy(BigDecimal value) {
+		return value == null ? ConsumptionLabels.NO_DATA : value;
+	}
+
+	private static Object reported(BigDecimal value) {
+		return value == null ? ConsumptionLabels.NOT_REPORTED : value;
+	}
+
+	private String ended(EnergySession session) {
+		return session.getEndedAt() == null ? ConsumptionLabels.NOT_REPORTED : dateTime.format(session.getEndedAt());
 	}
 
 	private static String text(String value) {

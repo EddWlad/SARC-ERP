@@ -11,11 +11,17 @@ import java.util.Locale;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionSummary;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState;
+import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyTotals;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentReference;
 import com.tidsec.sarc_bakend.shared.report.DomainLabels;
 
 /** Textos y formatos en espanol (Ecuador) para los reportes de consumo. */
 final class ConsumptionLabels {
+
+	/** Energia total sin ninguna lectura conocida: no equivale a 0 kWh. */
+	static final String NO_DATA = "Sin datos";
+	/** Energia o termino que la plataforma no informo en una sesion. */
+	static final String NOT_REPORTED = "No informado";
 
 	private static final Locale ES_EC = Locale.forLanguageTag("es-EC");
 	static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd/MM/yyyy", ES_EC);
@@ -25,6 +31,9 @@ final class ConsumptionLabels {
 
 	/** kWh con dos decimales y separador de miles, como se leen en el tablero. */
 	static String kwh(BigDecimal value) {
+		if (value == null) {
+			return NO_DATA;
+		}
 		NumberFormat format = NumberFormat.getNumberInstance(ES_EC);
 		format.setMinimumFractionDigits(2);
 		format.setMaximumFractionDigits(2);
@@ -51,8 +60,16 @@ final class ConsumptionLabels {
 		return shares;
 	}
 
+	/** Titulo de la energia del periodo: si faltan lecturas, el total es parcial y debe decirlo. */
+	static String energyTitle(EnergyTotals totals) {
+		return totals.sessionsWithoutEnergy() > 0 ? "Energía conocida (kWh)" : "Energía (kWh)";
+	}
+
 	/** Porcentaje de la energia total con un decimal; "0,0 %" si no hubo energia. */
 	static String percent(BigDecimal part, BigDecimal total) {
+		if (part == null || total == null) {
+			return NO_DATA;
+		}
 		if (total.signum() == 0) {
 			return "0,0 %";
 		}

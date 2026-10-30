@@ -14,6 +14,8 @@ public enum RowClassification {
 	 * se aplica si el analista la reasigna de forma explicita; aprobar no basta.
 	 */
 	EQUIPMENT_CHANGED,
+	/** Sesion pendiente con los mismos datos cuyo par ya resuelve un unico equipo: se vincula al confirmar. */
+	LINKABLE,
 	/** No se pudo interpretar sin adivinar: no se incorpora. */
 	INVALID,
 	/** El mismo ID de sesion aparece antes en el mismo lote: se ignora. */
@@ -23,6 +25,7 @@ public enum RowClassification {
 
 	/** Clasificaciones que pueden terminar escribiendo una sesion. */
 	public boolean writesSession() {
-		return this == NEW || this == MODIFIED || this == EQUIPMENT_CHANGED || this == PENDING_LINK;
+		return this == NEW || this == MODIFIED || this == EQUIPMENT_CHANGED || this == LINKABLE
+				|| this == PENDING_LINK;
 	}
 }

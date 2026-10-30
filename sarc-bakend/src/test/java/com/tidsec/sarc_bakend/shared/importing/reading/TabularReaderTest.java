@@ -87,6 +87,23 @@ class TabularReaderTest {
 		assertThat(rows.get(2).cells()).containsExactly("27151", "2026-10-22 23:45:12", "22.42");
 	}
 
+	/** D09: solo la primera hoja es entrada; las demas no se importan, sea cual sea su contenido. */
+	@Test
+	void readsOnlyTheFirstSheetOfTheWorkbook() throws Exception {
+		byte[] xlsx;
+		try (XSSFWorkbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+			workbook.createSheet("Datos").createRow(0).createCell(0).setCellValue("primera");
+			workbook.createSheet("Listas").createRow(0).createCell(0).setCellValue("segunda");
+			workbook.write(out);
+			xlsx = out.toByteArray();
+		}
+
+		List<TabularRow> rows = reader.read(xlsx);
+
+		assertThat(rows).hasSize(1);
+		assertThat(rows.getFirst().cells()).containsExactly("primera");
+	}
+
 	@Test
 	void ignoresColumnsBeyondTheLimitSoAStrayFarCellCannotExhaustMemory() throws Exception {
 		byte[] xlsx;

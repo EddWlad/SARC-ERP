@@ -556,7 +556,373 @@ class ConsumptionApiTest {
 		}
 	}
 
+	// ---- vinculacion Enerlink (feature 002, US2)
+
+	@Test
+	void fiveSessionsWithTheSamePairLinkToOneEquipmentEvenWithDifferentWriting() throws Exception {
+		String station = conectzStationWithEnerlinkIdentity("JAC PUMA TUMBACO", "JAC PUMA TUMBACO");
+		String id = upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "21-10-2026 08:30:00", "JAC PUMA TUMBACO", "JAC PUMA TUMBACO", "1")
+				+ enerlink("2", "21-10-2026 09:00:00", "21-10-2026 09:30:00", "jac puma tumbaco", "JAC  PUMA TUMBACO", "1")
+				+ enerlink("3", "21-10-2026 10:00:00", "21-10-2026 10:30:00", "JÁC PUMA TUMBACO", "JAC PUMA TÚMBACO", "1")
+				+ enerlink("4", "21-10-2026 11:00:00", "21-10-2026 11:30:00", " JAC PUMA TUMBACO ", "JAC PUMA TUMBACO", "1")
+				+ enerlink("5", "21-10-2026 12:00:00", "21-10-2026 12:30:00", "JAC PUMA TUMBACO", "jac puma tumbaco", "1"));
+
+		assertThat(batch(id)).containsEntry("newRows", 5).containsEntry("pendingLinkRows", 0);
+		confirm(id);
+
+		assertOfficial("2026-10-21", "2026-10-22", 5, 5.0);
+		assertThat(jdbc.queryForObject("select count(distinct equipment_id) from energy_session where equipment_id = ?::uuid",
+				Integer.class, station)).isEqualTo(1);
+	}
+
+	@Test
+	void everyUnresolvedSessionStaysPendingWithItsSpecificReason() throws Exception {
+		String first = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", conectzStation("CZ-1")));
+		String second = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", conectzStation("CZ-2")));
+		send(analyst, HttpMethod.POST, "/api/v1/equipment/" + first + "/external-identities",
+				"{\"platform\":\"ENERLINK\",\"scope\":\"Sin verificar\",\"externalId\":\"C1\"}").andExpect(status().isCreated());
+		verifiedIdentity(first, "Estación Doble", "C1");
+		insertVerifiedIdentity(second, "ESTACION DOBLE", "c1");
+
+		String id = upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "21-10-2026 08:30:00", "Nadie", "C1", "1")
+				+ enerlink("2", "21-10-2026 08:00:00", "21-10-2026 08:30:00", "Sin verificar", "C1", "1")
+				+ enerlink("3", "21-10-2026 08:00:00", "21-10-2026 08:30:00", "estacion doble", "C1", "1")
+				+ enerlink("4", "21-10-2026 08:00:00", "21-10-2026 08:30:00", "", "C1", "1")
+				+ enerlink("5", "21-10-2026 08:00:00", "21-10-2026 08:30:00", "", "", "1"));
+
+		assertThat(batch(id)).containsEntry("pendingLinkRows", 5).containsEntry("invalidRows", 0);
+		assertThat(issueCode(id, "1")).isEqualTo("IDENTITY_NOT_REGISTERED");
+		assertThat(issueCode(id, "2")).isEqualTo("IDENTITY_NOT_VERIFIED");
+		assertThat(issueCode(id, "3")).isEqualTo("IDENTITY_AMBIGUOUS");
+		assertThat(issueCode(id, "4")).isEqualTo("IDENTITY_INCOMPLETE");
+		assertThat(issueCode(id, "5")).isEqualTo("IDENTITY_INCOMPLETE");
+		confirm(id);
+
+		assertThat(jdbc.queryForList("select link_issue from energy_session order by external_session_id", String.class))
+				.containsExactly("IDENTITY_NOT_REGISTERED", "IDENTITY_NOT_VERIFIED", "IDENTITY_AMBIGUOUS",
+						"IDENTITY_INCOMPLETE", "IDENTITY_INCOMPLETE");
+		send(analyst, HttpMethod.POST, "/api/v1/energy/sessions/link-pending", "")
+				.andExpect(jsonPath("$.linked").value(0))
+				.andExpect(jsonPath("$.stillPending").value(5));
+		assertOfficial("2026-10-21", "2026-10-22", 0, 0.0);
+	}
+
+	@Test
+	void linkPendingLinksUniqueMatchesLeavesAmbiguousOnesAndAuditsEachSession() throws Exception {
+		String first = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", conectzStation("CZ-1")));
+		String second = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", conectzStation("CZ-2")));
+		confirm(upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "21-10-2026 08:30:00", "Unica", "C1", "2")
+				+ enerlink("2", "21-10-2026 08:00:00", "21-10-2026 08:30:00", "Doble", "C1", "3")));
+		verifiedIdentity(first, "Unica", "C1");
+		verifiedIdentity(first, "Doble", "C1");
+		insertVerifiedIdentity(second, "DOBLE", "c1");
+
+		send(analyst, HttpMethod.POST, "/api/v1/energy/sessions/link-pending", "")
+				.andExpect(jsonPath("$.linked").value(1))
+				.andExpect(jsonPath("$.stillPending").value(1));
+
+		assertOfficial("2026-10-21", "2026-10-22", 1, 2.0);
+		assertThat(jdbc.queryForObject("select link_issue from energy_session where external_session_id = '2'",
+				String.class)).isEqualTo("IDENTITY_AMBIGUOUS");
+		assertThat(jdbc.queryForObject("select count(*) from audit_event where action = 'ENERGY_SESSION_LINKED'",
+				Integer.class)).isEqualTo(1);
+	}
+
+	@Test
+	void reimportingAPendingSessionLinksItWhenConfirmingTheBatch() throws Exception {
+		String station = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", conectzStation("CZ-1")));
+		String report = ENERLINK_HEADER + enerlink("1", "21-10-2026 08:00:00", "21-10-2026 08:30:00", "Activo", "C1", "2");
+		confirm(upload("ENERLINK", "t.csv", report));
+		assertThat(batch(upload("ENERLINK", "t.csv", report))).containsEntry("identicalRows", 1);
+
+		verifiedIdentity(station, "Activo", "C1");
+		String id = upload("ENERLINK", "t.csv", report);
+
+		assertThat(batch(id)).containsEntry("linkableRows", 1).containsEntry("newRows", 0);
+		assertThat(confirm(id)).containsEntry("appliedRows", 1);
+		assertThat(rowOutcome(id, "1")).isEqualTo("LINKED");
+		assertOfficial("2026-10-21", "2026-10-22", 1, 2.0);
+		assertThat(jdbc.queryForObject("select count(*) from energy_session", Integer.class)).isEqualTo(1);
+		assertThat(jdbc.queryForObject("select count(*) from audit_event where action = 'ENERGY_SESSION_LINKED' "
+				+ "and actor_id is not null", Integer.class)).isEqualTo(1);
+		assertThat(batch(upload("ENERLINK", "t.csv", report))).containsEntry("identicalRows", 1);
+	}
+
+	@Test
+	void aLinkThatStoppedBeingUniqueAfterThePreviewIsNotApplied() throws Exception {
+		String first = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", conectzStation("CZ-1")));
+		String second = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", conectzStation("CZ-2")));
+		verifiedIdentity(first, "Activo", "C1");
+		String id = upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "21-10-2026 08:30:00", "Activo", "C1", "2"));
+		assertThat(batch(id)).containsEntry("newRows", 1);
+
+		insertVerifiedIdentity(second, "ACTIVO", "c1");
+		confirm(id);
+
+		assertOfficial("2026-10-21", "2026-10-22", 0, 0.0);
+		assertThat(rowDetail(id, "1")).contains("inventario cambio");
+		assertThat(jdbc.queryForObject("select link_issue from energy_session", String.class))
+				.isEqualTo("IDENTITY_AMBIGUOUS");
+	}
+
+	// ---- sesiones incompletas (feature 002, US3)
+
+	/** Matriz A-E de la especificacion: inicio valido, mismo periodo e identidad verificada. */
+	private static String matrix() {
+		return ENERLINK_HEADER
+				+ enerlink("A", "21-10-2026 08:00:00", "", "Activo", "C1", "")
+				+ enerlink("B", "21-10-2026 09:00:00", "21-10-2026 09:30:00", "Activo", "C1", "")
+				+ enerlink("C", "21-10-2026 10:00:00", "", "Activo", "C1", "0")
+				+ enerlink("D", "21-10-2026 11:00:00", "", "Activo", "C1", "2.500")
+				+ enerlink("E", "21-10-2026 12:00:00", "21-10-2026 12:30:00", "Activo", "C1", "1.250");
+	}
+
+	@Test
+	void theMatrixCountsFiveSessionsAndOnlyKnownEnergyEverywhere() throws Exception {
+		conectzStationWithEnerlinkIdentity("Activo", "C1");
+		String id = upload("ENERLINK", "t.csv", matrix());
+		assertThat(batch(id)).containsEntry("newRows", 5).containsEntry("invalidRows", 0);
+		confirm(id);
+
+		mvc.perform(summary("2026-10-21", "2026-10-22").cookie(manager))
+				.andExpect(jsonPath("$.official.sessions").value(5))
+				.andExpect(jsonPath("$.official.energyKwh").value(3.75))
+				.andExpect(jsonPath("$.official.sessionsWithoutEnergy").value(2))
+				.andExpect(jsonPath("$.averageKwhPerSession").value(1.25))
+				.andExpect(jsonPath("$.daily[0].energyKwh").value(3.75))
+				.andExpect(jsonPath("$.daily[0].sessionsWithoutEnergy").value(2))
+				.andExpect(jsonPath("$.top[0].energyKwh").value(3.75))
+				.andExpect(jsonPath("$.top[0].sessions").value(5))
+				.andExpect(jsonPath("$.equipmentWithoutEnergy").value(0));
+		mvc.perform(get("/api/v1/energy/sessions").param("text", "A").cookie(manager))
+				.andExpect(jsonPath("$.content[?(@.externalSessionId == 'A' && @.energyKwh)]").isEmpty())
+				.andExpect(jsonPath("$.content[?(@.externalSessionId == 'A' && @.endedAt)]").isEmpty());
+		assertThat(jdbc.queryForObject("select energy_kwh from energy_session where external_session_id = 'C'",
+				java.math.BigDecimal.class)).isEqualByComparingTo("0");
+
+		byte[] xlsx = mvc.perform(get("/api/v1/energy/report").param("format", "XLSX").param("from", "2026-10-21")
+				.param("to", "2026-10-22").cookie(manager)).andExpect(status().isOk()).andReturn().getResponse()
+				.getContentAsByteArray();
+		try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(xlsx))) {
+			assertThat(valueOf(workbook.getSheet("Resumen"), "Energ" + (char) 237 + "a conocida (kWh)")).isEqualTo(3.75);
+			assertThat(valueOf(workbook.getSheet("Resumen"), "Sesiones")).isEqualTo(5);
+			assertThat(valueOf(workbook.getSheet("Resumen"), "Sesiones sin energ" + (char) 237 + "a informada"))
+					.isEqualTo(2);
+			var cells = new StringBuilder();
+			workbook.getSheet("Transacciones").forEach(row -> row.forEach(cell -> cells.append(cell).append("|")));
+			assertThat(cells.toString()).contains("No informado");
+		}
+		mvc.perform(get("/api/v1/energy/report").param("format", "PDF").param("from", "2026-10-21")
+				.param("to", "2026-10-22").cookie(manager)).andExpect(status().isOk());
+	}
+
+	@Test
+	void aPeriodOnlyWithAbsentEnergyShowsNoDataInsteadOfZero() throws Exception {
+		conectzStationWithEnerlinkIdentity("Activo", "C1");
+		confirm(upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "", "Activo", "C1", "")));
+
+		mvc.perform(summary("2026-10-21", "2026-10-22").cookie(manager))
+				.andExpect(jsonPath("$.official.sessions").value(1))
+				.andExpect(jsonPath("$.official.energyKwh").doesNotExist())
+				.andExpect(jsonPath("$.official.sessionsWithoutEnergy").value(1))
+				.andExpect(jsonPath("$.averageKwhPerSession").doesNotExist())
+				.andExpect(jsonPath("$.daily[0].energyKwh").doesNotExist())
+				.andExpect(jsonPath("$.top.length()").value(0))
+				.andExpect(jsonPath("$.equipmentWithoutEnergy").value(1));
+		for (String format : List.of("PDF", "XLSX")) {
+			mvc.perform(get("/api/v1/energy/report").param("format", format).param("from", "2026-10-21")
+					.param("to", "2026-10-22").cookie(manager)).andExpect(status().isOk());
+		}
+		mvc.perform(summary("2026-10-25", "2026-10-26").cookie(manager))
+				.andExpect(jsonPath("$.official.energyKwh").value(0.0))
+				.andExpect(jsonPath("$.averageKwhPerSession").value(0.0));
+	}
+
+	@Test
+	void anEquipmentWithAKnownZeroStaysInTheRanking() throws Exception {
+		conectzStationWithEnerlinkIdentity("Activo", "C1");
+		confirm(upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "21-10-2026 08:30:00", "Activo", "C1", "0")));
+
+		mvc.perform(summary("2026-10-21", "2026-10-22").cookie(manager))
+				.andExpect(jsonPath("$.official.energyKwh").value(0.0))
+				.andExpect(jsonPath("$.top.length()").value(1))
+				.andExpect(jsonPath("$.equipmentWithoutEnergy").value(0));
+	}
+
+	@Test
+	void incompleteSessionsPendingOfIdentityDoNotCountAsOfficial() throws Exception {
+		confirm(upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "", "Nadie", "C1", "")));
+
+		mvc.perform(summary("2026-10-21", "2026-10-22").cookie(manager))
+				.andExpect(jsonPath("$.official.sessions").value(0))
+				.andExpect(jsonPath("$.pendingLink.sessions").value(1))
+				.andExpect(jsonPath("$.pendingLink.energyKwh").doesNotExist());
+	}
+
+	// ---- reimportacion y correcciones (feature 002, US4)
+
+	@Test
+	void reimportingTheMatrixChangesNothing() throws Exception {
+		conectzStationWithEnerlinkIdentity("Activo", "C1");
+		confirm(upload("ENERLINK", "t.csv", matrix()));
+
+		for (int attempt = 0; attempt < 2; attempt++) {
+			String again = upload("ENERLINK", "t.csv", matrix());
+			assertThat(batch(again)).containsEntry("identicalRows", 5).containsEntry("newRows", 0);
+			assertThat(confirm(again)).containsEntry("appliedRows", 0);
+		}
+
+		assertOfficial("2026-10-21", "2026-10-22", 5, 3.75);
+		assertThat(jdbc.queryForObject("select count(*) from energy_session", Integer.class)).isEqualTo(5);
+	}
+
+	@Test
+	void completingASessionNeedsApprovalAndKeepsThePreviousVersion() throws Exception {
+		conectzStationWithEnerlinkIdentity("Activo", "C1");
+		confirm(upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "", "Activo", "C1", "")));
+
+		String id = upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "21-10-2026 08:30:00", "Activo", "C1", "4"));
+		assertThat(batch(id)).containsEntry("modifiedRows", 1);
+		decide(id, "1", "\"approved\":true").andExpect(status().isOk());
+		confirm(id);
+
+		assertOfficial("2026-10-21", "2026-10-22", 1, 4.0);
+		assertThat(jdbc.queryForObject("select count(*) from energy_session_revision where energy_kwh is null "
+				+ "and ended_at is null", Integer.class)).isEqualTo(1);
+	}
+
+	@Test
+	void removingAKnownValueIsShownAndNeedsApproval() throws Exception {
+		conectzStationWithEnerlinkIdentity("Activo", "C1");
+		confirm(upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "21-10-2026 08:30:00", "Activo", "C1", "4")));
+
+		String unapproved = upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "", "Activo", "C1", ""));
+		assertThat(issueCodes(unapproved, "1")).contains("SESSION_CHANGED", "SESSION_VALUE_REMOVED");
+		confirm(unapproved);
+		assertOfficial("2026-10-21", "2026-10-22", 1, 4.0);
+
+		String approved = upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "", "Activo", "C1", ""));
+		decide(approved, "1", "\"approved\":true").andExpect(status().isOk());
+		confirm(approved);
+
+		assertThat(jdbc.queryForObject("select energy_kwh from energy_session", java.math.BigDecimal.class)).isNull();
+		assertThat(jdbc.queryForObject("select energy_kwh from energy_session_revision", java.math.BigDecimal.class))
+				.isEqualByComparingTo("4");
+	}
+
+	@Test
+	void aPendingSessionThatReceivesItsPairIsCorrectedAndLinkedOnApproval() throws Exception {
+		conectzStationWithEnerlinkIdentity("Activo", "C1");
+		confirm(upload("ENERLINK", "t.csv", ENERLINK_HEADER + enerlink("1", "21-10-2026 08:00:00", "", "", "", "3")));
+
+		String id = upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "", "Activo", "C1", "3"));
+		assertThat(batch(id)).containsEntry("modifiedRows", 1).containsEntry("equipmentChangedRows", 0);
+		decide(id, "1", "\"approved\":true").andExpect(status().isOk());
+		confirm(id);
+
+		assertOfficial("2026-10-21", "2026-10-22", 1, 3.0);
+		assertThat(jdbc.queryForObject("select link_issue from energy_session", String.class)).isNull();
+		assertThat(jdbc.queryForObject("select count(*) from audit_event where action = 'ENERGY_SESSION_LINKED'",
+				Integer.class)).isEqualTo(1);
+	}
+
+	@Test
+	void aNewPairOnALinkedSessionStillRequiresReassignment() throws Exception {
+		String station = conectzStationWithEnerlinkIdentity("Activo", "C1");
+		verifiedIdentity(station, "Otro activo", "C2");
+		confirm(upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "", "Activo", "C1", "3")));
+
+		String id = upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "", "Otro activo", "C2", "3"));
+
+		assertThat(batch(id)).containsEntry("equipmentChangedRows", 1).containsEntry("modifiedRows", 0);
+		decide(id, "1", "\"approved\":true").andExpect(status().is4xxClientError());
+	}
+
+	@Test
+	void aWritingVariantOfThePairIsACorrectionAndNotAChangeOfCharger() throws Exception {
+		conectzStationWithEnerlinkIdentity("Activo", "C1");
+		confirm(upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "", "Activo", "C1", "3")));
+
+		String id = upload("ENERLINK", "t.csv", ENERLINK_HEADER
+				+ enerlink("1", "21-10-2026 08:00:00", "", "Áctivo", "c1", "3"));
+
+		assertThat(batch(id)).containsEntry("equipmentChangedRows", 0).containsEntry("modifiedRows", 1);
+	}
+
+	/** Forma del incidente con datos ficticios: pares de la plantilla, energia y termino vacios (SC-007). */
+	@Test
+	void everyRowOfAnIncidentLikeFileHasAnExplainableResult() throws Exception {
+		conectzStationWithEnerlinkIdentity("JAC Uno", "JAC UNO");
+		StringBuilder report = new StringBuilder(ENERLINK_HEADER);
+		for (int index = 1; index <= 30; index++) {
+			report.append(enerlink("L" + index, "21-10-2026 08:00:00", "21-10-2026 08:30:00", "JAC UNO", "jac uno", "1"));
+		}
+		report.append(enerlink("V1", "21-10-2026 09:00:00", "21-10-2026 09:30:00", "JAC Uno", "JAC UNO", ""));
+		report.append(enerlink("V2", "21-10-2026 09:00:00", "", "JAC Uno", "JAC UNO", ""));
+		report.append(enerlink("P1", "21-10-2026 09:00:00", "", "Desconocido", "X", "1"));
+		report.append(enerlink("I1", "", "", "JAC Uno", "JAC UNO", "1"));
+
+		String id = upload("ENERLINK", "incidente.csv", report.toString());
+
+		assertThat(batch(id)).containsEntry("totalRows", 34).containsEntry("newRows", 32)
+				.containsEntry("pendingLinkRows", 1).containsEntry("invalidRows", 1);
+		assertThat(issueCode(id, "P1")).isEqualTo("IDENTITY_NOT_REGISTERED");
+		confirm(id);
+		assertOfficial("2026-10-21", "2026-10-22", 32, 30.0);
+	}
+
 	// ---- helpers
+
+	private static String enerlink(String id, String start, String end, String site, String charger, String energy) {
+		return String.join("\t", id, start, end, site, charger, "A - CCS1", "80", energy) + "\n";
+	}
+
+	/** Dos equipos con pares equivalentes solo pueden venir de datos previos: se insertan directamente. */
+	private void insertVerifiedIdentity(String equipmentId, String site, String charger) {
+		jdbc.update("""
+				insert into asset_external_identity(id,equipment_id,platform,scope,external_id,verified,verified_at,
+				created_at,updated_at,version) values(gen_random_uuid(),?::uuid,'ENERLINK',?,?,true,now(),now(),now(),0)
+				""", equipmentId, site, charger);
+	}
+
+	private String rowsOf(String batchId) throws Exception {
+		return mvc.perform(get("/api/v1/energy/imports/" + batchId + "/rows").cookie(analyst)).andReturn().getResponse()
+				.getContentAsString();
+	}
+
+	private List<String> issueCodes(String batchId, String externalSessionId) throws Exception {
+		return JsonPath.read(rowsOf(batchId), "$.content[?(@.externalSessionId == '" + externalSessionId + "')].issues[*].code");
+	}
+
+	private String issueCode(String batchId, String externalSessionId) throws Exception {
+		return issueCodes(batchId, externalSessionId).getFirst();
+	}
+
+	private String rowOutcome(String batchId, String externalSessionId) throws Exception {
+		return JsonPath.<List<String>>read(rowsOf(batchId),
+				"$.content[?(@.externalSessionId == '" + externalSessionId + "')].outcome").getFirst();
+	}
+
+	private String rowDetail(String batchId, String externalSessionId) throws Exception {
+		return JsonPath.<List<String>>read(rowsOf(batchId),
+				"$.content[?(@.externalSessionId == '" + externalSessionId + "')].outcomeDetail").getFirst();
+	}
 
 	private static String wallbox(String serial, String sessionId, String energy) {
 		return WALLBOX_HEADER + serial + "\tPlaza\t" + sessionId + "\t2026-10-21 08:00:00\t2026-10-21 09:00:00\t"

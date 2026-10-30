@@ -26,10 +26,10 @@ public class SessionRevision {
 	@Column(nullable = false, updatable = false)
 	private Instant startedAt;
 
-	@Column(nullable = false, updatable = false)
+	@Column(updatable = false)
 	private Instant endedAt;
 
-	@Column(nullable = false, updatable = false, precision = 12, scale = SessionReading.ENERGY_SCALE)
+	@Column(updatable = false, precision = 12, scale = SessionReading.ENERGY_SCALE)
 	private BigDecimal energyKwh;
 
 	@Column(updatable = false, length = 150)

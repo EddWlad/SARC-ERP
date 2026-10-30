@@ -56,10 +56,9 @@ class ConsumptionCalculator {
 		requirePeriod(criteria);
 		SessionCriteria official = criteria.withState(SessionState.VALIDATED);
 		EnergyTotals totals = sessions.totals(official);
-		BigDecimal average = totals.sessions() == 0 ? BigDecimal.ZERO
-				: totals.energyKwh().divide(BigDecimal.valueOf(totals.sessions()), 3, RoundingMode.HALF_UP);
-		return new ConsumptionSummary(criteria.from(), criteria.to(), totals, average,
-				ranking(official, TOP_SIZE), fillDays(criteria.from(), criteria.to(), sessions.daily(official)),
+		return new ConsumptionSummary(criteria.from(), criteria.to(), totals, average(totals),
+				ranking(official, TOP_SIZE), totals.equipment() - sessions.countEquipmentWithEnergy(official),
+				fillDays(criteria.from(), criteria.to(), sessions.daily(official)),
 				complete(ChargingNetwork.class, sessions.byNetwork(official)),
 				complete(SessionSource.class, sessions.bySource(official)),
 				complete(InfrastructureType.class, sessions.byType(official)),
@@ -68,7 +67,16 @@ class ConsumptionCalculator {
 				sessions.totals(criteria.withState(SessionState.TEST)), Instant.now(clock));
 	}
 
-	/** Equipos con actividad oficial ordenados por energia; {@code limit} <= 0 los trae todos. */
+	/** Promedio entre sesiones con lectura: una ausencia no opera como cero (FR-014). */
+	private static BigDecimal average(EnergyTotals totals) {
+		if (totals.sessions() == 0) {
+			return BigDecimal.ZERO;
+		}
+		return totals.readings() == 0 ? null
+				: totals.energyKwh().divide(BigDecimal.valueOf(totals.readings()), 3, RoundingMode.HALF_UP);
+	}
+
+	/** Equipos con energia oficial conocida ordenados por energia; {@code limit} <= 0 los trae todos. */
 	List<RankedEquipment> ranking(SessionCriteria official, int limit) {
 		List<EquipmentEnergy> ranked = sessions.byEquipment(official, limit);
 		Map<UUID, EquipmentReference> equipment = directory.findByIds(
@@ -104,7 +112,7 @@ class ConsumptionCalculator {
 				.collect(Collectors.toMap(DailyEnergy::date, Function.identity()));
 		List<DailyEnergy> days = new ArrayList<>();
 		for (LocalDate day = from; day.isBefore(to); day = day.plusDays(1)) {
-			days.add(byDate.getOrDefault(day, new DailyEnergy(day, 0, BigDecimal.ZERO)));
+			days.add(byDate.getOrDefault(day, new DailyEnergy(day, 0, BigDecimal.ZERO, 0)));
 		}
 		return days;
 	}

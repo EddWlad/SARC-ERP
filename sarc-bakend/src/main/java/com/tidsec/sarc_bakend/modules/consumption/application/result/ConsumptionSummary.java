@@ -16,10 +16,12 @@ import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
  * Indicadores de consumo del periodo [from, to) (PRD 7.3). {@code official} cuenta solo sesiones
  * validadas; pendientes de vincular y de prueba se informan aparte y no suman. {@code daily} trae
  * todos los dias del periodo y las distribuciones todas sus categorias, con cero donde no hubo
- * sesiones, para graficar sin huecos.
+ * sesiones, para graficar sin huecos. La energia es la conocida: {@code averageKwhPerSession} promedia
+ * solo sesiones con lectura y es nulo sin lecturas; {@code top} excluye equipos sin energia informada,
+ * que se cuentan en {@code equipmentWithoutEnergy}.
  */
 public record ConsumptionSummary(LocalDate from, LocalDate to, EnergyTotals official,
-		BigDecimal averageKwhPerSession, List<RankedEquipment> top, List<DailyEnergy> daily,
+		BigDecimal averageKwhPerSession, List<RankedEquipment> top, long equipmentWithoutEnergy, List<DailyEnergy> daily,
 		Map<ChargingNetwork, EnergyTotals> byNetwork, Map<SessionSource, EnergyTotals> bySource,
 		Map<InfrastructureType, EnergyTotals> byType, EnergyTotals pendingLink, EnergyTotals awaitingApproval,
 		EnergyTotals test,

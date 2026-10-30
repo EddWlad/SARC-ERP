@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import com.tidsec.sarc_bakend.modules.consumption.application.result.SessionView;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergySession;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.LinkIssue;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionReading;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState;
@@ -23,10 +24,11 @@ public record SessionResponse(
 		SessionSource source,
 		String externalSessionId,
 		Instant startedAt,
-		Instant endedAt,
+		@Schema(nullable = true) Instant endedAt,
 		LocalDate startDate,
-		BigDecimal energyKwh,
+		@Schema(nullable = true) BigDecimal energyKwh,
 		SessionState state,
+		@Schema(nullable = true) LinkIssue linkIssue,
 		@Schema(nullable = true) EquipmentRefResponse equipment,
 		@Schema(nullable = true) String site,
 		@Schema(nullable = true) String charger,
@@ -41,7 +43,7 @@ public record SessionResponse(
 		SessionReading reading = session.reading();
 		return new SessionResponse(session.getId(), session.getSource(), session.getExternalSessionId(),
 				session.getStartedAt(), session.getEndedAt(), session.getStartDate(), session.getEnergyKwh(),
-				session.getState(), EquipmentRefResponse.from(view.equipment()), reading.site(), reading.charger(),
+				session.getState(), session.getLinkIssue(), EquipmentRefResponse.from(view.equipment()), reading.site(), reading.charger(),
 				reading.serial(), reading.connector(), session.getRevision(), session.getImportBatchId(),
 				session.getVersion());
 	}

@@ -49,6 +49,7 @@ interface ImportRowJpaRepository extends JpaRepository<ImportRow, UUID> {
 			where r.batchId = :batchId
 			  and r.outcome in (com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowOutcome.INSERTED,
 			                    com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowOutcome.CORRECTED,
-			                    com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowOutcome.REASSIGNED)""")
+			                    com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowOutcome.REASSIGNED,
+			                    com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowOutcome.LINKED)""")
 	long countWritten(@Param("batchId") UUID batchId);
 }
