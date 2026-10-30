@@ -20,7 +20,14 @@ const otherFeature = {
 module.exports = defineConfig([
   {
     // Tipos generados desde el contrato OpenAPI (npm run api:types).
-    ignores: ['src/app/core/api/generated/**'],
+    ignores: [
+      'src/app/core/api/generated/**',
+      'node_modules/**',
+      'dist/**',
+      'build/**',
+      'coverage/**',
+      '.angular/**',
+    ],
   },
   {
     files: ['**/*.ts'],

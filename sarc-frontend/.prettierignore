@@ -1,1 +1,7 @@
 src/app/core/api/generated/
+node_modules/
+dist/
+build/
+coverage/
+.angular/
+package-lock.json

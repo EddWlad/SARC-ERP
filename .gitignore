@@ -8,6 +8,10 @@ target/
 build/
 node_modules/
 dist/
+*.class
+*.log
+*.tmp
+*.swp
 
 # IDE
 .idea/

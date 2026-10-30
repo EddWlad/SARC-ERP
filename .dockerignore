@@ -1,0 +1,12 @@
+**/node_modules/
+**/target/
+**/dist/
+**/build/
+.git/
+**/.env
+**/.env.*
+**/*.log*
+**/coverage/
+**/.angular/
+Dockerfile*
+.dockerignore
