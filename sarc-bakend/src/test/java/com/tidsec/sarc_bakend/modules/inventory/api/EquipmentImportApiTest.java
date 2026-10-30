@@ -313,6 +313,109 @@ class EquipmentImportApiTest {
 		assertThat(jdbc.queryForObject("select count(*) from asset_equipment",Integer.class)).isEqualTo(1);
 	}
 
+	@Test
+	void completingOnlyTheEnerlinkIdentityNeedsNoApprovalAndLeavesTheEquipmentIntact() throws Exception {
+		String kia = createKiaPoint("WB-1001", "204518", "PUK-1", "Quicentro");
+		String text = HEADER + identityRow("KIA", "WB-1001", "JAC PUMA TUMBACO", "JAC PUMA TUMBACO");
+
+		String id = paste(text);
+
+		assertThat(batch(id)).containsEntry("identityCompletedRows", 1).containsEntry("modifiedRows", 0);
+		assertThat(JsonPath.<Boolean>read(rows(id), "$.content[0].requiresApproval")).isFalse();
+		assertThat(confirm(id)).containsEntry("appliedRows", 1);
+		assertThat(rowField(id, 2, "outcome")).isEqualTo("IDENTITY_ADDED");
+		mvc.perform(get("/api/v1/equipment/" + kia).cookie(analyst))
+				.andExpect(jsonPath("$.version").value(0))
+				.andExpect(jsonPath("$.serial").value("WB-1001"))
+				.andExpect(jsonPath("$.assignedCode").value("204518"))
+				.andExpect(jsonPath("$.connectors[0].connectorTypeCode").value("TYPE2"));
+		mvc.perform(get("/api/v1/equipment/" + kia + "/external-identities").cookie(analyst))
+				.andExpect(jsonPath("$.length()").value(1))
+				.andExpect(jsonPath("$[0].scope").value("JAC PUMA TUMBACO"))
+				.andExpect(jsonPath("$[0].verified").value(true));
+		assertThat(jdbc.queryForObject("select count(*) from audit_event where action = 'EQUIPMENT_UPDATED'",
+				Integer.class)).isZero();
+
+		String repeated = paste(HEADER + identityRow("KIA", "WB-1001", " jac  púma tumbaco ", "JAC PUMA  TUMBACO"));
+		assertThat(batch(repeated)).containsEntry("identicalRows", 1).containsEntry("identityCompletedRows", 0);
+		assertThat(jdbc.queryForObject("select count(*) from asset_external_identity", Integer.class)).isEqualTo(1);
+	}
+
+	@Test
+	void aConflictingPairBlocksItsWholeRowAndTheRestOfTheBatchContinues() throws Exception {
+		String first = createKiaPoint("WB-1", "204518", "PUK-1", null);
+		createKiaPoint("WB-2", "204519", "PUK-2", null);
+		confirm(paste(HEADER + identityRow("KIA", "WB-1", "Estación Norte", "Cargador 1")));
+
+		String id = paste(HEADER
+				+ row("KIA", "Punto de carga", "", "No debe cambiar", "WB-2", "", "", "", "", "", "", "ESTACION  NORTE",
+						"cargador 1", "")
+				+ identityRow("KIA", "WB-1", "Estación Norte", "Cargador 2")
+				+ row("JAC", "Punto de carga", "Benny", "Nuevo libre", "N-2", "", "PUK-4", "Libre", "TYPE2", "", "",
+						"Otra", "Otra", ""));
+
+		assertThat(batch(id)).containsEntry("conflictRows", 2).containsEntry("newRows", 1);
+		assertThat(issueCodes(id, 2)).containsExactly("EXTERNAL_IDENTITY_IN_USE");
+		assertThat(issueCodes(id, 3)).containsExactly("ENERLINK_IDENTITY_DIFFERS");
+		assertThat(confirm(id)).containsEntry("appliedRows", 1);
+		assertThat(jdbc.queryForObject("select count(*) from asset_equipment", Integer.class)).isEqualTo(3);
+		assertThat(jdbc.queryForObject("select count(*) from asset_external_identity where equipment_id = ?::uuid",
+				Integer.class, first)).isEqualTo(1);
+		mvc.perform(get("/api/v1/equipment").param("text", "WB-2").cookie(analyst))
+				.andExpect(jsonPath("$.content[0].name").value("Punto WB-2"));
+
+		String taken = paste(HEADER + row("JAC", "Punto de carga", "Benny", "Nuevo tomado", "N-1", "", "PUK-3", "Libre",
+				"TYPE2", "", "", "Estacion Norte", "CARGADOR 1", ""));
+		assertThat(batch(taken)).containsEntry("conflictRows", 1);
+		assertThat(issueCodes(taken, 2)).containsExactly("EXTERNAL_IDENTITY_IN_USE");
+		assertThat(confirm(taken)).containsEntry("appliedRows", 0);
+	}
+
+	@Test
+	void anIncompletePairInvalidatesTheRowAndNothingIsWritten() throws Exception {
+		String id = paste(HEADER + row("JAC", "Punto de carga", "Benny", "Sin activo", "N-1", "", "PUK-1", "Libre",
+				"TYPE2", "", "", "", "SOLO CARGADOR", ""));
+
+		assertThat(batch(id)).containsEntry("invalidRows", 1);
+		assertThat(issueCodes(id, 2)).containsExactly("ENERLINK_SCOPE_REQUIRED");
+		assertThat(confirm(id)).containsEntry("appliedRows", 0);
+		assertThat(jdbc.queryForObject("select count(*) from asset_equipment", Integer.class)).isZero();
+	}
+
+	@Test
+	void aRowWithOtherChangesNeedsApprovalAndWithoutItTheIdentityIsNotRegistered() throws Exception {
+		createKiaPoint("WB-1", "204518", "PUK-1", null);
+
+		String id = paste(HEADER + row("KIA", "Punto de carga", "", "Otro nombre", "WB-1", "", "", "", "", "", "",
+				"Activo", "Cargador", ""));
+
+		assertThat(batch(id)).containsEntry("modifiedRows", 1).containsEntry("identityCompletedRows", 0);
+		assertThat(confirm(id)).containsEntry("appliedRows", 0);
+		assertThat(rowField(id, 2, "outcome")).isEqualTo("SKIPPED");
+		assertThat(jdbc.queryForObject("select count(*) from asset_external_identity", Integer.class)).isZero();
+	}
+
+	@Test
+	void identitiesOfOtherPlatformsKeepRequiringApproval() throws Exception {
+		createKiaPoint("WB-1", "204518", "PUK-1", null);
+
+		String id = paste(HEADER + row("KIA", "Punto de carga", "", "", "WB-1", "", "", "", "", "", "", "", "", "CP-1"));
+
+		assertThat(batch(id)).containsEntry("modifiedRows", 1).containsEntry("identityCompletedRows", 0);
+	}
+
+	@Test
+	void equivalentPairsInOneBatchAreDuplicates() throws Exception {
+		String id = paste(HEADER
+				+ row("JAC", "Punto de carga", "Benny", "Uno", "N-1", "", "PUK-1", "Libre", "TYPE2", "", "",
+						"Estación Sur", "Uno", "")
+				+ row("JAC", "Punto de carga", "Benny", "Dos", "N-2", "", "PUK-2", "Libre", "TYPE2", "", "",
+						"ESTACION  SUR", "uno", ""));
+
+		assertThat(batch(id)).containsEntry("newRows", 1).containsEntry("duplicateRows", 1);
+		assertThat(issueCodes(id, 3)).containsExactly("DUPLICATED_IN_BATCH");
+	}
+
 	private String importText(boolean file, String text) throws Exception {
 		if (!file) return paste(text);
 		byte[] bytes;
@@ -342,6 +445,11 @@ class EquipmentImportApiTest {
 			String enerlinkCharger, String ocppId) {
 		return String.join("\t", network, type, brand, name, serial, code, uid, "", "", "", usage, connector1,
 				connector2, connector3, enerlinkScope, enerlinkCharger, "", ocppId) + "\n";
+	}
+
+	/** Fila que solo informa la identidad Enerlink de un equipo existente. */
+	private static String identityRow(String network, String serial, String enerlinkScope, String enerlinkCharger) {
+		return row(network, "Punto de carga", "", "", serial, "", "", "", "", "", "", enerlinkScope, enerlinkCharger, "");
 	}
 
 	private String paste(String text) throws Exception {

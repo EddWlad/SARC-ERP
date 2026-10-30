@@ -324,6 +324,27 @@ class InventoryApiTest {
 	// ---- identidades externas
 
 	@Test
+	void manualEnerlinkIdentitiesCompareThePairAndAllowAddingAnotherToTheSameEquipment() throws Exception {
+		String first = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", station("EST-1")));
+		String second = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", station("EST-2")));
+
+		send(analyst, HttpMethod.POST, "/api/v1/equipment/" + first + "/external-identities",
+				"{\"platform\":\"ENERLINK\",\"externalId\":\"Solo cargador\"}")
+				.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code").value("ENERLINK_SCOPE_REQUIRED"));
+		send(analyst, HttpMethod.POST, "/api/v1/equipment/" + first + "/external-identities",
+				"{\"platform\":\"ENERLINK\",\"scope\":\"Estación Norte\",\"externalId\":\"Cargador 1\"}")
+				.andExpect(status().isCreated());
+		send(analyst, HttpMethod.POST, "/api/v1/equipment/" + second + "/external-identities",
+				"{\"platform\":\"ENERLINK\",\"scope\":\"ESTACION  NORTE\",\"externalId\":\"cargador 1\"}")
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("EXTERNAL_IDENTITY_IN_USE"));
+		send(analyst, HttpMethod.POST, "/api/v1/equipment/" + first + "/external-identities",
+				"{\"platform\":\"ENERLINK\",\"scope\":\"Estación Norte\",\"externalId\":\"Cargador 2\"}")
+				.andExpect(status().isCreated());
+	}
+
+	@Test
 	void externalIdentitiesResolveVerifyAndNeverPointToTwoEquipment() throws Exception {
 		String first = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", station("EST-1")));
 		String second = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", station("EST-2")));

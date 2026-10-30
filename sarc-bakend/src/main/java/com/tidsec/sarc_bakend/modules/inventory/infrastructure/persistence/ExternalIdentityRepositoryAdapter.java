@@ -45,6 +45,11 @@ class ExternalIdentityRepositoryAdapter implements ExternalIdentityRepository {
 	}
 
 	@Override
+	public List<ExternalIdentity> findByPlatform(ExternalPlatform platform) {
+		return jpa.findByPlatform(platform);
+	}
+
+	@Override
 	public void delete(ExternalIdentity identity) {
 		jpa.delete(identity);
 	}

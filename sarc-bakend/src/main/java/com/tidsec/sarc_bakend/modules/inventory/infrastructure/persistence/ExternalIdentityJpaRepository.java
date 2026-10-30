@@ -17,4 +17,6 @@ interface ExternalIdentityJpaRepository extends JpaRepository<ExternalIdentity, 
 			String externalId);
 
 	List<ExternalIdentity> findByPlatformAndVerifiedTrue(ExternalPlatform platform);
+
+	List<ExternalIdentity> findByPlatform(ExternalPlatform platform);
 }

@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +17,7 @@ import com.tidsec.sarc_bakend.modules.inventory.domain.model.externalidentity.Ex
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentRepository;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.ExternalIdentityRepository;
 import com.tidsec.sarc_bakend.shared.audit.AuditTrail;
+import com.tidsec.sarc_bakend.shared.catalog.ExternalKey;
 import com.tidsec.sarc_bakend.shared.domain.ExternalPlatform;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 import com.tidsec.sarc_bakend.shared.error.ConflictException;
@@ -68,12 +70,13 @@ public class ExternalIdentityService {
 		}
 		ExternalIdentity identity = ExternalIdentity.register(owner.getId(), command.platform(), command.scope(),
 				command.externalId(), command.alias());
-		identities.findByKey(identity.getPlatform(), identity.getScope(), identity.getExternalId())
-				.ifPresent(existing -> {
-					throw new ConflictException("EXTERNAL_IDENTITY_IN_USE",
-							"Ese identificador externo ya pertenece a un equipo",
-							Map.of("equipmentId", existing.getEquipmentId()));
-				});
+		if (identity.getPlatform() == ExternalPlatform.ENERLINK && identity.getScope().isEmpty()) {
+			throw new BusinessRuleException("ENERLINK_SCOPE_REQUIRED", "Enerlink exige ACTIVO y CARGADOR");
+		}
+		holderOf(identity).ifPresent(existing -> {
+			throw new ConflictException("EXTERNAL_IDENTITY_IN_USE", "Ese identificador externo ya pertenece a un equipo",
+					Map.of("equipmentId", existing.getEquipmentId()));
+		});
 		identities.save(identity);
 		audit.record("EXTERNAL_IDENTITY_REGISTERED", ExternalIdentity.AUDIT_ENTITY_TYPE, identity.getId(),
 				Map.of("equipmentId", owner.getId().toString(), "platform", identity.getPlatform().name(),
@@ -103,6 +106,17 @@ public class ExternalIdentityService {
 		identities.delete(identity);
 		audit.record("EXTERNAL_IDENTITY_REMOVED", ExternalIdentity.AUDIT_ENTITY_TYPE, id,
 				Map.of("equipmentId", identity.getEquipmentId().toString(), "externalId", identity.getExternalId()));
+	}
+
+	/** Enerlink compara el par normalizado (D05); las demas plataformas, su clave exacta. */
+	private Optional<ExternalIdentity> holderOf(ExternalIdentity identity) {
+		if (identity.getPlatform() != ExternalPlatform.ENERLINK) {
+			return identities.findByKey(identity.getPlatform(), identity.getScope(), identity.getExternalId());
+		}
+		String key = new ExternalKey(identity.getScope(), identity.getExternalId()).comparable();
+		return identities.findByPlatform(ExternalPlatform.ENERLINK).stream()
+				.filter(existing -> new ExternalKey(existing.getScope(), existing.getExternalId()).comparable().equals(key))
+				.findFirst();
 	}
 
 	private ExternalIdentity load(UUID id) {

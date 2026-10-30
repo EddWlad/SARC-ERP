@@ -23,6 +23,7 @@ public record EquipmentImportBatchResponse(
 		int newRows,
 		int identicalRows,
 		int modifiedRows,
+		int identityCompletedRows,
 		int invalidRows,
 		int duplicateRows,
 		int deletedExistsRows,
@@ -36,8 +37,8 @@ public record EquipmentImportBatchResponse(
 		EquipmentRowCounts counts = batch.getCounts();
 		return new EquipmentImportBatchResponse(batch.getId(), batch.getOrigin(), batch.getFileName(),
 				batch.getChecksum(), batch.getStatus(), batch.getFailureCode(), batch.getFailureMessage(),
-				counts.total(), counts.newRows(), counts.identical(), counts.modified(), counts.invalid(),
-				counts.duplicate(), counts.deletedExists(), counts.conflict(), batch.getAppliedRows(),
+				counts.total(), counts.newRows(), counts.identical(), counts.modified(),
+				counts.identityCompleted(), counts.invalid(), counts.duplicate(), counts.deletedExists(), counts.conflict(), batch.getAppliedRows(),
 				batch.getCreatedAt(), batch.getConfirmedAt(), batch.getVersion());
 	}
 }

@@ -20,5 +20,11 @@ public interface EquipmentDirectory {
 	Map<ExternalKey, EquipmentReference> findByVerifiedIdentities(ExternalPlatform platform,
 			Collection<ExternalKey> keys);
 
+	/**
+	 * Busca pares completos por su forma normalizada e informa si cada uno es confiable, ambiguo, sin
+	 * verificar o desconocido. Devuelve una entrada por cada clave recibida.
+	 */
+	Map<ExternalKey, IdentityMatch> matchIdentities(ExternalPlatform platform, Collection<ExternalKey> keys);
+
 	Map<UUID, EquipmentReference> findByIds(Collection<UUID> ids);
 }

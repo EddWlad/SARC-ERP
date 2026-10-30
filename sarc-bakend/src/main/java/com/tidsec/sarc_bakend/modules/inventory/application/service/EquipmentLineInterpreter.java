@@ -109,8 +109,12 @@ final class EquipmentLineInterpreter {
 
 	private static List<ProposedEquipment.Identity> identities(EquipmentLine line, List<RowIssue> issues) {
 		List<ProposedEquipment.Identity> identities = new ArrayList<>();
-		if (line.enerlinkCharger() != null) {
+		if (line.enerlinkCharger() != null && line.enerlinkScope() != null) {
 			identities.add(identity(ExternalPlatform.ENERLINK, line.enerlinkScope(), line.enerlinkCharger()));
+		}
+		else if (line.enerlinkCharger() != null) {
+			issues.add(new RowIssue("ENERLINK_SCOPE_REQUIRED",
+					"Indique tambien el ACTIVO de Enerlink del cargador \"" + line.enerlinkCharger() + "\""));
 		}
 		else if (line.enerlinkScope() != null) {
 			issues.add(new RowIssue("ENERLINK_CHARGER_REQUIRED",

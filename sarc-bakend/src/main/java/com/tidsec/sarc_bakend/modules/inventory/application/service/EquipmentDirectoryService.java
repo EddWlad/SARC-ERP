@@ -19,6 +19,7 @@ import com.tidsec.sarc_bakend.modules.inventory.domain.repository.ExternalIdenti
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentDirectory;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentReference;
 import com.tidsec.sarc_bakend.shared.catalog.ExternalKey;
+import com.tidsec.sarc_bakend.shared.catalog.IdentityMatch;
 import com.tidsec.sarc_bakend.shared.domain.ExternalPlatform;
 
 /** Implementacion del puerto publico {@link EquipmentDirectory} con los datos del inventario. */
@@ -75,6 +76,38 @@ class EquipmentDirectoryService implements EquipmentDirectory {
 		Map<ExternalKey, EquipmentReference> result = new HashMap<>();
 		matched.forEach((key, id) -> result.put(key, references.get(id)));
 		return result;
+	}
+
+	@Override
+	public Map<ExternalKey, IdentityMatch> matchIdentities(ExternalPlatform platform, Collection<ExternalKey> keys) {
+		if (keys.isEmpty()) {
+			return Map.of();
+		}
+		Map<String, List<ExternalIdentity>> byKey = identities.findByPlatform(platform).stream()
+				.collect(Collectors.groupingBy(
+						identity -> new ExternalKey(identity.getScope(), identity.getExternalId()).comparable()));
+		Map<ExternalKey, Set<UUID>> verified = new HashMap<>();
+		for (ExternalKey key : keys) {
+			verified.put(key, byKey.getOrDefault(key.comparable(), List.of()).stream()
+					.filter(ExternalIdentity::isVerified).map(ExternalIdentity::getEquipmentId)
+					.collect(Collectors.toSet()));
+		}
+		Map<UUID, EquipmentReference> references = findByIds(verified.values().stream()
+				.filter(owners -> owners.size() == 1).flatMap(Set::stream).distinct().toList());
+		Map<ExternalKey, IdentityMatch> matches = new HashMap<>();
+		verified.forEach((key, owners) -> {
+			if (owners.size() == 1) {
+				matches.put(key, new IdentityMatch(IdentityMatch.Status.UNIQUE, references.get(owners.iterator().next())));
+			}
+			else if (owners.size() > 1) {
+				matches.put(key, new IdentityMatch(IdentityMatch.Status.AMBIGUOUS, null));
+			}
+			else {
+				matches.put(key, new IdentityMatch(byKey.containsKey(key.comparable()) ? IdentityMatch.Status.NOT_VERIFIED
+						: IdentityMatch.Status.NOT_REGISTERED, null));
+			}
+		});
+		return matches;
 	}
 
 	@Override

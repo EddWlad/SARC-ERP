@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -18,6 +17,7 @@ import com.tidsec.sarc_bakend.modules.inventory.domain.model.importbatch.Equipme
 import com.tidsec.sarc_bakend.modules.inventory.domain.model.importbatch.EquipmentRowClassification;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentRepository;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.ExternalIdentityRepository;
+import com.tidsec.sarc_bakend.shared.domain.ExternalPlatform;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 import com.tidsec.sarc_bakend.shared.error.ConflictException;
 import com.tidsec.sarc_bakend.shared.importing.batch.RowIssue;
@@ -56,8 +56,13 @@ class EquipmentRowEvaluator {
 		this.identifiers = identifiers;
 	}
 
+	/** Identidades Enerlink actuales, para pasarlas a {@link #evaluate} sin consultarlas por fila. */
+	EnerlinkIdentityIndex enerlinkIdentities() {
+		return EnerlinkIdentityIndex.of(identities.findByPlatform(ExternalPlatform.ENERLINK));
+	}
+
 	/** {@code catalog}: tipos de conector por codigo. */
-	Evaluation evaluate(EquipmentLine line, Map<String, ConnectorType> catalog) {
+	Evaluation evaluate(EquipmentLine line, Map<String, ConnectorType> catalog, EnerlinkIdentityIndex enerlink) {
 		EquipmentLineInterpreter.Interpretation interpretation = EquipmentLineInterpreter.interpret(line, catalog);
 		if (!interpretation.isValid()) {
 			return new Evaluation(EquipmentRowClassification.INVALID, interpretation.issues(), null, null, List.of(),
@@ -101,24 +106,31 @@ class EquipmentRowEvaluator {
 		List<ProposedEquipment.Identity> toRegister = new ArrayList<>();
 		List<ExternalIdentity> toVerify = new ArrayList<>();
 		for (ProposedEquipment.Identity identity : proposal.identities()) {
-			Optional<ExternalIdentity> owner = identities.findByKey(identity.platform(), identity.scope(),
-					identity.externalId());
-			if (owner.isEmpty()) {
-				toRegister.add(identity);
-			}
-			else if (existing == null || !owner.get().getEquipmentId().equals(existing.getId())) {
+			List<ExternalIdentity> holders = identity.platform() == ExternalPlatform.ENERLINK ? enerlink.holders(identity)
+					: identities.findByKey(identity.platform(), identity.scope(), identity.externalId()).stream().toList();
+			if (holders.stream().anyMatch(holder -> existing == null || !holder.getEquipmentId().equals(existing.getId()))) {
 				return Evaluation.of(EquipmentRowClassification.CONFLICT, existing, new RowIssue(
 						"EXTERNAL_IDENTITY_IN_USE", "La identidad " + identity.describe() + " ya es de otro equipo"));
 			}
-			else if (!owner.get().isVerified()) {
-				toVerify.add(owner.get());
+			if (holders.isEmpty() && identity.platform() == ExternalPlatform.ENERLINK && existing != null
+					&& enerlink.hasOtherVerifiedPair(existing.getId(), identity)) {
+				return Evaluation.of(EquipmentRowClassification.CONFLICT, existing, new RowIssue(
+						"ENERLINK_IDENTITY_DIFFERS", "El equipo ya tiene otra identidad Enerlink verificada; agregue "
+								+ identity.describe() + " de forma explicita en Identidades externas"));
+			}
+			if (holders.isEmpty()) {
+				toRegister.add(identity);
+			}
+			else if (holders.stream().noneMatch(ExternalIdentity::isVerified)) {
+				toVerify.add(holders.getFirst());
 			}
 		}
 
 		if (existing == null) {
 			return new Evaluation(EquipmentRowClassification.NEW, List.of(), null, proposal, toRegister, toVerify);
 		}
-		List<String> changes = changes(existing, draft);
+		List<String> equipmentChanges = changes(existing, draft);
+		List<String> changes = new ArrayList<>(equipmentChanges);
 		toRegister.forEach(identity -> changes.add("nueva identidad " + identity.describe()));
 		toVerify.forEach(identity -> changes.add("verifica identidad " + new ProposedEquipment.Identity(
 				identity.getPlatform(), identity.getScope(), identity.getExternalId()).describe()));
@@ -126,9 +138,20 @@ class EquipmentRowEvaluator {
 			return new Evaluation(EquipmentRowClassification.IDENTICAL, List.of(), existing, null, List.of(),
 					List.of());
 		}
+		if (equipmentChanges.isEmpty() && onlyEnerlink(toRegister, toVerify)) {
+			return new Evaluation(EquipmentRowClassification.IDENTITY_COMPLETED, List.of(new RowIssue(
+					"IDENTITY_COMPLETED", "Completa: " + String.join(", ", changes) + ". Se aplica al confirmar")),
+					existing, proposal, toRegister, toVerify);
+		}
 		return new Evaluation(EquipmentRowClassification.MODIFIED, List.of(new RowIssue("EQUIPMENT_CHANGED",
 				"Cambia: " + String.join(", ", changes) + ". Apruebe para actualizar el equipo")), existing, proposal,
 				toRegister, toVerify);
+	}
+
+	/** Solo Enerlink se completa sin aprobacion por fila; las demas plataformas no cambian (FR-019). */
+	private static boolean onlyEnerlink(List<ProposedEquipment.Identity> toRegister, List<ExternalIdentity> toVerify) {
+		return toRegister.stream().allMatch(identity -> identity.platform() == ExternalPlatform.ENERLINK)
+				&& toVerify.stream().allMatch(identity -> identity.getPlatform() == ExternalPlatform.ENERLINK);
 	}
 
 	/** Campos del equipo que cambiarian, con su nombre para el analista. */

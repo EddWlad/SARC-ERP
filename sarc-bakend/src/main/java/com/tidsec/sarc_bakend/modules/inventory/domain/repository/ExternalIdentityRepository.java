@@ -21,5 +21,8 @@ public interface ExternalIdentityRepository {
 	/** Identidades verificadas de una plataforma, para conciliar importaciones. */
 	List<ExternalIdentity> findVerified(ExternalPlatform platform);
 
+	/** Todas las identidades de una plataforma, para compararlas por su forma normalizada. */
+	List<ExternalIdentity> findByPlatform(ExternalPlatform platform);
+
 	void delete(ExternalIdentity identity);
 }

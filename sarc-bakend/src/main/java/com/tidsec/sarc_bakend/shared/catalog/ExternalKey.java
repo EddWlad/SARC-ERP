@@ -11,6 +11,11 @@ public record ExternalKey(String scope, String externalId) {
 		externalId = externalId == null ? "" : externalId.strip();
 	}
 
+	/** Trae ambito e identificador: el par completo que exige una identidad de Enerlink. */
+	public boolean isComplete() {
+		return !scope.isEmpty() && !externalId.isEmpty();
+	}
+
 	/**
 	 * Forma de comparar claves escritas a mano en las plataformas ("ESTACION 4", "Estación 4"): sin
 	 * distinguir mayusculas, tildes ni espacios repetidos.

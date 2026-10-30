@@ -9,6 +9,8 @@ public enum EquipmentRowClassification {
 	IDENTICAL,
 	/** El equipo existe con datos distintos: se actualiza solo si el analista lo aprueba. */
 	MODIFIED,
+	/** El equipo existe y solo se completa su identidad Enerlink: se aplica al confirmar, sin escribir el equipo. */
+	IDENTITY_COMPLETED,
 	/** Faltan datos o no cumplen las reglas del equipo: no se incorpora. */
 	INVALID,
 	/** La serie, el codigo, el UID/PUK o una identidad externa aparecen antes en el mismo lote. */
@@ -20,6 +22,6 @@ public enum EquipmentRowClassification {
 
 	/** Clasificaciones que pueden escribir en el inventario al confirmar. */
 	public boolean writesEquipment() {
-		return this == NEW || this == MODIFIED;
+		return this == NEW || this == MODIFIED || this == IDENTITY_COMPLETED;
 	}
 }

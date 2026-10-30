@@ -19,6 +19,7 @@ public class EquipmentImportBatch extends BaseImportBatch {
 	private int newRows;
 	private int identicalRows;
 	private int modifiedRows;
+	private int identityCompletedRows;
 	private int invalidRows;
 	private int duplicateRows;
 	private int deletedExistsRows;
@@ -42,6 +43,7 @@ public class EquipmentImportBatch extends BaseImportBatch {
 		this.newRows = counts.newRows();
 		this.identicalRows = counts.identical();
 		this.modifiedRows = counts.modified();
+		this.identityCompletedRows = counts.identityCompleted();
 		this.invalidRows = counts.invalid();
 		this.duplicateRows = counts.duplicate();
 		this.deletedExistsRows = counts.deletedExists();
@@ -49,7 +51,7 @@ public class EquipmentImportBatch extends BaseImportBatch {
 	}
 
 	public EquipmentRowCounts getCounts() {
-		return new EquipmentRowCounts(totalRows, newRows, identicalRows, modifiedRows, invalidRows, duplicateRows,
-				deletedExistsRows, conflictRows);
+		return new EquipmentRowCounts(totalRows, newRows, identicalRows, modifiedRows, identityCompletedRows,
+				invalidRows, duplicateRows, deletedExistsRows, conflictRows);
 	}
 }

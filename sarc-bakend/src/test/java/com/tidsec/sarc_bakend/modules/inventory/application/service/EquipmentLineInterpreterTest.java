@@ -74,6 +74,25 @@ class EquipmentLineInterpreterTest {
 				"El tipo de conector \"!!\" no existe en el catalogo");
 	}
 
+	@Test
+	void theEnerlinkPairMustComeCompleteOrNotAtAll() {
+		assertThat(enerlinkIssues(null, "JAC PUMA")).containsExactly("ENERLINK_SCOPE_REQUIRED");
+		assertThat(enerlinkIssues("JAC PUMA", null)).containsExactly("ENERLINK_CHARGER_REQUIRED");
+		assertThat(enerlinkIssues(null, null)).isEmpty();
+		assertThat(EquipmentLineInterpreter.interpret(enerlinkLine(null, null), CATALOG).proposal().identities())
+				.isEmpty();
+	}
+
+	private static java.util.List<String> enerlinkIssues(String scope, String charger) {
+		return EquipmentLineInterpreter.interpret(enerlinkLine(scope, charger), CATALOG).issues().stream()
+				.map(RowIssue::code).toList();
+	}
+
+	private static EquipmentLine enerlinkLine(String scope, String charger) {
+		return line("JAC", "Electrolinera", null, null, "S-1", null, null, null, "TYPE2", null, null, scope, charger,
+				null, null);
+	}
+
 	private static EquipmentLine line(String network, String type, String brand, String name, String serial,
 			String code, String uid, String usage, String connector1, String connector2, String connector3,
 			String enerlinkScope, String enerlinkCharger, String wallbox, String ocpp) {

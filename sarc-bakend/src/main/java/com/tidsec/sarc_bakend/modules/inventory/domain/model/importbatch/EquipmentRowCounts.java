@@ -5,7 +5,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /** Resumen de la vista previa: cuantas filas hay de cada clasificacion. */
-public record EquipmentRowCounts(int total, int newRows, int identical, int modified, int invalid, int duplicate,
+public record EquipmentRowCounts(int total, int newRows, int identical, int modified, int identityCompleted, int invalid, int duplicate,
 		int deletedExists, int conflict) {
 
 	public static EquipmentRowCounts of(Collection<EquipmentRowClassification> classifications) {
@@ -15,6 +15,7 @@ public record EquipmentRowCounts(int total, int newRows, int identical, int modi
 				counts.getOrDefault(EquipmentRowClassification.NEW, 0),
 				counts.getOrDefault(EquipmentRowClassification.IDENTICAL, 0),
 				counts.getOrDefault(EquipmentRowClassification.MODIFIED, 0),
+				counts.getOrDefault(EquipmentRowClassification.IDENTITY_COMPLETED, 0),
 				counts.getOrDefault(EquipmentRowClassification.INVALID, 0),
 				counts.getOrDefault(EquipmentRowClassification.DUPLICATE, 0),
 				counts.getOrDefault(EquipmentRowClassification.DELETED_EXISTS, 0),

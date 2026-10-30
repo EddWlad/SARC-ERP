@@ -36,6 +36,8 @@ import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentImpor
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentRepository;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.ExternalIdentityRepository;
 import com.tidsec.sarc_bakend.shared.audit.AuditTrail;
+import com.tidsec.sarc_bakend.shared.catalog.ExternalKey;
+import com.tidsec.sarc_bakend.shared.domain.ExternalPlatform;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 import com.tidsec.sarc_bakend.shared.error.NotFoundException;
 import com.tidsec.sarc_bakend.shared.importing.batch.ImportFailure;
@@ -121,10 +123,11 @@ class EquipmentImportProcessor {
 					"La carga masiva admite hasta " + MAX_ROWS + " equipos por archivo; divida la plantilla");
 		}
 		Map<String, ConnectorType> catalog = catalog();
+		EnerlinkIdentityIndex enerlink = evaluator.enerlinkIdentities();
 		Set<String> seenKeys = new HashSet<>();
 		List<EquipmentImportRow> classified = new ArrayList<>();
 		for (SheetLine line : lines) {
-			classified.add(classifyLine(batchId, line, catalog, seenKeys));
+			classified.add(classifyLine(batchId, line, catalog, enerlink, seenKeys));
 		}
 		rows.insertAll(classified);
 		EquipmentRowCounts counts = EquipmentRowCounts.of(
@@ -140,8 +143,8 @@ class EquipmentImportProcessor {
 	}
 
 	private EquipmentImportRow classifyLine(UUID batchId, SheetLine sheetLine, Map<String, ConnectorType> catalog,
-			Set<String> seenKeys) {
-		Evaluation evaluation = evaluator.evaluate(sheetLine.line(), catalog);
+			EnerlinkIdentityIndex enerlink, Set<String> seenKeys) {
+		Evaluation evaluation = evaluator.evaluate(sheetLine.line(), catalog, enerlink);
 		EquipmentRowClassification classification = evaluation.classification();
 		List<RowIssue> issues = evaluation.issues();
 		if (classification != EquipmentRowClassification.INVALID) {
@@ -175,13 +178,20 @@ class EquipmentImportProcessor {
 		if (proposal.uidPuk() != null) {
 			keys.put("uid:" + Equipment.normalizeIdentifier(proposal.uidPuk()), "El UID/PUK " + proposal.uidPuk());
 		}
-		proposal.identities().forEach(identity -> keys.put("identity:" + identity.platform() + "|"
-				+ identity.scope().toUpperCase(Locale.ROOT) + "|" + identity.externalId().toUpperCase(Locale.ROOT),
+		proposal.identities().forEach(identity -> keys.put("identity:" + repeatableKey(identity),
 				"La identidad " + identity.describe()));
 		String repeated = keys.entrySet().stream().filter(entry -> seenKeys.contains(entry.getKey()))
 				.map(Map.Entry::getValue).findFirst().orElse(null);
 		seenKeys.addAll(keys.keySet());
 		return repeated;
+	}
+
+	/** Enerlink compara el par normalizado (D05); las demas plataformas sin distinguir mayusculas. */
+	private static String repeatableKey(ProposedEquipment.Identity identity) {
+		return identity.platform() == ExternalPlatform.ENERLINK
+				? identity.platform() + "|" + new ExternalKey(identity.scope(), identity.externalId()).comparable()
+				: identity.platform() + "|" + identity.scope().toUpperCase(Locale.ROOT) + "|"
+						+ identity.externalId().toUpperCase(Locale.ROOT);
 	}
 
 	private boolean applyNextChunk(UUID batchId) {
@@ -190,8 +200,9 @@ class EquipmentImportProcessor {
 			return false;
 		}
 		Map<String, ConnectorType> catalog = catalog();
+		EnerlinkIdentityIndex enerlink = evaluator.enerlinkIdentities();
 		for (EquipmentImportRow row : next) {
-			Outcome outcome = applyRow(batchId, row, catalog);
+			Outcome outcome = applyRow(batchId, row, catalog, enerlink);
 			row.recordOutcome(outcome.result(), outcome.detail());
 		}
 		return true;
@@ -204,14 +215,15 @@ class EquipmentImportProcessor {
 		}
 	}
 
-	private Outcome applyRow(UUID batchId, EquipmentImportRow row, Map<String, ConnectorType> catalog) {
+	private Outcome applyRow(UUID batchId, EquipmentImportRow row, Map<String, ConnectorType> catalog,
+			EnerlinkIdentityIndex enerlink) {
 		if (row.getClassification() == EquipmentRowClassification.MODIFIED) {
 			Long currentVersion = equipment.findById(row.getEquipmentId()).map(Equipment::getVersion).orElse(null);
 			if (!Objects.equals(currentVersion, row.getEquipmentVersion())) {
 				return Outcome.skipped("El equipo se modifico despues de la vista previa; vuelva a cargar la plantilla");
 			}
 		}
-		Evaluation evaluation = evaluator.evaluate(row.getLine(), catalog);
+		Evaluation evaluation = evaluator.evaluate(row.getLine(), catalog, enerlink);
 		EquipmentRowClassification now = evaluation.classification();
 		if (now == EquipmentRowClassification.IDENTICAL) {
 			return new Outcome(EquipmentRowOutcome.UNCHANGED, null);
@@ -220,6 +232,10 @@ class EquipmentImportProcessor {
 			return Outcome.skipped(evaluation.issues().isEmpty()
 					? "El inventario cambio despues de la vista previa; vuelva a cargar la plantilla"
 					: evaluation.issues().getFirst().message());
+		}
+		if (now == EquipmentRowClassification.IDENTITY_COMPLETED) {
+			registerIdentities(evaluation.existing(), evaluation);
+			return new Outcome(EquipmentRowOutcome.IDENTITY_ADDED, null);
 		}
 		Equipment written = now == EquipmentRowClassification.NEW ? create(batchId, evaluation)
 				: update(batchId, evaluation);

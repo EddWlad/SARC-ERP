@@ -28,6 +28,7 @@ interface EquipmentImportRowJpaRepository extends JpaRepository<EquipmentImportR
 			select r from EquipmentImportRow r
 			where r.batchId = :batchId and r.outcome is null
 			  and (r.classification = com.tidsec.sarc_bakend.modules.inventory.domain.model.importbatch.EquipmentRowClassification.NEW
+			       or r.classification = com.tidsec.sarc_bakend.modules.inventory.domain.model.importbatch.EquipmentRowClassification.IDENTITY_COMPLETED
 			       or (r.classification = com.tidsec.sarc_bakend.modules.inventory.domain.model.importbatch.EquipmentRowClassification.MODIFIED
 			           and r.approved = true))
 			order by r.rowNumber""")
@@ -46,6 +47,7 @@ interface EquipmentImportRowJpaRepository extends JpaRepository<EquipmentImportR
 			select count(r) from EquipmentImportRow r
 			where r.batchId = :batchId
 			  and r.outcome in (com.tidsec.sarc_bakend.modules.inventory.domain.model.importbatch.EquipmentRowOutcome.CREATED,
-			                    com.tidsec.sarc_bakend.modules.inventory.domain.model.importbatch.EquipmentRowOutcome.UPDATED)""")
+			                    com.tidsec.sarc_bakend.modules.inventory.domain.model.importbatch.EquipmentRowOutcome.UPDATED,
+			                    com.tidsec.sarc_bakend.modules.inventory.domain.model.importbatch.EquipmentRowOutcome.IDENTITY_ADDED)""")
 	long countWritten(@Param("batchId") UUID batchId);
 }
