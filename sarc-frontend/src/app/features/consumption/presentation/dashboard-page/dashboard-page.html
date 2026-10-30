@@ -48,9 +48,16 @@
     <ul class="kpi-grid">
       <li class="kpi-tile">
         <span class="kpi-value">
-          {{ quantities.kwh(summary.official.energyKwh) }}<span class="kpi-unit">kWh</span>
+          {{ quantities.knownKwh(summary.official.energyKwh) }}
+          @if ((summary.official.energyKwh ?? null) !== null) {
+            <span class="kpi-unit">kWh</span>
+          }
         </span>
-        <span class="kpi-label">Energía entregada</span>
+        <span class="kpi-label">
+          {{
+            summary.official.sessionsWithoutEnergy > 0 ? 'Energía conocida' : 'Energía entregada'
+          }}
+        </span>
       </li>
       <li class="kpi-tile">
         <span class="kpi-value">{{ quantities.count(summary.official.sessions) }}</span>
@@ -62,9 +69,12 @@
       </li>
       <li class="kpi-tile">
         <span class="kpi-value">
-          {{ quantities.kwh(summary.averageKwhPerSession) }}<span class="kpi-unit">kWh</span>
+          {{ quantities.knownKwh(summary.averageKwhPerSession) }}
+          @if ((summary.averageKwhPerSession ?? null) !== null) {
+            <span class="kpi-unit">kWh</span>
+          }
         </span>
-        <span class="kpi-label">Promedio por sesión</span>
+        <span class="kpi-label">Promedio por sesión con lectura</span>
       </li>
     </ul>
   </section>
@@ -76,21 +86,23 @@
         <span>Pendientes de vincular</span>
         <span>
           <strong>{{ quantities.count(summary.pendingLink.sessions) }}</strong>
-          <span class="muted"> · {{ quantities.kwh(summary.pendingLink.energyKwh) }} kWh</span>
+          <span class="muted"> · {{ quantities.knownEnergy(summary.pendingLink.energyKwh) }}</span>
         </span>
       </li>
       <li class="metric-row">
         <span>Por aprobar (fuente no preferente)</span>
         <span>
           <strong>{{ quantities.count(summary.awaitingApproval.sessions) }}</strong>
-          <span class="muted"> · {{ quantities.kwh(summary.awaitingApproval.energyKwh) }} kWh</span>
+          <span class="muted">
+            · {{ quantities.knownEnergy(summary.awaitingApproval.energyKwh) }}</span
+          >
         </span>
       </li>
       <li class="metric-row">
         <span>Pruebas</span>
         <span>
           <strong>{{ quantities.count(summary.test.sessions) }}</strong>
-          <span class="muted"> · {{ quantities.kwh(summary.test.energyKwh) }} kWh</span>
+          <span class="muted"> · {{ quantities.knownEnergy(summary.test.energyKwh) }}</span>
         </span>
       </li>
     </ul>
@@ -129,7 +141,10 @@
 
       <section class="panel wide" aria-labelledby="top-title">
         <h2 id="top-title">Top 5 equipos por energía</h2>
-        <sarc-top-equipment [items]="summary.top" />
+        <sarc-top-equipment
+          [items]="summary.top"
+          [withoutEnergy]="summary.equipmentWithoutEnergy"
+        />
       </section>
 
       <section class="panel" aria-labelledby="network-title">

@@ -32,11 +32,26 @@ import { RankedEquipment } from '../../domain/consumption';
         </li>
       }
     </ol>
+    @if (withoutEnergy() > 0) {
+      <p class="muted excluded">
+        {{
+          quantities.amount(
+            withoutEnergy(),
+            'equipo fuera del ranking por no tener energía informada',
+            'equipos fuera del ranking por no tener energía informada'
+          )
+        }}
+      </p>
+    }
   `,
   styles: `
     :host {
       display: block;
       --sarc-chart-height: 220px;
+    }
+
+    .excluded {
+      margin: var(--sarc-space-2) 0 0;
     }
 
     .ranking {
@@ -95,6 +110,8 @@ import { RankedEquipment } from '../../domain/consumption';
 })
 export class TopEquipment {
   readonly items = input.required<readonly RankedEquipment[]>();
+  /** Equipos con sesiones oficiales que no entran al ranking por no tener energia informada. */
+  readonly withoutEnergy = input(0);
 
   protected readonly quantities = inject(QuantityFormat);
   protected readonly formatKwh = (value: number) => this.quantities.kwh(value);

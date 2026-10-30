@@ -177,7 +177,12 @@
       @let item = rowOf(row);
       @if (item.startedAt) {
         <span class="muted block">
-          {{ item.startedAt | date: 'short' }} – {{ item.endedAt | date: 'shortTime' }}
+          {{ item.startedAt | date: 'short' }}
+          @if (item.endedAt) {
+            – {{ item.endedAt | date: 'shortTime' }}
+          } @else {
+            · Término no informado
+          }
         </span>
       }
     </ng-template>
@@ -198,7 +203,9 @@
         class="badge"
         [class.badge-accent]="item.classification === 'NEW'"
         [class.badge-info]="
-          item.classification === 'MODIFIED' || item.classification === 'EQUIPMENT_CHANGED'
+          item.classification === 'MODIFIED' ||
+          item.classification === 'EQUIPMENT_CHANGED' ||
+          item.classification === 'LINKABLE'
         "
         [class.badge-warn]="
           item.classification === 'INVALID' || item.classification === 'PENDING_LINK'
@@ -213,7 +220,11 @@
 
     <ng-template #issues let-row>
       @for (issue of rowOf(row).issues; track issue.code) {
-        <span class="issue">{{ issue.message }}</span>
+        @if (issue.code === 'SESSION_VALUE_REMOVED') {
+          <strong class="issue">{{ issue.message }}</strong>
+        } @else {
+          <span class="issue">{{ issue.message }}</span>
+        }
       }
     </ng-template>
 

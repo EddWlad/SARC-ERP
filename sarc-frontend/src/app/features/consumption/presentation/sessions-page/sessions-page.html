@@ -42,6 +42,25 @@
   </mat-form-field>
 </sarc-consumption-filter-bar>
 
+@if (facade.summary(); as summary) {
+  <p class="period-summary muted">
+    Indicadores oficiales del período:
+    {{ quantities.amount(summary.official.sessions, 'sesión', 'sesiones') }} ·
+    {{ summary.official.sessionsWithoutEnergy > 0 ? 'Energía conocida' : 'Energía' }}
+    {{ quantities.knownEnergy(summary.official.energyKwh) }}
+    @if (summary.official.sessionsWithoutEnergy > 0) {
+      ·
+      {{
+        quantities.amount(
+          summary.official.sessionsWithoutEnergy,
+          'sesión sin energía informada',
+          'sesiones sin energía informada'
+        )
+      }}
+    }
+  </p>
+}
+
 <section class="results" aria-label="Sesiones" [attr.aria-busy]="facade.loading()">
   @if (facade.loading()) {
     <mat-progress-bar mode="indeterminate" aria-label="Cargando sesiones" />
@@ -65,11 +84,14 @@
               <strong>{{ session.equipment?.name ?? session.charger ?? 'Sin vincular' }}</strong>
               <span class="muted">{{ session.startedAt | date: 'short' }}</span>
             </div>
-            <strong class="energy">{{ quantities.kwh(session.energyKwh) }} kWh</strong>
+            <strong class="energy">{{ quantities.reportedEnergy(session.energyKwh) }}</strong>
           </div>
           <span class="muted">
             {{ sourceLabels[session.source] }} · {{ session.externalSessionId }}
           </span>
+          @if (session.linkIssue; as issue) {
+            <span class="muted">{{ linkIssueLabels[issue] }}</span>
+          }
           <div class="card-foot">
             <sarc-session-state-badge [state]="session.state" />
             @if (canEdit) {
@@ -95,7 +117,11 @@
         <td mat-cell *matCellDef="let row">
           @let session = sessionOf(row);
           {{ session.startedAt | date: 'short' }}
-          <span class="muted block">hasta {{ session.endedAt | date: 'shortTime' }}</span>
+          @if (session.endedAt) {
+            <span class="muted block">hasta {{ session.endedAt | date: 'shortTime' }}</span>
+          } @else {
+            <span class="muted block">Término no informado</span>
+          }
         </td>
       </ng-container>
       <ng-container matColumnDef="equipment">
@@ -115,6 +141,9 @@
             <span class="muted block">
               {{ session.site ? session.site + ' / ' : '' }}{{ session.charger ?? session.serial }}
             </span>
+            @if (session.linkIssue; as issue) {
+              <span class="muted block">{{ linkIssueLabels[issue] }}</span>
+            }
           }
         </td>
       </ng-container>
@@ -129,7 +158,7 @@
       <ng-container matColumnDef="energy">
         <th mat-header-cell *matHeaderCellDef class="number">kWh</th>
         <td mat-cell *matCellDef="let row" class="number">
-          <strong>{{ quantities.kwh(sessionOf(row).energyKwh) }}</strong>
+          <strong>{{ quantities.reportedKwh(sessionOf(row).energyKwh) }}</strong>
         </td>
       </ng-container>
       <ng-container matColumnDef="state">

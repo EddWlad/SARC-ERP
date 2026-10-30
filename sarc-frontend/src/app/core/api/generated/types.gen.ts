@@ -116,12 +116,12 @@ export type EquipmentImportRowResponse = {
     enerlinkCharger?: string | null;
     wallboxId?: string | null;
     ocppId?: string | null;
-    classification: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'INVALID' | 'DUPLICATE' | 'DELETED_EXISTS' | 'CONFLICT';
+    classification: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'IDENTITY_COMPLETED' | 'INVALID' | 'DUPLICATE' | 'DELETED_EXISTS' | 'CONFLICT';
     issues: Array<RowIssue>;
     equipmentId?: string | null;
     requiresApproval: boolean;
     approved: boolean;
-    outcome?: 'CREATED' | 'UPDATED' | 'UNCHANGED' | 'SKIPPED';
+    outcome?: 'CREATED' | 'UPDATED' | 'IDENTITY_ADDED' | 'UNCHANGED' | 'SKIPPED';
     outcomeDetail?: string | null;
 };
 
@@ -150,14 +150,14 @@ export type ImportRowResponse = {
     connector?: string | null;
     equipmentId?: string | null;
     network?: 'KIA' | 'JAC' | 'CONECTZ';
-    classification: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'EQUIPMENT_CHANGED' | 'INVALID' | 'DUPLICATE' | 'PENDING_LINK';
+    classification: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'EQUIPMENT_CHANGED' | 'LINKABLE' | 'INVALID' | 'DUPLICATE' | 'PENDING_LINK';
     issues: Array<Issue>;
     nonPreferredSource: boolean;
     requiresApproval: boolean;
     test: boolean;
     approved: boolean;
     reassigned: boolean;
-    outcome?: 'INSERTED' | 'CORRECTED' | 'REASSIGNED' | 'UNCHANGED' | 'SKIPPED';
+    outcome?: 'INSERTED' | 'CORRECTED' | 'REASSIGNED' | 'LINKED' | 'UNCHANGED' | 'SKIPPED';
     outcomeDetail?: string | null;
 };
 
@@ -245,6 +245,7 @@ export type EquipmentImportBatchResponse = {
     newRows: number;
     identicalRows: number;
     modifiedRows: number;
+    identityCompletedRows: number;
     invalidRows: number;
     duplicateRows: number;
     deletedExistsRows: number;
@@ -272,10 +273,11 @@ export type SessionResponse = {
     source: 'ENERLINK' | 'WALLBOX';
     externalSessionId: string;
     startedAt: string;
-    endedAt: string;
+    endedAt?: string | null;
     startDate: string;
-    energyKwh: number;
+    energyKwh?: number | null;
     state: 'VALIDATED' | 'PENDING_LINK' | 'AWAITING_APPROVAL' | 'TEST';
+    linkIssue?: 'IDENTITY_INCOMPLETE' | 'IDENTITY_NOT_REGISTERED' | 'IDENTITY_NOT_VERIFIED' | 'IDENTITY_AMBIGUOUS';
     equipment?: EquipmentRefResponse;
     site?: string | null;
     charger?: string | null;
@@ -310,6 +312,7 @@ export type ImportBatchResponse = {
     invalidRows: number;
     duplicateRows: number;
     pendingLinkRows: number;
+    linkableRows: number;
     appliedRows: number;
     createdAt: string;
     confirmedAt?: string | null;
@@ -477,8 +480,9 @@ export type ConsumptionSummaryResponse = {
     from: string;
     to: string;
     official: Totals;
-    averageKwhPerSession: number;
+    averageKwhPerSession?: number | null;
     top: Array<Ranked>;
+    equipmentWithoutEnergy: number;
     daily: Array<Day>;
     byNetwork: Array<NetworkShare>;
     bySource: Array<SourceShare>;
@@ -492,13 +496,14 @@ export type ConsumptionSummaryResponse = {
 export type Day = {
     date: string;
     sessions: number;
-    energyKwh: number;
+    energyKwh?: number | null;
+    sessionsWithoutEnergy: number;
 };
 
 export type NetworkShare = {
     network: 'KIA' | 'JAC' | 'CONECTZ';
     sessions: number;
-    energyKwh: number;
+    energyKwh?: number | null;
 };
 
 export type Ranked = {
@@ -510,19 +515,20 @@ export type Ranked = {
 export type SourceShare = {
     source: 'ENERLINK' | 'WALLBOX';
     sessions: number;
-    energyKwh: number;
+    energyKwh?: number | null;
 };
 
 export type Totals = {
     sessions: number;
-    energyKwh: number;
+    energyKwh?: number | null;
     equipment: number;
+    sessionsWithoutEnergy: number;
 };
 
 export type TypeShare = {
     type: 'CHARGING_POINT' | 'CHARGING_STATION';
     sessions: number;
-    energyKwh: number;
+    energyKwh?: number | null;
 };
 
 export type PageResultSessionResponse = {
@@ -1348,7 +1354,7 @@ export type EquipmentImportRowsData = {
         id: string;
     };
     query?: {
-        classification?: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'INVALID' | 'DUPLICATE' | 'DELETED_EXISTS' | 'CONFLICT';
+        classification?: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'IDENTITY_COMPLETED' | 'INVALID' | 'DUPLICATE' | 'DELETED_EXISTS' | 'CONFLICT';
         page?: number;
         size?: number;
     };
@@ -1478,7 +1484,7 @@ export type RowsData = {
         id: string;
     };
     query?: {
-        classification?: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'EQUIPMENT_CHANGED' | 'INVALID' | 'DUPLICATE' | 'PENDING_LINK';
+        classification?: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'EQUIPMENT_CHANGED' | 'LINKABLE' | 'INVALID' | 'DUPLICATE' | 'PENDING_LINK';
         page?: number;
         size?: number;
     };

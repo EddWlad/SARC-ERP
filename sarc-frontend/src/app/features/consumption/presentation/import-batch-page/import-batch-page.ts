@@ -36,6 +36,7 @@ const TESTABLE: ReadonlySet<RowClassification> = new Set([
   'NEW',
   'MODIFIED',
   'EQUIPMENT_CHANGED',
+  'LINKABLE',
   'PENDING_LINK',
 ]);
 
@@ -92,7 +93,7 @@ export class ImportBatchPage {
     return batch === undefined
       ? ''
       : `Importación completada: ${this.quantities.amount(batch.appliedRows, 'sesión aplicada', 'sesiones aplicadas')} ` +
-          `(nuevas, corregidas o reasignadas) de ${this.quantities.amount(batch.totalRows, 'fila', 'filas')}.`;
+          `(nuevas, corregidas, reasignadas o vinculadas) de ${this.quantities.amount(batch.totalRows, 'fila', 'filas')}.`;
   });
   protected readonly columns = computed(() => [
     'row',
@@ -118,9 +119,7 @@ export class ImportBatchPage {
   }
 
   protected energyOf(row: ImportRow): string {
-    return row.energyKwh === null || row.energyKwh === undefined
-      ? '—'
-      : this.quantities.kwh(row.energyKwh);
+    return row.classification === 'INVALID' ? '—' : this.quantities.reportedKwh(row.energyKwh);
   }
 
   // Las filas de mat-table llegan sin tipo a la plantilla: este metodo las tipa.

@@ -27,7 +27,7 @@ import { DailyEnergy } from '../../domain/consumption';
             <tr>
               <td>{{ day.date | date: 'EEE dd/MM/yyyy' }}</td>
               <td>{{ quantities.count(day.sessions) }}</td>
-              <td>{{ quantities.kwh(day.energyKwh) }}</td>
+              <td>{{ quantities.knownKwh(day.energyKwh) }}</td>
             </tr>
           }
         </tbody>

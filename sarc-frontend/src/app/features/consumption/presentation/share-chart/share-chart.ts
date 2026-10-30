@@ -6,7 +6,7 @@ import { ChartView, ChartSeries } from '../../../../shared/ui/chart/chart-view';
 
 export interface ShareItem {
   readonly label: string;
-  readonly energyKwh: number;
+  readonly energyKwh?: number | null;
   readonly sessions: number;
 }
 
@@ -34,8 +34,8 @@ const SLOT_COLORS: readonly SeriesColor[] = ['series-1', 'series-2', 'series-3']
           <li>
             <span class="swatch" [style.background]="'var(--sarc-' + colors[index] + ')'"></span>
             <span class="name">{{ item.label }}</span>
-            <span class="value">{{ formatKwh(item.energyKwh) }} kWh</span>
-            <strong class="share">{{ quantities.percent(item.energyKwh, total()) }}</strong>
+            <span class="value">{{ quantities.knownEnergy(item.energyKwh) }}</span>
+            <strong class="share">{{ quantities.percent(item.energyKwh ?? 0, total()) }}</strong>
           </li>
         }
       </ul>
@@ -96,19 +96,21 @@ export class ShareChart {
   protected readonly formatKwh = (value: number) => this.quantities.kwh(value);
 
   protected readonly total = computed(() =>
-    this.items().reduce((sum, item) => sum + item.energyKwh, 0),
+    this.items().reduce((sum, item) => sum + (item.energyKwh ?? 0), 0),
   );
   protected readonly labels = computed(() => this.items().map((item) => item.label));
   protected readonly series = computed<ChartSeries>(() => ({
     label: 'Energía (kWh)',
-    values: this.items().map((item) => item.energyKwh),
+    values: this.items().map((item) => item.energyKwh ?? 0),
     colors: this.items().map((_, index) => SLOT_COLORS[index % SLOT_COLORS.length]),
   }));
   protected readonly description = computed(
     () =>
       `${this.title()}: ` +
       this.items()
-        .map((item) => `${item.label} ${this.quantities.percent(item.energyKwh, this.total())}`)
+        .map(
+          (item) => `${item.label} ${this.quantities.percent(item.energyKwh ?? 0, this.total())}`,
+        )
         .join(', '),
   );
 }

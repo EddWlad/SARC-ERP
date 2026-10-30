@@ -27,6 +27,7 @@ export const CLASSIFICATION_LABELS: Readonly<Record<RowClassification, string>> 
   IDENTICAL: 'Idénticas',
   MODIFIED: 'Modificadas',
   EQUIPMENT_CHANGED: 'Cambian de cargador',
+  LINKABLE: 'Se vinculan',
   INVALID: 'Inválidas',
   DUPLICATE: 'Duplicadas',
   PENDING_LINK: 'Pendientes de vincular',
@@ -38,6 +39,7 @@ export const CLASSIFICATION_HINTS: Readonly<Record<RowClassification, string>> =
   IDENTICAL: 'Ya importadas con los mismos datos; no se tocan',
   MODIFIED: 'Difieren de lo importado; se corrigen solo si las aprueba',
   EQUIPMENT_CHANGED: 'La sesión ya existe con otro cargador; solo se mueven si las reasigna',
+  LINKABLE: 'Sesiones pendientes cuya identidad ya resuelve un equipo; se vinculan al confirmar',
   INVALID: 'No se pudieron interpretar; no se incorporan',
   DUPLICATE: 'Repiten una sesión anterior del mismo lote; se ignoran',
   PENDING_LINK: 'Se guardan sin equipo hasta vincularlas; no suman',
@@ -49,6 +51,7 @@ export const OUTCOME_LABELS: Readonly<Record<RowOutcome, string>> = {
   INSERTED: 'Incorporada',
   CORRECTED: 'Corregida',
   REASSIGNED: 'Reasignada',
+  LINKED: 'Vinculada',
   UNCHANGED: 'Sin cambios',
   SKIPPED: 'Omitida',
 };
@@ -64,6 +67,8 @@ export function classificationCount(batch: ImportBatch, classification: RowClass
       return batch.modifiedRows;
     case 'EQUIPMENT_CHANGED':
       return batch.equipmentChangedRows;
+    case 'LINKABLE':
+      return batch.linkableRows;
     case 'INVALID':
       return batch.invalidRows;
     case 'DUPLICATE':

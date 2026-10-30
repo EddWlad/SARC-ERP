@@ -20,6 +20,7 @@ import { injectIsHandset } from '../../../../shared/ui/handset';
 import { SessionsFacade } from '../../application/sessions-facade';
 import {
   Session,
+  LINK_ISSUE_LABELS,
   SESSION_STATE_LABELS,
   SESSION_STATES,
   SessionState,
@@ -64,6 +65,7 @@ export class SessionsPage {
   protected readonly pageSizeOptions = [10, 20, 50, 100];
   protected readonly states = SESSION_STATES;
   protected readonly stateLabels = SESSION_STATE_LABELS;
+  protected readonly linkIssueLabels = LINK_ISSUE_LABELS;
   protected readonly sourceLabels = SOURCE_LABELS;
   protected readonly networkLabels = NETWORK_LABELS;
 

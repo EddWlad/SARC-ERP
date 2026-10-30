@@ -17,6 +17,7 @@ export type Session = SessionResponse;
 export type SessionPage = PageResultSessionResponse;
 export type SessionSource = Session['source'];
 export type SessionState = Session['state'];
+export type LinkIssue = NonNullable<Session['linkIssue']>;
 
 export const SOURCE_LABELS: Readonly<Record<SessionSource, string>> = {
   ENERLINK: 'Enerlink',
@@ -37,6 +38,14 @@ export const SESSION_STATE_HINTS: Readonly<Record<SessionState, string>> = {
   AWAITING_APPROVAL:
     'Fuente no preferente para su equipo; no suma hasta que un analista la apruebe',
   TEST: 'Transacción de prueba; se conserva pero no suma',
+};
+
+/** Por que una sesion Enerlink sigue pendiente de vincular (FR-006). */
+export const LINK_ISSUE_LABELS: Readonly<Record<LinkIssue, string>> = {
+  IDENTITY_INCOMPLETE: 'Identidad Enerlink incompleta',
+  IDENTITY_NOT_REGISTERED: 'Identidad Enerlink no registrada',
+  IDENTITY_NOT_VERIFIED: 'Identidad Enerlink no verificada',
+  IDENTITY_AMBIGUOUS: 'Identidad Enerlink ambigua',
 };
 
 export const SOURCES = Object.keys(SOURCE_LABELS) as readonly SessionSource[];

@@ -58,7 +58,7 @@ export class DashboardPage {
   );
   protected readonly dailyEnergy = computed<ChartSeries>(() => ({
     label: 'Energía (kWh)',
-    values: (this.facade.summary()?.daily ?? []).map((day) => day.energyKwh),
+    values: (this.facade.summary()?.daily ?? []).map((day) => day.energyKwh ?? 0),
     colors: 'series-1',
   }));
   protected readonly dailySessions = computed<ChartSeries>(() => ({

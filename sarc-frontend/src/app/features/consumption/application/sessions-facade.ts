@@ -10,6 +10,7 @@ import { ConsumptionApi } from '../data-access/consumption-api';
 import {
   ConsumptionFilters,
   NO_CONSUMPTION_FILTERS,
+  ConsumptionSummary,
   Session,
   SessionPage,
   SessionState,
@@ -47,6 +48,14 @@ export class SessionsFacade {
     }),
   );
 
+  /** Indicadores oficiales del periodo y filtros compartidos; no dependen de estado ni busqueda. */
+  private readonly summaryResult = httpResource<ConsumptionSummary>(() =>
+    this.api.summaryRequest(this.period.range(), this.filters()),
+  );
+
+  readonly summary = computed(() =>
+    this.summaryResult.hasValue() ? this.summaryResult.value() : undefined,
+  );
   readonly sessions = computed(() => (this.result.hasValue() ? this.result.value().content : []));
   readonly totalElements = computed(() =>
     this.result.hasValue() ? this.result.value().totalElements : 0,
@@ -89,6 +98,7 @@ export class SessionsFacade {
 
   reload(): void {
     this.result.reload();
+    this.summaryResult.reload();
   }
 
   async markTest(session: Session, test: boolean): Promise<Session> {
