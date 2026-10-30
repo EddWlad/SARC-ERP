@@ -70,7 +70,10 @@ public class EquipmentService {
 		identifiers.requireUnique(created, created.getId());
 		equipment.save(created);
 		Map<String, String> details = new HashMap<>(Map.of("network", created.getNetwork().name(), "type",
-				created.getType().name(), "serial", created.getSerial(), "assignedCode", created.getAssignedCode()));
+				created.getType().name(), "serial", created.getSerial()));
+		if (created.getAssignedCode() != null) {
+			details.put("assignedCode", created.getAssignedCode());
+		}
 		if (replaced != null) {
 			details.put("replaces", replaced.getId().toString());
 		}

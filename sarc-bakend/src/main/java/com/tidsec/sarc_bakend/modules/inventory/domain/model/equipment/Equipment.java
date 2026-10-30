@@ -60,7 +60,7 @@ public class Equipment extends BaseAuditableEntity {
 	@Column(nullable = false, length = 80)
 	private String serial;
 
-	@Column(nullable = false, length = 80)
+	@Column(length = 80)
 	private String assignedCode;
 
 	@Column(length = 80)
@@ -126,7 +126,7 @@ public class Equipment extends BaseAuditableEntity {
 			throw new BusinessRuleException("REPLACED_EQUIPMENT_ACTIVE",
 					"El equipo reemplazado debe estar inactivo o eliminado antes del reemplazo");
 		}
-		Equipment equipment = withDetails(network, type, details, replaces == null ? null : replaces.getId());
+		Equipment equipment = withDetails(network, type, details, replaces == null ? null : replaces.getId(), null);
 		equipment.replaceConnectors(connectorTypes);
 		return equipment;
 	}
@@ -138,7 +138,7 @@ public class Equipment extends BaseAuditableEntity {
 	 */
 	public static Equipment draft(ChargingNetwork network, InfrastructureType type, EquipmentDetails details,
 			List<ConnectorType> connectorTypes, Equipment current) {
-		Equipment draft = withDetails(network, type, details, null);
+		Equipment draft = withDetails(network, type, details, null, current == null ? null : current.assignedCode);
 		if (current != null) {
 			current.activeConnectors().forEach(connector -> draft.connectors
 					.add(new Connector(draft, connector.getOrdinal(), connector.getConnectorType())));
@@ -148,11 +148,12 @@ public class Equipment extends BaseAuditableEntity {
 	}
 
 	private static Equipment withDetails(ChargingNetwork network, InfrastructureType type, EquipmentDetails details,
-			UUID replacesEquipmentId) {
+			UUID replacesEquipmentId, String retainedCode) {
 		if (network == null || type == null) {
 			throw new BusinessRuleException("INVALID_CLASSIFICATION", "La red y el tipo de equipo son obligatorios");
 		}
 		Equipment equipment = new Equipment(network, type, replacesEquipmentId);
+		equipment.assignedCode = retainedCode;
 		equipment.applyDetails(details);
 		return equipment;
 	}
@@ -164,17 +165,21 @@ public class Equipment extends BaseAuditableEntity {
 	/** Actualiza los datos editables. Corregir la serie mantiene la identidad del equipo. */
 	public void applyDetails(EquipmentDetails details) {
 		EquipmentClassification classification = classification();
+		classification.requireUsageStatus(details.usageStatus());
 		this.brand = require(details.brand(), "La marca es obligatoria");
 		this.name = requireText(details.name(), 150, "El nombre es obligatorio (maximo 150)");
 		this.serial = requireText(normalizeIdentifier(details.serial()), 80, "La serie es obligatoria (maximo 80)");
-		this.assignedCode = classification.resolveAssignedCode(serial, details.requestedCode());
+		String requestedCode = details.requestedCode();
+		if (!classification.usesSerialAsCode() && (requestedCode == null || requestedCode.isBlank())) {
+			requestedCode = this.assignedCode;
+		}
+		this.assignedCode = classification.resolveAssignedCode(serial, requestedCode, details.usageStatus());
 		this.uidPuk = optionalText(normalizeIdentifier(details.uidPuk()), 80, "El UID/PUK admite 80 caracteres");
 		classification.requireUidPuk(uidPuk);
 		this.location = optionalText(details.location(), 300, "La ubicacion admite 300 caracteres");
 		this.mapsUrl = optionalUrl(details.mapsUrl(), Set.of("https://"), "El enlace de mapas debe usar https");
 		this.ocppUrl = optionalUrl(details.ocppUrl(), Set.of("ws://", "wss://", "http://", "https://"),
 				"La URL OCPP debe usar ws, wss, http o https");
-		classification.requireUsageStatus(details.usageStatus());
 		this.usageStatus = details.usageStatus();
 	}
 

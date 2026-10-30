@@ -232,12 +232,15 @@ class EquipmentImportProcessor {
 		ProposedEquipment proposal = evaluation.proposal();
 		Equipment created = equipment.save(Equipment.register(proposal.network(), proposal.type(),
 				proposal.details(), proposal.connectorTypes(), null));
-		audit.record("EQUIPMENT_REGISTERED", Equipment.AUDIT_ENTITY_TYPE, created.getId(), Map.of(
+		Map<String, String> details = new HashMap<>(Map.of(
 				"network", created.getNetwork().name(),
 				"type", created.getType().name(),
 				"serial", created.getSerial(),
-				"assignedCode", created.getAssignedCode(),
 				"importBatch", batchId.toString()));
+		if (created.getAssignedCode() != null) {
+			details.put("assignedCode", created.getAssignedCode());
+		}
+		audit.record("EQUIPMENT_REGISTERED", Equipment.AUDIT_ENTITY_TYPE, created.getId(), details);
 		return created;
 	}
 

@@ -2195,7 +2195,7 @@
             "type" : "string"
           },
           "assignedCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "uidPuk" : {
             "type" : [ "string", "null" ]
@@ -2249,7 +2249,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "adminStatus", "assignedCode", "brand", "connectors", "createdAt", "id", "name", "network", "restrictedDataVisible", "schedule", "serial", "type", "updatedAt", "version" ]
+        "required" : [ "adminStatus", "brand", "connectors", "createdAt", "id", "name", "network", "restrictedDataVisible", "schedule", "serial", "type", "updatedAt", "version" ]
       },
       "ExceptionResponse" : {
         "type" : "object",
@@ -2966,7 +2966,7 @@
             "type" : "string"
           },
           "assignedCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "network" : {
             "type" : "string",
@@ -2977,7 +2977,7 @@
             "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
           }
         },
-        "required" : [ "assignedCode", "id", "name", "network", "type" ]
+        "required" : [ "id", "name", "network", "type" ]
       },
       "SessionResponse" : {
         "type" : "object",
@@ -3511,7 +3511,7 @@
             "type" : "string"
           },
           "assignedCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "serial" : {
             "type" : "string"
@@ -3553,7 +3553,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "adminStatus", "assignedCode", "brand", "connectorTypeCodes", "id", "name", "network", "serial", "type", "version" ]
+        "required" : [ "adminStatus", "brand", "connectorTypeCodes", "id", "name", "network", "serial", "type", "version" ]
       },
       "PageResultEquipmentSummaryResponse" : {
         "type" : "object",

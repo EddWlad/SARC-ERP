@@ -125,7 +125,11 @@ public class ConsumptionReportService {
 	private String equipmentName(UUID id, Map<UUID, EquipmentReference> loaded) {
 		EquipmentReference reference = loaded.containsKey(id) ? loaded.get(id)
 				: directory.findByIds(List.of(id)).get(id);
-		return reference == null ? id.toString() : reference.name() + " (" + reference.assignedCode() + ")";
+		if (reference == null) {
+			return id.toString();
+		}
+		return reference.assignedCode() == null ? reference.name()
+				: reference.name() + " (" + reference.assignedCode() + ")";
 	}
 
 	private static List<SessionView> views(List<EnergySession> list, Map<UUID, EquipmentReference> equipment) {

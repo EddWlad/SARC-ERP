@@ -10,7 +10,8 @@ import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 /**
  * Reglas de identificacion por red y tipo (PRD 6.2):
  * <ul>
- * <li>Punto KIA: 1 conector, codigo asignado de 6 digitos sin cero inicial, UID/PUK obligatorio.</li>
+ * <li>Punto KIA: 1 conector, codigo opcional solo en FREE; si existe, 6 digitos sin cero inicial;
+ * UID/PUK obligatorio.</li>
  * <li>Punto JAC o CONECTZ: 1 conector, codigo igual a la serie, UID/PUK obligatorio.</li>
  * <li>Electrolinera de cualquier red: 1 a 3 conectores, codigo igual a la serie, UID/PUK opcional.</li>
  * </ul>
@@ -33,7 +34,7 @@ public record EquipmentClassification(ChargingNetwork network, InfrastructureTyp
 		return !(isPoint() && network == ChargingNetwork.KIA);
 	}
 
-	public String resolveAssignedCode(String serial, String requestedCode) {
+	public String resolveAssignedCode(String serial, String requestedCode, UsageStatus usageStatus) {
 		boolean requested = requestedCode != null && !requestedCode.isBlank();
 		if (usesSerialAsCode()) {
 			if (requested && !requestedCode.strip().equals(serial)) {
@@ -42,7 +43,14 @@ public record EquipmentClassification(ChargingNetwork network, InfrastructureTyp
 			}
 			return serial;
 		}
-		if (!requested || !KIA_POINT_CODE.matcher(requestedCode.strip()).matches()) {
+		if (!requested) {
+			if (usageStatus == UsageStatus.FREE) {
+				return null;
+			}
+			throw new BusinessRuleException("INVALID_ASSIGNED_CODE",
+					"El codigo asignado es obligatorio en puntos KIA bloqueados o desconectados");
+		}
+		if (!KIA_POINT_CODE.matcher(requestedCode.strip()).matches()) {
 			throw new BusinessRuleException("INVALID_ASSIGNED_CODE",
 					"El codigo de un punto KIA tiene 6 digitos y no empieza en cero");
 		}

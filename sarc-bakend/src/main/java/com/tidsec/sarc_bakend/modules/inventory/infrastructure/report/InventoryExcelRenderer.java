@@ -62,7 +62,7 @@ class InventoryExcelRenderer implements InventoryReportRenderer {
 	}
 
 	private static List<Object> row(EquipmentView equipment) {
-		return List.of(equipment.name(), equipment.assignedCode(), equipment.serial(), equipment.network().name(),
+		return List.of(equipment.name(), equipment.assignedCode() == null ? "" : equipment.assignedCode(), equipment.serial(), equipment.network().name(),
 				DomainLabels.of(equipment.type()), InventoryLabels.of(equipment.brand()),
 				InventoryLabels.of(equipment.adminStatus()), InventoryLabels.of(equipment.usageStatus()),
 				InventoryLabels.connectorCodes(equipment.connectors()), equipment.connectors().size(),

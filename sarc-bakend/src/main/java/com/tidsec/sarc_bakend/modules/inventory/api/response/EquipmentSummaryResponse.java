@@ -3,6 +3,8 @@ package com.tidsec.sarc_bakend.modules.inventory.api.response;
 import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import com.tidsec.sarc_bakend.modules.inventory.application.result.ConnectorView;
@@ -17,7 +19,7 @@ import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 public record EquipmentSummaryResponse(
 		UUID id,
 		String name,
-		String assignedCode,
+		@JsonInclude(JsonInclude.Include.ALWAYS) @Schema(nullable = true) String assignedCode,
 		String serial,
 		ChargingNetwork network,
 		InfrastructureType type,

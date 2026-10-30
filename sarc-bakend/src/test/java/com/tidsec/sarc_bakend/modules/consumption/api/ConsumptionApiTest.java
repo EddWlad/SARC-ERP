@@ -486,6 +486,76 @@ class ConsumptionApiTest {
 		}
 	}
 
+	@Test
+	void freeEquipmentWithoutCodeKeepsConsumptionHistoryAndArchivedReportsAcrossUsageChanges() throws Exception {
+		String equipment = createdId(send(analyst,HttpMethod.POST,"/api/v1/equipment", """
+				{"network":"KIA","type":"CHARGING_POINT","brand":"WALLBOX","name":"Free sin codigo",
+				 "serial":"FREE-HISTORY","uidPuk":"U-FREE","usageStatus":"FREE","connectorTypeIds":["%s"]}
+				""".formatted(TYPE2)));
+		confirm(upload("WALLBOX","original.csv",wallbox("FREE-HISTORY","FREE-S1","10.00")));
+		String correction = upload("WALLBOX","correction.csv",wallbox("FREE-HISTORY","FREE-S1","12.50"));
+		send(analyst,HttpMethod.PUT,"/api/v1/energy/imports/"+correction+"/rows/decision",
+				"{\"rowIds\":[\""+rowId(correction,"FREE-S1")+"\"],\"approved\":true}")
+				.andExpect(status().isOk());
+		confirm(correction);
+		// A verified external Wallbox identity can resolve a different source serial to the same UUID.
+		String identity = createdId(send(analyst,HttpMethod.POST,"/api/v1/equipment/"+equipment+"/external-identities",
+				"{\"platform\":\"WALLBOX\",\"externalId\":\"EXTERNAL-FREE\"}"));
+		send(analyst,HttpMethod.POST,"/api/v1/external-identities/"+identity+"/verify","{\"version\":0}")
+				.andExpect(status().isOk());
+		confirm(upload("WALLBOX","external.csv",wallbox("EXTERNAL-FREE","FREE-S2","7.50")));
+		assertOfficial("2026-10-21","2026-10-22",2,20.0);
+		mvc.perform(summary("2026-10-21","2026-10-22").param("equipmentId",equipment).cookie(manager))
+				.andExpect(jsonPath("$.official.energyKwh").value(20.0))
+				.andExpect(jsonPath("$.top[0].equipment.id").value(equipment))
+				.andExpect(jsonPath("$.top[0].equipment.assignedCode").isEmpty());
+		mvc.perform(get("/api/v1/energy/sessions").param("equipmentId",equipment).cookie(manager))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2))
+				.andExpect(jsonPath("$.content[0].equipment.assignedCode").isEmpty());
+		String sessions = jdbc.queryForObject("select jsonb_agg(to_jsonb(s) order by id)::text from energy_session s",String.class);
+		String revisions = jdbc.queryForObject("select jsonb_agg(to_jsonb(s) order by id)::text from energy_session_revision s",String.class);
+		var copies = new java.util.HashMap<String,byte[]>();
+		when(fileStorage.storeDocument(anyString(),anyString(),any())).thenAnswer(invocation -> {
+			String ref = "sandbox/" + java.util.UUID.randomUUID();
+			copies.put(ref,((byte[]) invocation.getArgument(2)).clone());
+			return ref;
+		});
+		for (String format : List.of("PDF","XLSX")) {
+			byte[] bytes = mvc.perform(get("/api/v1/energy/report").param("format",format)
+					.param("from","2026-10-21").param("to","2026-10-22").param("equipmentId",equipment).cookie(manager))
+					.andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+			assertThat(copies.values()).anySatisfy(stored -> assertThat(stored).isEqualTo(bytes));
+			if (format.equals("XLSX")) {
+				try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
+					assertThat(valueOf(workbook.getSheet("Resumen"),"Energ"+(char)237+"a (kWh)")).isEqualTo(20.0);
+					var cells = new StringBuilder();
+					workbook.forEach(sheet -> sheet.forEach(row -> row.forEach(cell -> cells.append(cell.toString()).append("|"))));
+					assertThat(cells.toString()).doesNotContain("null","undefined");
+				}
+			}
+			else assertThat(new String(bytes,0,5,StandardCharsets.US_ASCII)).isEqualTo("%PDF-");
+		}
+		String issued = jdbc.queryForObject("select jsonb_agg(to_jsonb(r) order by id)::text from report_issued r",String.class);
+		var originalCopies = new java.util.HashMap<String,byte[]>();
+		copies.forEach((key,value) -> originalCopies.put(key,value.clone()));
+		for (String usage : List.of("BLOCKED","FREE")) {
+			int version = jdbc.queryForObject("select version from asset_equipment where id=?::uuid",Integer.class,equipment);
+			send(analyst,HttpMethod.PUT,"/api/v1/equipment/"+equipment, """
+					{"version":%d,"brand":"WALLBOX","name":"Free sin codigo","serial":"FREE-HISTORY",
+					"assignedCode":"654321","uidPuk":"U-FREE","usageStatus":"%s","connectorTypeIds":["%s"]}
+					""".formatted(version,usage,TYPE2)).andExpect(status().isOk());
+		}
+		assertOfficial("2026-10-21","2026-10-22",2,20.0);
+		assertThat(jdbc.queryForObject("select jsonb_agg(to_jsonb(s) order by id)::text from energy_session s",String.class)).isEqualTo(sessions);
+		assertThat(jdbc.queryForObject("select jsonb_agg(to_jsonb(s) order by id)::text from energy_session_revision s",String.class)).isEqualTo(revisions);
+		assertThat(jdbc.queryForObject("select jsonb_agg(to_jsonb(r) order by id)::text from report_issued r",String.class)).isEqualTo(issued);
+		originalCopies.forEach((key,value) -> assertThat(copies.get(key)).isEqualTo(value));
+		for (var entry : copies.entrySet()) {
+			String checksum = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(entry.getValue()));
+			assertThat(jdbc.queryForObject("select checksum from report_issued where file_ref=?",String.class,entry.getKey())).isEqualTo(checksum);
+		}
+	}
+
 	// ---- helpers
 
 	private static String wallbox(String serial, String sessionId, String energy) {

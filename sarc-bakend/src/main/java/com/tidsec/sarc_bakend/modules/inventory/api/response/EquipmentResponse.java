@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import com.tidsec.sarc_bakend.modules.inventory.application.result.EquipmentView;
@@ -24,7 +26,7 @@ public record EquipmentResponse(
 		EquipmentBrand brand,
 		String name,
 		String serial,
-		String assignedCode,
+		@JsonInclude(JsonInclude.Include.ALWAYS) @Schema(nullable = true) String assignedCode,
 		@Schema(nullable = true) String uidPuk,
 		@Schema(nullable = true) String location,
 		@Schema(nullable = true) String mapsUrl,

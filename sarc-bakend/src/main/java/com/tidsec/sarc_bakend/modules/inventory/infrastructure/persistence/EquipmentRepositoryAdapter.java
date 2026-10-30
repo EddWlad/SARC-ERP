@@ -85,7 +85,9 @@ class EquipmentRepositoryAdapter implements EquipmentRepository {
 		Root<Equipment> root = query.from(Equipment.class);
 		List<Predicate> matches = new ArrayList<>();
 		matches.add(cb.equal(root.get("serial"), serial));
-		matches.add(cb.equal(root.get("assignedCode"), assignedCode));
+		if (assignedCode != null) {
+			matches.add(cb.equal(root.get("assignedCode"), assignedCode));
+		}
 		if (uidPuk != null) {
 			matches.add(cb.equal(root.get("uidPuk"), uidPuk));
 		}

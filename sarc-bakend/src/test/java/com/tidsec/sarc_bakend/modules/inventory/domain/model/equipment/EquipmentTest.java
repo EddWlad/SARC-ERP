@@ -46,6 +46,70 @@ class EquipmentTest {
 	}
 
 	@Test
+	void freeKiaNormalizesEveryAbsentCodeToNull() {
+		for (String code : new String[] { null, "", "   " }) {
+			Equipment point = Equipment.register(ChargingNetwork.KIA, InfrastructureType.CHARGING_POINT,
+					details("FREE-1", code, "UID-1", UsageStatus.FREE), List.of(type2), null);
+			assertThat(point.getAssignedCode()).isNull();
+		}
+	}
+
+	@Test
+	void blockedAndDisconnectedKiaStillRequireCode() {
+		for (UsageStatus usage : List.of(UsageStatus.BLOCKED, UsageStatus.DISCONNECTED)) {
+			assertThatThrownBy(() -> Equipment.register(ChargingNetwork.KIA, InfrastructureType.CHARGING_POINT,
+					details("REQ-1", null, "UID-1", usage), List.of(type2), null))
+					.hasMessageContaining("obligatorio");
+		}
+	}
+
+	@Test
+	void freeKiaStillRejectsAnInvalidInformedCode() {
+		for (String code : List.of("012345", "12345", "1234567", "12A456")) {
+			assertThatThrownBy(() -> Equipment.register(ChargingNetwork.KIA, InfrastructureType.CHARGING_POINT,
+					details("FREE-1", code, "UID-1", UsageStatus.FREE), List.of(type2), null))
+					.extracting("code").isEqualTo("INVALID_ASSIGNED_CODE");
+		}
+	}
+
+	@Test
+	void changingUsageRetainsExistingCodeAndOtherBusinessDataInEditsAndDrafts() {
+		Equipment point = Equipment.register(ChargingNetwork.KIA, InfrastructureType.CHARGING_POINT,
+				details("HISTORY", "654321", "U1", UsageStatus.BLOCKED), List.of(type2), null);
+		point.defineSchedule(ScheduleMode.ALWAYS_OPEN, List.of(), List.of());
+		UUID connectorId = point.activeConnectors().getFirst().getId();
+		for (String code : new String[] { null, "", "   " }) {
+			EquipmentDetails free = details("HISTORY", code, "U1", UsageStatus.FREE);
+			Equipment draft = Equipment.draft(ChargingNetwork.KIA, InfrastructureType.CHARGING_POINT,
+					free, List.of(type2), point);
+			assertThat(draft.getAssignedCode()).isEqualTo("654321");
+			point.applyDetails(free);
+			assertThat(point.getAssignedCode()).isEqualTo("654321");
+			assertThat(point.getSerial()).isEqualTo("HISTORY");
+			assertThat(point.getUidPuk()).isEqualTo("U1");
+			assertThat(point.getScheduleMode()).isEqualTo(ScheduleMode.ALWAYS_OPEN);
+			assertThat(point.activeConnectors().getFirst().getId()).isEqualTo(connectorId);
+		}
+	}
+
+	@Test
+	void aFreePointWithoutCodeRequiresAValidOneBeforeLocking() {
+		Equipment point = Equipment.register(ChargingNetwork.KIA, InfrastructureType.CHARGING_POINT,
+				details("FREE", null, "U1", UsageStatus.FREE), List.of(type2), null);
+		for (UsageStatus usage : List.of(UsageStatus.BLOCKED, UsageStatus.DISCONNECTED)) {
+			assertThatThrownBy(() -> point.applyDetails(details("FREE", null, "U1", usage)))
+					.hasMessageContaining("obligatorio");
+			assertThat(point.getUsageStatus()).isEqualTo(UsageStatus.FREE);
+			assertThat(point.getAssignedCode()).isNull();
+		}
+		point.applyDetails(details("FREE", "654321", "U1", UsageStatus.BLOCKED));
+		assertThat(point.getAssignedCode()).isEqualTo("654321");
+		assertThat(point.getUsageStatus()).isEqualTo(UsageStatus.BLOCKED);
+		point.applyDetails(details("FREE", "765432", "U1", UsageStatus.BLOCKED));
+		assertThat(point.getAssignedCode()).isEqualTo("765432");
+	}
+
+	@Test
 	void stationCodeIsItsSerial() {
 		assertThat(station().getAssignedCode()).isEqualTo("ST-1");
 	}

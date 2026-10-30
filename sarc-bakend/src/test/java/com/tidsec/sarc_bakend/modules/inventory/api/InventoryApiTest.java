@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -502,6 +503,182 @@ class InventoryApiTest {
 				+ (event.getThrowableProxy() == null ? "" : ThrowableProxyUtil.asString(event.getThrowableProxy())))
 				.collect(Collectors.joining("\n"));
 		assertThat(logged).contains("Violacion de integridad de datos").doesNotContain("PUK-SECRETO");
+	}
+
+	@Test
+	void freeKiaAbsentCodesAreReadableAuditedAndExportable() throws Exception {
+		for (String value : List.of("null", "\"\"", "\"   \"")) {
+			String suffix = Integer.toString(value.length());
+			String json = kiaPoint("FREE-" + suffix, "123456", "UID-" + suffix)
+					.replace("\"assignedCode\":\"123456\"", "\"assignedCode\":" + value);
+			String id = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", json));
+			mvc.perform(get("/api/v1/equipment/" + id).cookie(analyst))
+					.andExpect(status().isOk()).andExpect(jsonPath("$.assignedCode").isEmpty());
+			assertThat(jdbc.queryForObject("select assigned_code from asset_equipment where id=?::uuid",
+					String.class, id)).isNull();
+			assertThat(auditActions(id)).contains("EQUIPMENT_REGISTERED");
+			assertThat(jdbc.queryForObject("select details::text from audit_event where entity_id=?::uuid",
+					String.class, id)).doesNotContain("assignedCode");
+		}
+		String omitted = kiaPoint("FREE-OMITTED", "123456", "UID-OMITTED")
+				.replace("\"assignedCode\":\"123456\",", "");
+		createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", omitted));
+		mvc.perform(get("/api/v1/equipment").cookie(manager))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(4))
+				.andExpect(jsonPath("$.content[0].assignedCode").isEmpty());
+		for (String format : List.of("PDF", "XLSX")) {
+			byte[] bytes = mvc.perform(get("/api/v1/inventory/report").cookie(manager).param("format", format))
+					.andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+			assertThat(bytes).isNotEmpty();
+			if (format.equals("XLSX")) {
+				try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
+					assertThat(workbook.getSheet("Equipos").getRow(5).getCell(1).getStringCellValue()).isEmpty();
+				}
+			}
+		}
+	}
+
+	@Test
+	void directCreateRequiresCodeForBlockedAndDisconnectedAndKeepsPermissions() throws Exception {
+		for (String usage : List.of("BLOCKED", "DISCONNECTED")) {
+			String json = kiaPoint("REQ-" + usage, "", "UID-" + usage).replace("FREE", usage);
+			send(analyst, HttpMethod.POST, "/api/v1/equipment", json)
+					.andExpect(status().isUnprocessableEntity())
+					.andExpect(jsonPath("$.detail", org.hamcrest.Matchers.containsString("obligatorio")));
+		}
+		send(manager, HttpMethod.POST, "/api/v1/equipment", kiaPoint("NO", "", "NO"))
+				.andExpect(status().isForbidden());
+		assertThat(jdbc.queryForObject("select count(*) from asset_equipment", Long.class)).isZero();
+	}
+
+	@Test
+	void usageOnlyEditsPreserveCodeAndHistoryForEveryAbsentRepresentation() throws Exception {
+		String id = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment",
+				kiaPoint("HISTORY", "654321", "U1").replace("FREE", "BLOCKED")
+						.replace("\"uidPuk\"", "\"location\":\"Quito\",\"mapsUrl\":\"https://maps.example.test/point\","
+								+ "\"ocppUrl\":\"wss://ocpp.example.test\",\"uidPuk\"")));
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id + "/schedule",
+				"{\"version\":0,\"mode\":\"ALWAYS_OPEN\",\"intervals\":[],\"exceptions\":[]}").andExpect(status().isOk());
+		send(analyst, HttpMethod.POST, "/api/v1/equipment/" + id + "/external-identities",
+				"{\"platform\":\"WALLBOX\",\"externalId\":\"HISTORY-WB\"}")
+				.andExpect(status().isCreated());
+		String before = retainedBusinessSnapshot(id);
+		String connectors = jdbc.queryForObject("select jsonb_agg(to_jsonb(c))::text from asset_connector c "
+				+ "where equipment_id=?::uuid", String.class, id);
+		String identities = jdbc.queryForObject("select jsonb_agg(to_jsonb(i))::text from asset_external_identity i "
+				+ "where equipment_id=?::uuid", String.class, id);
+		int version = 1;
+		for (String fragment : List.of("", "\"assignedCode\":null,", "\"assignedCode\":\"\",",
+				"\"assignedCode\":\"   \",")) {
+			for (String usage : List.of("FREE", "BLOCKED")) {
+				send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id,
+						kiaUpdate("HISTORY", fragment + "\"location\":\"Quito\","
+								+ "\"mapsUrl\":\"https://maps.example.test/point\","
+								+ "\"ocppUrl\":\"wss://ocpp.example.test\",", usage, version++))
+						.andExpect(status().isOk()).andExpect(jsonPath("$.assignedCode").value("654321"))
+						.andExpect(jsonPath("$.usageStatus").value(usage));
+				assertThat(retainedBusinessSnapshot(id)).isEqualTo(before);
+			}
+		}
+		assertThat(jdbc.queryForObject("select jsonb_agg(to_jsonb(c))::text from asset_connector c "
+				+ "where equipment_id=?::uuid", String.class, id)).isEqualTo(connectors);
+		assertThat(jdbc.queryForObject("select jsonb_agg(to_jsonb(i))::text from asset_external_identity i "
+				+ "where equipment_id=?::uuid", String.class, id)).isEqualTo(identities);
+		assertThat(jdbc.queryForList("select details::text from audit_event where entity_id=?::uuid "
+				+ "and action='EQUIPMENT_UPDATED'", String.class, id))
+				.hasSize(8).allSatisfy(details -> assertThat(details).contains("usageStatusFrom", "usageStatusTo")
+						.doesNotContain("assignedCodeFrom", "assignedCodeTo"));
+	}
+
+	@Test
+	void invalidTransitionsRollbackAndExplicitCodeCorrectionsRemainAuthorized() throws Exception {
+		String id = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment",
+				kiaPoint("TRANSITION", "", "U1")));
+		createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment",
+				kiaPoint("RESERVED", "765432", "U2")));
+		String before = fullSnapshot(id);
+		for (String usage : List.of("BLOCKED", "DISCONNECTED")) {
+			send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id, kiaUpdate("TRANSITION", "", usage, 0)
+					.replace("Punto TRANSITION", "Partial change"))
+					.andExpect(status().isUnprocessableEntity())
+					.andExpect(jsonPath("$.detail", org.hamcrest.Matchers.containsString("obligatorio")));
+			assertThat(fullSnapshot(id)).isEqualTo(before);
+		}
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id, kiaUpdate("TRANSITION", "", "FREE", 0)
+				.replace("Punto TRANSITION", "Renombrado sin codigo"))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.assignedCode").isEmpty())
+				.andExpect(jsonPath("$.name").value("Renombrado sin codigo"));
+		// Use the persisted version for each subsequent edit.
+		int version = jdbc.queryForObject("select version from asset_equipment where id=?::uuid", Integer.class, id);
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id,
+				kiaUpdate("TRANSITION", "\"assignedCode\":\"654321\",", "BLOCKED", version))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.assignedCode").value("654321"));
+		version = jdbc.queryForObject("select version from asset_equipment where id=?::uuid", Integer.class, id);
+		before = fullSnapshot(id);
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id,
+				kiaUpdate("TRANSITION", "\"assignedCode\":\"765432\",", "BLOCKED", version))
+				.andExpect(status().isConflict());
+		assertThat(fullSnapshot(id)).isEqualTo(before);
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id,
+				kiaUpdate("TRANSITION", "\"assignedCode\":\"876543\",", "BLOCKED", version))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.assignedCode").value("876543"));
+		send(analyst, HttpMethod.PUT, "/api/v1/equipment/" + id,
+				kiaUpdate("TRANSITION", "", "FREE", version)).andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("CONCURRENT_MODIFICATION"));
+		assertThat(jdbc.queryForList("select details::text from audit_event where entity_id=?::uuid "
+				+ "and action='EQUIPMENT_UPDATED'", String.class, id))
+				.anySatisfy(details -> assertThat(details).contains("assignedCodeFrom", "654321", "assignedCodeTo", "876543"));
+	}
+
+	private String fullSnapshot(String id) {
+		return jdbc.queryForObject("select to_jsonb(e)::text from asset_equipment e where id=?::uuid", String.class, id);
+	}
+
+	private String retainedBusinessSnapshot(String id) {
+		return jdbc.queryForObject("select (to_jsonb(e) - 'usage_status' - 'updated_at' - 'updated_by' - 'version')::text "
+				+ "from asset_equipment e where id=?::uuid", String.class, id);
+	}
+
+	private static String kiaUpdate(String serial, String codeFragment, String usage, int version) {
+		return """
+				{"version":%d,"brand":"WALLBOX","name":"Punto %s","serial":"%s",
+				 %s"uidPuk":"U1","usageStatus":"%s","connectorTypeIds":["%s"]}
+				""".formatted(version, serial, serial, codeFragment, usage, TYPE2);
+	}
+
+	@Test
+	void simultaneousCreatesUseDatabaseUniquenessButTwoAbsentCodesCanCoexist() throws Exception {
+		var checked = new java.util.concurrent.CountDownLatch(2);
+		doAnswer(invocation -> {
+			Object result = invocation.callRealMethod();
+			checked.countDown();
+			assertThat(checked.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+			return result;
+		}).when(equipmentRepository).findHoldersOf(anyString(), eq("654321"), anyString());
+		try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+			var first = executor.submit(() -> send(analyst,HttpMethod.POST,"/api/v1/equipment",
+					kiaPoint("RACE-A","654321","UID-RACE-A")).andReturn());
+			var second = executor.submit(() -> send(analyst,HttpMethod.POST,"/api/v1/equipment",
+					kiaPoint("RACE-B","654321","UID-RACE-B")).andReturn());
+			var results = List.of(first.get(30,java.util.concurrent.TimeUnit.SECONDS),
+					second.get(30,java.util.concurrent.TimeUnit.SECONDS));
+			assertThat(results).extracting(result -> result.getResponse().getStatus()).containsExactlyInAnyOrder(201,409);
+			for (var result : results) {
+				if (result.getResponse().getStatus() == 409) {
+					assertThat(result.getResponse().getContentAsString()).contains("DATA_INTEGRITY_VIOLATION")
+							.doesNotContain("UID-RACE", "insert into", "SQLException");
+				}
+			}
+			assertThat(jdbc.queryForObject("select count(*) from asset_equipment",Integer.class)).isEqualTo(1);
+			assertThat(jdbc.queryForObject("select count(*) from audit_event where action='EQUIPMENT_REGISTERED'",Integer.class)).isEqualTo(1);
+			var freeA = executor.submit(() -> send(analyst,HttpMethod.POST,"/api/v1/equipment",
+					kiaPoint("NULL-A","","NULL-U-A")).andReturn());
+			var freeB = executor.submit(() -> send(analyst,HttpMethod.POST,"/api/v1/equipment",
+					kiaPoint("NULL-B","","NULL-U-B")).andReturn());
+			assertThat(freeA.get(30,java.util.concurrent.TimeUnit.SECONDS).getResponse().getStatus()).isEqualTo(201);
+			assertThat(freeB.get(30,java.util.concurrent.TimeUnit.SECONDS).getResponse().getStatus()).isEqualTo(201);
+			assertThat(jdbc.queryForObject("select count(*) from asset_equipment where assigned_code is null",Integer.class)).isEqualTo(2);
+		}
 	}
 
 	// ---- helpers

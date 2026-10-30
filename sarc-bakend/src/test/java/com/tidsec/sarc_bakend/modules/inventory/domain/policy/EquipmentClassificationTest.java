@@ -24,22 +24,22 @@ class EquipmentClassificationTest {
 
 	@Test
 	void kiaPointKeepsItsSixDigitCode() {
-		assertThat(KIA_POINT.resolveAssignedCode("SER-1", " 123456 ")).isEqualTo("123456");
+		assertThat(KIA_POINT.resolveAssignedCode("SER-1", " 123456 ", UsageStatus.BLOCKED)).isEqualTo("123456");
 	}
 
 	@ParameterizedTest
 	@ValueSource(strings = { "012345", "12345", "1234567", "12A456", "" })
 	void kiaPointRejectsInvalidCodes(String code) {
-		assertThatThrownBy(() -> KIA_POINT.resolveAssignedCode("SER-1", code))
+		assertThatThrownBy(() -> KIA_POINT.resolveAssignedCode("SER-1", code, UsageStatus.BLOCKED))
 				.isInstanceOf(BusinessRuleException.class)
 				.extracting("code").isEqualTo("INVALID_ASSIGNED_CODE");
 	}
 
 	@Test
 	void otherEquipmentUsesTheSerialAsCode() {
-		assertThat(JAC_POINT.resolveAssignedCode("SER-1", null)).isEqualTo("SER-1");
-		assertThat(KIA_STATION.resolveAssignedCode("SER-2", "SER-2")).isEqualTo("SER-2");
-		assertThatThrownBy(() -> JAC_POINT.resolveAssignedCode("SER-1", "999999"))
+		assertThat(JAC_POINT.resolveAssignedCode("SER-1", null, UsageStatus.BLOCKED)).isEqualTo("SER-1");
+		assertThat(KIA_STATION.resolveAssignedCode("SER-2", "SER-2", UsageStatus.BLOCKED)).isEqualTo("SER-2");
+		assertThatThrownBy(() -> JAC_POINT.resolveAssignedCode("SER-1", "999999", UsageStatus.BLOCKED))
 				.extracting("code").isEqualTo("ASSIGNED_CODE_IS_SERIAL");
 	}
 

@@ -86,7 +86,7 @@ class InventoryPdfRenderer implements InventoryReportRenderer {
 	}
 
 	private static List<String> row(EquipmentView equipment) {
-		return List.of(equipment.name(), equipment.assignedCode(), equipment.network().name(),
+		return List.of(equipment.name(), equipment.assignedCode() == null ? "" : equipment.assignedCode(), equipment.network().name(),
 				DomainLabels.of(equipment.type()), InventoryLabels.of(equipment.brand()),
 				InventoryLabels.of(equipment.adminStatus()), InventoryLabels.of(equipment.usageStatus()),
 				InventoryLabels.connectorCodes(equipment.connectors()), equipment.location() == null ? "" : equipment.location());

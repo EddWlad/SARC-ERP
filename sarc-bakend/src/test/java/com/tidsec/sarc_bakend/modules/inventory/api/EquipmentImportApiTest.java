@@ -15,6 +15,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.charset.StandardCharsets;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +94,12 @@ class EquipmentImportApiTest {
 				.andExpect(header().string("Content-Disposition", "attachment; filename=\"plantilla-carga-equipos.xlsx\""))
 				.andReturn().getResponse().getContentAsByteArray();
 
+		try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(xlsx))) {
+			var instructions = new StringBuilder();
+			workbook.getSheet("Instrucciones").forEach(row -> row.forEach(cell -> instructions.append(cell.toString()).append(" ")));
+			assertThat(instructions.toString()).contains("Libre", "Bloqueado", "Desconectado");
+			assertThat(EquipmentSheetColumns.ASSIGNED_CODE.hint()).contains("Libre", "Bloqueado", "Desconectado");
+		}
 		List<TabularRow> rows = new TabularReader().read(xlsx);
 		assertThat(rows.getFirst().cells())
 				.containsExactlyElementsOf(Arrays.stream(EquipmentSheetColumns.values()).map(EquipmentSheetColumns::header).toList());
@@ -128,7 +140,7 @@ class EquipmentImportApiTest {
 
 		String id = paste(HEADER
 				+ row("TESLA", "Punto de carga", "Wallbox", "X", "N-1", "", "", "", "TYPE2", "", "", "", "", "")
-				+ row("KIA", "Punto de carga", "Wallbox", "Sin codigo", "N-2", "", "PUK-2", "Libre", "TYPE2", "", "",
+				+ row("KIA", "Punto de carga", "Wallbox", "Sin codigo", "N-2", "", "PUK-2", "Bloqueado", "TYPE2", "", "",
 						"", "", "")
 				+ row("JAC", "Punto de carga", "Benny", "Nuevo", "N-3", "", "PUK-3", "Libre", "TYPE2", "", "", "", "",
 						"")
@@ -221,6 +233,105 @@ class EquipmentImportApiTest {
 		send(manager, HttpMethod.POST, "/api/v1/equipment/imports/paste", "{\"text\":\"x\"}")
 				.andExpect(status().isForbidden());
 		mvc.perform(get("/api/v1/equipment/imports").cookie(manager)).andExpect(status().isForbidden());
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void freeCodeMatrixWorksInPasteAndXlsxAndRetryCreatesNoDuplicates(boolean file) throws Exception {
+		createKiaPoint("RESERVED", "654321", "RESERVED-U", null);
+		String text = HEADER
+				+ row("KIA","Punto de carga","Wallbox","Free A","FREE-A","","U-A","Libre","TYPE2","","","","","")
+				+ row("KIA","Punto de carga","Wallbox","Free B","FREE-B","   ","U-B","Libre","TYPE2","","","","","")
+				+ row("KIA","Punto de carga","Wallbox","Blocked","REQ-B","","U-C","Bloqueado","TYPE2","","","","","")
+				+ row("KIA","Punto de carga","Wallbox","Disconnected","REQ-D","","U-D","Desconectado","TYPE2","","","","","")
+				+ row("KIA","Punto de carga","Wallbox","Invalid","INVALID","012345","U-E","Libre","TYPE2","","","","","")
+				+ row("KIA","Punto de carga","Wallbox","Reserved","DUP","654321","U-F","Libre","TYPE2","","","","","")
+				+ row("KIA","Punto de carga","Wallbox","Valid","VALID","987654","U-G","Libre","TYPE2","","","","","")
+				+ row("KIA","Punto de carga","Wallbox","Batch duplicate","BATCH-DUP","987654","U-H","Libre","TYPE2","","","","","");
+		String id = importText(file, text);
+		assertThat(batch(id)).containsEntry("newRows",3).containsEntry("invalidRows",3)
+				.containsEntry("conflictRows",1).containsEntry("duplicateRows",1);
+		assertThat(issues(id,4).getFirst()).contains("obligatorio");
+		assertThat(issues(id,5).getFirst()).contains("obligatorio");
+		assertThat(confirm(id)).containsEntry("appliedRows",3);
+		assertThat(jdbc.queryForObject("select count(*) from asset_equipment where assigned_code is null", Integer.class))
+				.isEqualTo(2);
+		assertThat(jdbc.queryForList("select details::text from audit_event where action='EQUIPMENT_REGISTERED' "
+				+ "and entity_id in (select id from asset_equipment where assigned_code is null)", String.class))
+				.hasSize(2).allSatisfy(details -> assertThat(details).contains("importBatch").doesNotContain("assignedCode"));
+		String retry = importText(file, text);
+		assertThat(batch(retry)).containsEntry("newRows",0).containsEntry("identicalRows",3);
+		assertThat(confirm(retry)).containsEntry("appliedRows",0);
+		assertThat(jdbc.queryForObject("select count(*) from asset_equipment", Integer.class)).isEqualTo(4);
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void importTransitionsPreserveCodesRequireApprovalAndPermitExplicitCorrection(boolean file) throws Exception {
+		String kept = createKiaPoint("KEPT","654321","U1",null);
+		createKiaPoint("RESERVED","765432","U2",null);
+		String first = importText(file, HEADER + row("KIA","Punto de carga","","","KEPT","","","Bloqueado","","","","","",""));
+		assertThat(batch(first)).containsEntry("modifiedRows",1);
+		assertThat(confirm(first)).containsEntry("appliedRows",0);
+		for (String usage : List.of("Bloqueado","Libre")) {
+			String id = importText(file, HEADER + row("KIA","Punto de carga","","","KEPT","","",usage,"","","","","",""));
+			approve(id,rowField(id,2,"id"));
+			assertThat(confirm(id)).containsEntry("appliedRows",1);
+			mvc.perform(get("/api/v1/equipment/"+kept).cookie(analyst))
+					.andExpect(jsonPath("$.assignedCode").value("654321"));
+		}
+		String correction = importText(file, HEADER + row("KIA","Punto de carga","","","KEPT","876543","","Libre","","","","","",""));
+		assertThat(batch(correction)).containsEntry("modifiedRows",1);
+		approve(correction,rowField(correction,2,"id"));
+		assertThat(confirm(correction)).containsEntry("appliedRows",1);
+		mvc.perform(get("/api/v1/equipment/"+kept).cookie(analyst)).andExpect(jsonPath("$.assignedCode").value("876543"));
+		String duplicate = importText(file, HEADER + row("KIA","Punto de carga","","","KEPT","765432","","Libre","","","","","",""));
+		assertThat(batch(duplicate)).containsEntry("conflictRows",1);
+		assertThat(confirm(duplicate)).containsEntry("appliedRows",0);
+		String created = importText(file, HEADER + row("KIA","Punto de carga","Wallbox","Free","ABSENT","","U3","Libre","TYPE2","","","","",""));
+		assertThat(confirm(created)).containsEntry("appliedRows",1);
+		String absent = equipmentId("ABSENT");
+		String rejected = importText(file, HEADER + row("KIA","Punto de carga","","","ABSENT","","","Bloqueado","","","","","",""));
+		assertThat(batch(rejected)).containsEntry("invalidRows",1);
+		assertThat(confirm(rejected)).containsEntry("appliedRows",0);
+		mvc.perform(get("/api/v1/equipment/"+absent).cookie(analyst))
+				.andExpect(jsonPath("$.usageStatus").value("FREE")).andExpect(jsonPath("$.assignedCode").isEmpty());
+		String valid = importText(file, HEADER + row("KIA","Punto de carga","","","ABSENT","987654","","Bloqueado","","","","","",""));
+		approve(valid,rowField(valid,2,"id"));
+		assertThat(confirm(valid)).containsEntry("appliedRows",1);
+		mvc.perform(get("/api/v1/equipment/"+absent).cookie(analyst))
+				.andExpect(jsonPath("$.usageStatus").value("BLOCKED")).andExpect(jsonPath("$.assignedCode").value("987654"));
+	}
+
+	@Test
+	void previewWithoutCodeIsRevalidatedWhenAnotherRequestCreatesTheEquipment() throws Exception {
+		String text = HEADER + row("KIA","Punto de carga","Wallbox","Free","NEW-FREE","","U1","Libre","TYPE2","","","","","");
+		String id = paste(text);
+		String other = paste(text);
+		assertThat(confirm(other)).containsEntry("appliedRows",1);
+		assertThat(confirm(id)).containsEntry("appliedRows",0);
+		assertThat(jdbc.queryForObject("select count(*) from asset_equipment",Integer.class)).isEqualTo(1);
+	}
+
+	private String importText(boolean file, String text) throws Exception {
+		if (!file) return paste(text);
+		byte[] bytes;
+		try (var workbook = new XSSFWorkbook(); var output = new ByteArrayOutputStream()) {
+			var sheet = workbook.createSheet("Equipos");
+			int index = 0;
+			for (String line : text.split("\n")) {
+				var excelRow = sheet.createRow(index++);
+				String[] cells = line.split("\t",-1);
+				for (int column = 0; column < cells.length; column++) excelRow.createCell(column).setCellValue(cells[column]);
+			}
+			workbook.write(output);
+			bytes = output.toByteArray();
+		}
+		String id = JsonPath.read(mvc.perform(multipart("/api/v1/equipment/imports")
+				.file(new MockMultipartFile("file","equipos.xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",bytes))
+				.with(xsrf()).cookie(analyst)).andExpect(status().isAccepted()).andReturn().getResponse().getContentAsString(),"$.id");
+		awaitStatus(id,"READY");
+		return id;
 	}
 
 	// ---- helpers

@@ -83,7 +83,7 @@ final class ConsumptionLabels {
 	}
 
 	static String code(EquipmentReference equipment) {
-		return equipment == null ? "" : equipment.assignedCode();
+		return equipment == null || equipment.assignedCode() == null ? "" : equipment.assignedCode();
 	}
 
 	static String network(EquipmentReference equipment) {
