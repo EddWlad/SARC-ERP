@@ -1,0 +1,57 @@
+{
+  "backendFull": {
+    "log": "feature003-backend-full.log",
+    "tests": 236,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "backendFinal": {
+    "log": "feature003-final-verification.log",
+    "tests": 51,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "backendLastCases": {
+    "log": "feature003-last-cases.log",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "pdfFinal": {
+    "log": "feature003-pdf-final.log",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "browser": {
+    "log": "feature003-browser.log",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "angularFull": {
+    "log": "feature003-frontend-final.log",
+    "result": "PASS"
+  },
+  "angularLast": {
+    "log": "feature003-dashboard-final.log",
+    "result": "PASS"
+  },
+  "lint": {
+    "log": "feature003-lint-final.log",
+    "result": "PASS"
+  },
+  "build": {
+    "log": "feature003-build-final.log",
+    "result": "PASS"
+  },
+  "migrations": "9 SHA-256 identical; only V010 added",
+  "tasks": "53/53 complete",
+  "isolation": "PostgreSQL18 Testcontainers; mocked storage; browser56199, Angular4201 stopped; no dev DB connection",
+  "accessibility": "AXE DOM snapshots: zero violations; aria-hidden-focus incomplete; focal manual keyboard/contrast review, not full certification"
+}

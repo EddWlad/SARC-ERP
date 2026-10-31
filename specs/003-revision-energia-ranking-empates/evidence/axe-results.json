@@ -1,0 +1,26 @@
+[
+  {
+    "file": "feature003-dashboard.html",
+    "axe": {
+      "name": "axe-core",
+      "version": "4.14.0"
+    },
+    "passes": 29,
+    "violations": [],
+    "incomplete": [],
+    "limitation": "Instantánea DOM real analizada en JSDOM; contraste y geometría requieren revisión visual/computada en navegador."
+  },
+  {
+    "file": "feature003-dialog.html",
+    "axe": {
+      "name": "axe-core",
+      "version": "4.14.0"
+    },
+    "passes": 7,
+    "violations": [],
+    "incomplete": [
+      "aria-hidden-focus"
+    ],
+    "limitation": "Instantánea DOM real analizada en JSDOM; contraste y geometría requieren revisión visual/computada en navegador."
+  }
+]

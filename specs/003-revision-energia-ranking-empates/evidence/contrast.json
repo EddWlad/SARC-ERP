@@ -1,0 +1,13 @@
+{
+  "background": [
+    18,
+    19,
+    22
+  ],
+  "textRatios": {
+    "(224, 226, 236)": 14.38,
+    "(227, 226, 230)": 14.41,
+    "(171, 199, 255)": 10.92
+  },
+  "method": "Colores CSS calculados del diálogo oscuro real; umbral texto normal AA 4.5:1. Verificación focal, no auditoría completa de todos los temas."
+}
