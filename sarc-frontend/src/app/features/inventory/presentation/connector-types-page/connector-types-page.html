@@ -26,6 +26,11 @@
       <p>No se pudo cargar el catálogo.</p>
       <button matButton="tonal" type="button" (click)="facade.reload()">Reintentar</button>
     </div>
+  } @else if (!facade.loading() && facade.all().length === 0) {
+    <div class="state">
+      <p>Aún no hay tipos de conector. Cree el primero para poder registrar equipos.</p>
+      <button matButton="tonal" type="button" (click)="create()">Nuevo tipo</button>
+    </div>
   } @else {
     <table mat-table [dataSource]="facade.all()" class="table">
       <ng-container matColumnDef="code">
