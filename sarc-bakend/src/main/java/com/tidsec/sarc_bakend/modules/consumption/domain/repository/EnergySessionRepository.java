@@ -22,6 +22,8 @@ public interface EnergySessionRepository {
 
 	EnergySession save(EnergySession session);
 
+	void flushEnergyDecision(EnergySession session);
+
 	void saveRevision(SessionRevision revision);
 
 	Optional<EnergySession> findById(UUID id);
@@ -52,8 +54,8 @@ public interface EnergySessionRepository {
 	/** Distribucion por tipo de infraestructura; solo los tipos con sesiones. */
 	Map<InfrastructureType, EnergyTotals> byType(SessionCriteria criteria);
 
-	/** Equipos con energia conocida, de mayor a menor; {@code limit} <= 0 devuelve todos. */
-	List<EquipmentEnergy> byEquipment(SessionCriteria criteria, int limit);
+	/** Todos los equipos con energia conocida; el calculador aplica posiciones y empates. */
+	List<EquipmentEnergy> byEquipment(SessionCriteria criteria);
 
 	/** Equipos distintos con al menos una lectura de energia. */
 	long countEquipmentWithEnergy(SessionCriteria criteria);

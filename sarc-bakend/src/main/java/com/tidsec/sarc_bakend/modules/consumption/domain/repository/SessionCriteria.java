@@ -1,6 +1,7 @@
 package com.tidsec.sarc_bakend.modules.consumption.domain.repository;
 
 import java.time.LocalDate;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReviewStatus;
 import java.util.UUID;
 
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
@@ -14,9 +15,16 @@ import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
  * reporta la fuente.
  */
 public record SessionCriteria(LocalDate from, LocalDate to, ChargingNetwork network, InfrastructureType type,
-		SessionSource source, UUID equipmentId, SessionState state, String text) {
+		SessionSource source, UUID equipmentId, SessionState state, String text, EnergyReviewStatus energyReview) {
+	public SessionCriteria(LocalDate from, LocalDate to, ChargingNetwork network, InfrastructureType type,
+			SessionSource source, UUID equipmentId, SessionState state, String text) {
+		this(from, to, network, type, source, equipmentId, state, text, null);
+	}
+	public SessionCriteria withEnergyReview(EnergyReviewStatus review) {
+		return new SessionCriteria(from, to, network, type, source, equipmentId, state, text, review);
+	}
 
 	public SessionCriteria withState(SessionState newState) {
-		return new SessionCriteria(from, to, network, type, source, equipmentId, newState, text);
+		return new SessionCriteria(from, to, network, type, source, equipmentId, newState, text, energyReview);
 	}
 }

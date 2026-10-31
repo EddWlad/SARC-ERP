@@ -24,6 +24,6 @@ public record ConsumptionSummary(LocalDate from, LocalDate to, EnergyTotals offi
 		BigDecimal averageKwhPerSession, List<RankedEquipment> top, long equipmentWithoutEnergy, List<DailyEnergy> daily,
 		Map<ChargingNetwork, EnergyTotals> byNetwork, Map<SessionSource, EnergyTotals> bySource,
 		Map<InfrastructureType, EnergyTotals> byType, EnergyTotals pendingLink, EnergyTotals awaitingApproval,
-		EnergyTotals test,
+		EnergyTotals test, EnergyTotals energyReview, EnergyTotals energyRejected, EnergyTotals approvedAboveThreshold,
 		Instant generatedAt) {
 }

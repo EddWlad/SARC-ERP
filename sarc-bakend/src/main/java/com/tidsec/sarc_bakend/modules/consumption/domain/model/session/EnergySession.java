@@ -24,7 +24,8 @@ import jakarta.persistence.Table;
 /**
  * Sesion de carga reportada por una plataforma. Su identidad natural es (fuente, ambito, ID de la
  * fuente), por eso reimportar la misma sesion no la duplica. Se cuenta en el dia local de inicio y
- * su red sale del equipo del inventario al que se vincula.
+ * su red sale del equipo del inventario al que se vincula. La observacion energetica es un control
+ * independiente: una lectura alta se conserva y solo suma tras aprobarla y superar los demas controles.
  */
 @Entity
 @Table(name = "energy_session")
@@ -78,6 +79,10 @@ public class EnergySession extends BaseAuditableEntity {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private SessionState state;
+
+	@Enumerated(EnumType.STRING)
+	@Column(length = 20)
+	private EnergyReviewStatus energyReview;
 
 	/** Un analista aprobo que esta fuente, no preferente para su equipo, sume (PRD 7.2). */
 	@Column(nullable = false)
@@ -212,12 +217,35 @@ public class EnergySession extends BaseAuditableEntity {
 
 	/** Un analista aprueba que esta fuente no preferente sume para su equipo. */
 	public void approveSource() {
-		if (state != SessionState.AWAITING_APPROVAL) {
+		if (!canApproveSource()) {
 			throw new BusinessRuleException("SESSION_NOT_AWAITING_APPROVAL",
 					"La sesion no espera aprobacion de fuente");
 		}
 		sourceApproved = true;
-		state = SessionState.VALIDATED;
+		if (state != SessionState.TEST) {
+			state = officialState();
+		}
+	}
+
+	public boolean canApproveSource() {
+		return equipmentId != null && !sourceApproved
+				&& !PreferredSourcePolicy.isPreferred(source, network, infrastructureType);
+	}
+
+	public EnergyReview decideEnergy(EnergyReviewStatus decision, String justification, UUID actor, Instant at) {
+		if (energyReview == null) {
+			throw new BusinessRuleException("SESSION_NOT_UNDER_ENERGY_REVIEW", "La sesión no tiene observación energética");
+		}
+		EnergyReview review = EnergyReview.of(this, decision, justification, actor, at);
+		energyReview = decision;
+		if (state != SessionState.TEST) {
+			state = officialState();
+		}
+		return review;
+	}
+
+	public EnergyReviewStatus getEnergyReview() {
+		return energyReview;
 	}
 
 	/** Marca o desmarca como prueba; al desmarcar vuelve a su estado segun la vinculacion. */
@@ -232,6 +260,12 @@ public class EnergySession extends BaseAuditableEntity {
 
 	private void apply(SessionReading reading, OperatingZone zone) {
 		SessionRules.requireValid(reading);
+		if (!SessionRules.requiresReview(reading.energyKwh())) {
+			energyReview = null;
+		}
+		else if (energyKwh == null || energyKwh.compareTo(reading.energyKwh()) != 0 || energyReview == null) {
+			energyReview = EnergyReviewStatus.PENDING;
+		}
 		this.startedAt = reading.startedAt();
 		this.endedAt = reading.endedAt();
 		this.startDate = zone.dateOf(reading.startedAt());
@@ -240,6 +274,9 @@ public class EnergySession extends BaseAuditableEntity {
 		this.sourceCharger = reading.charger();
 		this.sourceSerial = reading.serial();
 		this.sourceConnector = reading.connector();
+		if (state != SessionState.TEST) {
+			state = officialState();
+		}
 	}
 
 	private void attach(EquipmentReference equipment) {
@@ -256,13 +293,19 @@ public class EnergySession extends BaseAuditableEntity {
 	}
 
 	/**
-	 * Estado que le corresponde fuera de las pruebas: sin equipo, pendiente; con equipo, validada si
-	 * la fuente es la preferente o se aprobo; si no, por aprobar. Es la unica regla para importar,
+	 * Estado fuera de las pruebas: vinculo, decision energetica y aprobacion de fuente se evaluan
+	 * en ese orden. Solo superados todos corresponde VALIDATED. Es la unica regla para importar,
 	 * vincular, reasignar y reincorporar pruebas.
 	 */
 	private SessionState officialState() {
 		if (equipmentId == null) {
 			return SessionState.PENDING_LINK;
+		}
+		if (energyReview == EnergyReviewStatus.REJECTED) {
+			return SessionState.ENERGY_REJECTED;
+		}
+		if (energyReview == EnergyReviewStatus.PENDING) {
+			return SessionState.ENERGY_REVIEW;
 		}
 		return sourceApproved || PreferredSourcePolicy.isPreferred(source, network, infrastructureType)
 				? SessionState.VALIDATED

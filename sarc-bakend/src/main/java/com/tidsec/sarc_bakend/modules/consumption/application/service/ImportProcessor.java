@@ -129,6 +129,8 @@ class ImportProcessor {
 		rows.insertAll(classified);
 		RowCounts counts = RowCounts.of(classified.stream().map(ImportRow::getClassification).toList());
 		batch.previewReady(counts);
+		batch.recordEnergyReviewRows((int) classified.stream().filter(r -> r.getEnergyKwh() != null
+				&& r.getEnergyKwh().compareTo(new java.math.BigDecimal("1000")) > 0).count());
 		batches.save(batch);
 		audit.record("ENERGY_IMPORT_PREVIEW_READY", ImportBatch.AUDIT_ENTITY_TYPE, batchId, Map.of(
 				"rows", String.valueOf(counts.total()),
@@ -147,7 +149,7 @@ class ImportProcessor {
 		String id = parsed.externalSessionId();
 		Resolution resolution = equipment.get(parsed.lookup());
 		EquipmentReference found = resolution.equipment();
-		List<RowIssue> issues = new ArrayList<>();
+		List<RowIssue> issues = new ArrayList<>(parsed.issues());
 		if (!seen.add(id)) {
 			issues.add(new RowIssue("DUPLICATED_IN_BATCH", "La sesion " + id + " ya aparece antes en este lote"));
 			return ImportRow.classified(batch.getId(), parsed.rowNumber(), id, parsed.reading(), found,

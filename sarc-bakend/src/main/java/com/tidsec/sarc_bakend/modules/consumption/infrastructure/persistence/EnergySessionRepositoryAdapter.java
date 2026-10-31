@@ -60,6 +60,18 @@ class EnergySessionRepositoryAdapter implements EnergySessionRepository {
 	}
 
 	@Override
+	public void flushEnergyDecision(EnergySession session) {
+		entityManager.flush();
+		int changed = entityManager.createQuery("update EnergySession e set e.version = e.version + 1 where e.id = :id and e.version = :version")
+				.setParameter("id", session.getId()).setParameter("version", session.getVersion()).executeUpdate();
+		if (changed != 1) {
+			throw new com.tidsec.sarc_bakend.shared.error.ConflictException("CONCURRENT_MODIFICATION",
+					"La sesión cambió; recargue antes de decidir");
+		}
+		entityManager.refresh(session);
+	}
+
+	@Override
 	public void saveRevision(SessionRevision revision) {
 		revisions.save(revision);
 	}
@@ -168,7 +180,7 @@ class EnergySessionRepositoryAdapter implements EnergySessionRepository {
 	}
 
 	@Override
-	public List<EquipmentEnergy> byEquipment(SessionCriteria criteria, int limit) {
+	public List<EquipmentEnergy> byEquipment(SessionCriteria criteria) {
 		CriteriaBuilder cb = entityManager.getCriteriaBuilder();
 		CriteriaQuery<Tuple> query = cb.createTupleQuery();
 		Root<EnergySession> root = query.from(EnergySession.class);
@@ -180,9 +192,6 @@ class EnergySessionRepositoryAdapter implements EnergySessionRepository {
 				.having(cb.greaterThan(readings(root, cb), 0L))
 				.orderBy(cb.desc(energy), cb.asc(equipment));
 		var typed = entityManager.createQuery(query);
-		if (limit > 0) {
-			typed.setMaxResults(limit);
-		}
 		return typed.getResultList().stream()
 				.map(row -> new EquipmentEnergy(row.get(0, UUID.class), row.get(1, Long.class),
 						row.get(2, BigDecimal.class)))

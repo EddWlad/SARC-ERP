@@ -78,9 +78,10 @@ class EnergyImportController {
 	@GetMapping("/{id}/rows")
 	PageResult<ImportRowResponse> rows(@PathVariable UUID id,
 			@RequestParam(required = false) RowClassification classification,
+			@RequestParam(required = false) Boolean aboveThreshold,
 			@RequestParam(defaultValue = "0") @Min(0) int page,
 			@RequestParam(defaultValue = "50") @Min(1) @Max(PageQuery.MAX_SIZE) int size) {
-		return imports.rows(id, classification, new PageQuery(page, size)).map(ImportRowResponse::from);
+		return imports.rows(id, classification, aboveThreshold, new PageQuery(page, size)).map(ImportRowResponse::from);
 	}
 
 	@PutMapping("/{id}/rows/decision")

@@ -15,5 +15,7 @@ public enum SessionState {
 	 */
 	AWAITING_APPROVAL,
 	/** Transaccion de prueba marcada por un analista. */
-	TEST
+	TEST,
+	ENERGY_REVIEW,
+	ENERGY_REJECTED
 }

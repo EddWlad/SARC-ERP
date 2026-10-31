@@ -1,6 +1,10 @@
 package com.tidsec.sarc_bakend.modules.consumption.application.service;
 
 import java.util.List;
+import java.time.Clock;
+import com.tidsec.sarc_bakend.modules.consumption.application.command.DecideEnergyReviewCommand;
+import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyReviewRepository;
+import com.tidsec.sarc_bakend.shared.security.CurrentActor;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -35,13 +39,19 @@ public class SessionService {
 	private final EquipmentResolver resolver;
 	private final EquipmentDirectory directory;
 	private final AuditTrail audit;
+	private final EnergyReviewRepository reviews;
+	private final CurrentActor actor;
+	private final Clock clock;
 
 	SessionService(EnergySessionRepository sessions, EquipmentResolver resolver, EquipmentDirectory directory,
-			AuditTrail audit) {
+			AuditTrail audit, EnergyReviewRepository reviews, CurrentActor actor, Clock clock) {
 		this.sessions = sessions;
 		this.resolver = resolver;
 		this.directory = directory;
 		this.audit = audit;
+		this.reviews = reviews;
+		this.actor = actor;
+		this.clock = clock;
 	}
 
 	/** Excluye o reincorpora una sesion de los indicadores oficiales sin eliminarla (PRD RF-003.9). */
@@ -78,6 +88,7 @@ public class SessionService {
 		int linked = 0;
 		int awaitingApproval = 0;
 		int stillPending = 0;
+		int awaitingEnergyReview = 0;
 		UUID after = null;
 		List<EnergySession> chunk;
 		while (!(chunk = sessions.findPendingLink(after, PENDING_CHUNK)).isEmpty()) {
@@ -101,6 +112,9 @@ public class SessionService {
 						if (session.getState() == SessionState.AWAITING_APPROVAL) {
 							awaitingApproval++;
 						}
+						else if (session.getState() == SessionState.ENERGY_REVIEW || session.getState() == SessionState.ENERGY_REJECTED) {
+							awaitingEnergyReview++;
+						}
 						else {
 							linked++;
 						}
@@ -109,12 +123,24 @@ public class SessionService {
 			}
 			after = chunk.getLast().getId();
 		}
-		if (linked + awaitingApproval > 0) {
+		if (linked + awaitingApproval + awaitingEnergyReview > 0) {
 			audit.record("ENERGY_SESSIONS_LINKED", EnergySession.AUDIT_ENTITY_TYPE, null,
 					Map.of("linked", String.valueOf(linked), "awaitingApproval", String.valueOf(awaitingApproval),
-							"stillPending", String.valueOf(stillPending)));
+							"stillPending", String.valueOf(stillPending), "awaitingEnergyReview", String.valueOf(awaitingEnergyReview)));
 		}
-		return new PendingLinkResult(linked, awaitingApproval, stillPending);
+		return new PendingLinkResult(linked, awaitingApproval, stillPending, awaitingEnergyReview);
+	}
+
+	public SessionView decideEnergy(DecideEnergyReviewCommand command) {
+		EnergySession session = loadForChange(command.id(), command.version());
+		String before = session.getEnergyReview() == null ? "NONE" : session.getEnergyReview().name();
+		var review = session.decideEnergy(command.decision(), command.justification(), actor.id().orElse(null), clock.instant());
+		sessions.flushEnergyDecision(session);
+		reviews.insert(review);
+		audit.record("ENERGY_SESSION_REVIEWED", EnergySession.AUDIT_ENTITY_TYPE, session.getId(),
+				Map.of("from", before, "to", review.getDecision().name(), "justification", review.getJustification(),
+						"energyKwh", review.getEnergyKwh().toPlainString(), "sessionVersion", Long.toString(review.getSessionVersion())));
+		return view(session);
 	}
 
 	private EnergySession loadForChange(UUID id, long version) {

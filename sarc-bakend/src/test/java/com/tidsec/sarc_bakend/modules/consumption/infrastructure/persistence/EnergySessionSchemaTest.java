@@ -25,11 +25,45 @@ class EnergySessionSchemaTest {
 				UUID batch = insertBatch(connection);
 				UUID previous = insertSession(connection, batch, "S-1", "now() + interval '1 hour'", "12.500", null);
 				String before = snapshot(connection, previous);
+				Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
+						.target("9").load().migrate();
+				UUID incomplete = insertSession(connection, batch, "V009-NULL", "null", "null", "IDENTITY_AMBIGUOUS");
 
 				Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
 						.load().migrate();
 
 				assertThat(snapshot(connection, previous)).isEqualTo(before);
+				try (var sql = connection.createStatement(); var rows = sql.executeQuery(
+						"select count(*) from energy_session where id='" + incomplete + "' and energy_kwh is null and ended_at is null and link_issue='IDENTITY_AMBIGUOUS'")) {
+					rows.next(); assertThat(rows.getInt(1)).isEqualTo(1);
+				}
+				UUID high = insertSession(connection, batch, "REVIEW", "null", "1500", null);
+				try (var sql = connection.createStatement()) {
+					assertThatThrownBy(() -> sql.executeUpdate("update energy_session set energy_review='UNKNOWN' where id='" + high + "'"))
+							.isInstanceOf(SQLException.class).hasMessageContaining("ck_energy_session_review");
+					assertThatThrownBy(() -> sql.executeUpdate("update energy_session set state='VALIDATED',energy_review='PENDING' where id='" + high + "'"))
+							.isInstanceOf(SQLException.class).hasMessageContaining("ck_energy_session_review_official");
+					assertThatThrownBy(() -> sql.executeUpdate("insert into energy_session_review(id,session_id,session_revision,session_version,decision,justification,energy_kwh,decided_at) values(gen_random_uuid(),gen_random_uuid(),1,0,'APPROVED','x',1500,now())"))
+							.isInstanceOf(SQLException.class).hasMessageContaining("foreign key");
+					String review = "insert into energy_session_review(id,session_id,session_revision,session_version,decision,justification,energy_kwh,decided_at) values ('";
+					String values = "','" + high + "',1,0,'APPROVED','Verificada',1500,now())";
+					sql.executeUpdate(review + UUID.randomUUID() + values);
+					assertThatThrownBy(() -> sql.executeUpdate(review + UUID.randomUUID() + values))
+							.isInstanceOf(SQLException.class).hasMessageContaining("uq_energy_session_review_version");
+					assertThatThrownBy(() -> sql.executeUpdate("update energy_session_review set justification='   '"))
+							.isInstanceOf(SQLException.class);
+					for (String column : new String[] {"session_revision", "session_version", "decision", "justification", "energy_kwh", "decided_at"}) {
+						assertThatThrownBy(() -> sql.executeUpdate("update energy_session_review set " + column + "=null"))
+								.isInstanceOf(SQLException.class);
+					}
+					try (var history = sql.executeQuery("select count(*) from flyway_schema_history where success and version in ('009','010')")) {
+						history.next(); assertThat(history.getInt(1)).isEqualTo(2);
+					}
+					try (var server = sql.executeQuery("show server_version_num")) {
+						server.next();
+						assertThat(server.getInt(1)).isGreaterThanOrEqualTo(180000);
+					}
+				}
 				insertSession(connection, batch, "S-2", "null", "null", "IDENTITY_AMBIGUOUS");
 				assertThatThrownBy(() -> insertSession(connection, batch, "S-3", "now() - interval '1 hour'", "1", null))
 						.isInstanceOf(SQLException.class).hasMessageContaining("ck_energy_session_span");

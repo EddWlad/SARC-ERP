@@ -28,7 +28,7 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 
 	private static final List<String> SESSION_HEADERS = List.of("ID sesión", "Fuente", "Inicio", "Término",
 			"Día de conteo", "kWh", "Equipo", "Código", "Red", "Tipo", "Activo (origen)", "Cargador (origen)",
-			"Serie (origen)", "Conector (origen)");
+			"Serie (origen)", "Conector (origen)", "Excepción de energía", "Justificación");
 
 	private final CorporateBranding branding;
 	private final DateTimeFormatter dateTime;
@@ -64,9 +64,9 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 				.sheet("Por equipo", "Consumo por equipo", List.of("#", "Equipo", "Código", "Red", "Tipo", "Sesiones",
 						"kWh", "Id interno"), ranking(report.ranking()))
 				.sheet("Transacciones", "Transacciones validadas", SESSION_HEADERS,
-						report.official().stream().map(view -> session(view, false)).toList())
-				.sheet("Excluidas", "Pendientes de vincular y pruebas (no suman)", excludedHeaders,
-						report.excluded().stream().map(view -> session(view, true)).toList())
+						report.official().stream().map(view -> session(view, false, report.energyJustifications())).toList())
+				.sheet("Excluidas", "Sesiones fuera de los indicadores oficiales", excludedHeaders,
+						report.excluded().stream().map(view -> session(view, true, report.energyJustifications())).toList())
 				.finish();
 	}
 
@@ -82,15 +82,22 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 				List.of("Pendientes de vincular (kWh)", energy(summary.pendingLink().energyKwh())),
 				List.of("Por aprobar (sesiones)", summary.awaitingApproval().sessions()),
 				List.of("Por aprobar (kWh)", energy(summary.awaitingApproval().energyKwh())),
+				List.of("Top incluye más de cinco por empate", summary.top().size() > 5 ? "Sí" : "No"),
 				List.of("Pruebas (sesiones)", summary.test().sessions()),
-				List.of("Pruebas (kWh)", energy(summary.test().energyKwh())));
+				List.of("Pruebas (kWh)", energy(summary.test().energyKwh())),
+				List.of("Energía por revisar (sesiones)", summary.energyReview().sessions()),
+				List.of("Energía por revisar (kWh)", energy(summary.energyReview().energyKwh())),
+				List.of("Energía rechazada (sesiones)", summary.energyRejected().sessions()),
+				List.of("Energía rechazada (kWh)", energy(summary.energyRejected().energyKwh())),
+				List.of("Aprobadas sobre umbral (sesiones, incluidas en oficiales)", summary.approvedAboveThreshold().sessions()),
+				List.of("Aprobadas sobre umbral (kWh, incluidos en oficiales)", energy(summary.approvedAboveThreshold().energyKwh())));
 	}
 
 	private static List<List<Object>> ranking(List<RankedEquipment> ranking) {
 		List<List<Object>> rows = new ArrayList<>();
 		for (int index = 0; index < ranking.size(); index++) {
 			RankedEquipment item = ranking.get(index);
-			rows.add(List.of(index + 1, ConsumptionLabels.name(item.equipment()),
+			rows.add(List.of(item.position(), ConsumptionLabels.name(item.equipment()),
 					ConsumptionLabels.code(item.equipment()), ConsumptionLabels.network(item.equipment()),
 					item.equipment() == null ? "" : DomainLabels.of(item.equipment().type()), item.sessions(),
 					item.energyKwh(), item.equipment() == null ? "" : item.equipment().id().toString()));
@@ -98,7 +105,7 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 		return rows;
 	}
 
-	private List<Object> session(SessionView view, boolean withState) {
+	private List<Object> session(SessionView view, boolean withState, java.util.Map<java.util.UUID, String> justifications) {
 		EnergySession session = view.session();
 		SessionReading reading = session.reading();
 		List<Object> row = new ArrayList<>(List.of(session.getExternalSessionId(), ConsumptionLabels.of(session.getSource()),
@@ -107,6 +114,8 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 				ConsumptionLabels.name(view.equipment()), ConsumptionLabels.code(view.equipment()),
 				ConsumptionLabels.network(view.equipment()), DomainLabels.of(session.getInfrastructureType()),
 				text(reading.site()), text(reading.charger()), text(reading.serial()), text(reading.connector())));
+		row.add(ConsumptionLabels.of(session.getEnergyReview()));
+		row.add(justifications.getOrDefault(session.getId(), ""));
 		if (withState) {
 			row.add(ConsumptionLabels.of(session.getState()));
 		}

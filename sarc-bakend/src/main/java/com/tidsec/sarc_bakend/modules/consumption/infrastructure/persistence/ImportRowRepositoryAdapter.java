@@ -60,10 +60,18 @@ class ImportRowRepositoryAdapter implements ImportRowRepository {
 	}
 
 	@Override
-	public PageResult<ImportRow> search(UUID batchId, RowClassification classification, PageQuery pageQuery) {
+	public PageResult<ImportRow> search(UUID batchId, RowClassification classification, Boolean aboveThreshold, PageQuery pageQuery) {
 		Pageable pageable = PageRequest.of(pageQuery.page(), pageQuery.size(), Sort.by("rowNumber"));
-		Page<ImportRow> page = classification == null ? jpa.findByBatchId(batchId, pageable)
-				: jpa.findByBatchIdAndClassification(batchId, classification, pageable);
+		Page<ImportRow> page = jpa.findAll((root, query, cb) -> {
+			var conditions = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
+			conditions.add(cb.equal(root.get("batchId"), batchId));
+			if (classification != null) conditions.add(cb.equal(root.get("classification"), classification));
+			if (aboveThreshold != null) {
+				var high = cb.greaterThan(root.<java.math.BigDecimal>get("energyKwh"), new java.math.BigDecimal("1000"));
+				conditions.add(aboveThreshold ? high : cb.or(cb.isNull(root.get("energyKwh")), cb.not(high)));
+			}
+			return cb.and(conditions.toArray(jakarta.persistence.criteria.Predicate[]::new));
+		}, pageable);
 		return new PageResult<>(page.getContent(), page.getNumber(), page.getSize(), page.getTotalElements(),
 				page.getTotalPages());
 	}

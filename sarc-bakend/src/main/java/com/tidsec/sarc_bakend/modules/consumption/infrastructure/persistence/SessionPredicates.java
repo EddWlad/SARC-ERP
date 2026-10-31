@@ -42,6 +42,9 @@ final class SessionPredicates {
 		if (criteria.state() != null) {
 			predicates.add(cb.equal(root.get("state"), criteria.state()));
 		}
+		if (criteria.energyReview() != null) {
+			predicates.add(cb.equal(root.get("energyReview"), criteria.energyReview()));
+		}
 		if (criteria.text() != null && !criteria.text().isBlank()) {
 			String pattern = "%" + escape(criteria.text().strip().toLowerCase(Locale.ROOT)) + "%";
 			predicates.add(cb.or(

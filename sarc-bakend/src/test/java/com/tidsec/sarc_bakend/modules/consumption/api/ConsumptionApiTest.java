@@ -105,6 +105,332 @@ class ConsumptionApiTest {
 				""".formatted(TYPE2)));
 	}
 
+	// Feature 003: todas las pruebas usan PostgreSQL desechable y FileStorage mock.
+	@Test
+	void highReadingsFromBothSourcesAreStoredAndDecisionsAreIdempotent() throws Exception {
+		conectzStationWithEnerlinkIdentity("QA", "C1");
+		String wallbox = wallbox("WB-1001", "HIGH-W", "1500,000");
+		String enerlink = ENERLINK_HEADER + enerlink("HIGH-E", "21-10-2026 08:00:00", "", "QA", "C1", "1500");
+		for (String source : List.of("WALLBOX", "ENERLINK")) {
+			String report = source.equals("WALLBOX") ? wallbox : enerlink;
+			String external = source.equals("WALLBOX") ? "HIGH-W" : "HIGH-E";
+			String batch = upload(source, "high.csv", report);
+			assertThat(batch(batch)).containsEntry("newRows", 1).containsEntry("energyReviewRows", 1);
+			mvc.perform(get("/api/v1/energy/imports/" + batch + "/rows").param("aboveThreshold", "true").cookie(analyst))
+					.andExpect(jsonPath("$.totalElements").value(1));
+			confirm(batch);
+			Map<String, Object> session = energySession(external);
+			assertThat(session).containsEntry("state", "ENERGY_REVIEW");
+			String id = session.get("id").toString();
+			review(id, "APPROVED", "Verificada con operador", session.get("version"), analyst).andExpect(status().isOk());
+			long decisions = jdbc.queryForObject("select count(*) from energy_session_review", Long.class);
+			for (int retry = 0; retry < 2; retry++) confirm(upload(source, "same.csv", report));
+			assertThat(energySession(external)).containsEntry("energyReview", "APPROVED").containsEntry("state", "VALIDATED");
+			assertThat(jdbc.queryForObject("select count(*) from energy_session_review", Long.class)).isEqualTo(decisions);
+		}
+		assertOfficial("2026-10-21", "2026-10-22", 2, 3000);
+	}
+
+	@Test
+	void energyDecisionsValidatePermissionsReasonsAndVersionsIncludingSameStateRaces() throws Exception {
+		confirm(upload("WALLBOX", "high.csv", wallbox("WB-1001", "HIGH", "1500,00")));
+		Map<String, Object> session = energySession("HIGH");
+		String id = session.get("id").toString();
+		Object version = session.get("version");
+		review(id, "APPROVED", "Texto", version, manager).andExpect(status().isForbidden());
+		review(id, "APPROVED", "   ", version, analyst).andExpect(status().isBadRequest());
+		review(id, "APPROVED", "x".repeat(501), version, analyst).andExpect(status().isBadRequest());
+		review(id, "PENDING", "Texto", version, analyst).andExpect(status().isUnprocessableContent());
+		review(id, "APPROVED", "x".repeat(500), version, analyst).andExpect(status().isOk());
+		review(id, "REJECTED", "Antigua", version, analyst).andExpect(status().isConflict());
+		Object reviewed = energySession("HIGH").get("version");
+		var start = new CountDownLatch(1);
+		try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+			java.util.concurrent.Callable<Integer> action = () -> {
+				start.await();
+				return review(id, "APPROVED", "Otra decisión", reviewed, analyst).andReturn().getResponse().getStatus();
+			};
+			var first = executor.submit(action);
+			var second = executor.submit(action);
+			start.countDown();
+			assertThat(List.of(first.get(20, TimeUnit.SECONDS), second.get(20, TimeUnit.SECONDS)))
+					.containsExactlyInAnyOrder(200, 409);
+		}
+		assertThat(jdbc.queryForObject("select count(*) from energy_session_review", Integer.class)).isEqualTo(2);
+		assertThat(jdbc.queryForObject("select count(*) from audit_event where action = 'ENERGY_SESSION_REVIEWED'", Integer.class)).isEqualTo(2);
+		assertThat(energySession("HIGH")).containsEntry("revision", 1);
+		jdbc.update("update energy_session_review set decided_at='2026-10-21T15:00:00Z'");
+		mvc.perform(get("/api/v1/energy/sessions/" + id + "/energy-reviews").cookie(manager))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2))
+				.andExpect(jsonPath("$[0].justification").value("Otra decisión"));
+	}
+
+	@Test
+	void reviewCountsUseExclusiveStatesButEnergyFilterFindsUnlinkedAndTestSessions() throws Exception {
+		String report = ENERLINK_HEADER
+				+ enerlink("P", "21-10-2026 08:00:00", "", "Unknown", "C1", "1500");
+		confirm(upload("ENERLINK", "p.csv", report));
+		mvc.perform(get("/api/v1/energy/sessions").param("energyReview", "PENDING").cookie(manager))
+				.andExpect(jsonPath("$.totalElements").value(1));
+		mvc.perform(summary("2026-10-21", "2026-10-22").cookie(manager))
+				.andExpect(jsonPath("$.pendingLink.sessions").value(1))
+				.andExpect(jsonPath("$.energyReview.sessions").value(0))
+				.andExpect(jsonPath("$.official.sessions").value(0));
+		conectzStationWithEnerlinkIdentity("Unknown", "C1");
+		send(analyst, HttpMethod.POST, "/api/v1/energy/sessions/link-pending", "")
+				.andExpect(jsonPath("$.awaitingEnergyReview").value(1)).andExpect(jsonPath("$.linked").value(0));
+		Map<String, Object> session = energySession("P");
+		send(analyst, HttpMethod.PATCH, "/api/v1/energy/sessions/" + session.get("id") + "/test",
+				"{\"test\":true,\"version\":" + session.get("version") + "}").andExpect(status().isOk());
+		mvc.perform(summary("2026-10-21", "2026-10-22").cookie(manager))
+				.andExpect(jsonPath("$.test.sessions").value(1)).andExpect(jsonPath("$.energyReview.sessions").value(0));
+		mvc.perform(get("/api/v1/energy/sessions").param("energyReview", "PENDING").cookie(manager))
+				.andExpect(jsonPath("$.totalElements").value(1));
+	}
+
+	private Map<String, Object> energySession(String externalId) throws Exception {
+		return JsonPath.read(mvc.perform(get("/api/v1/energy/sessions").param("text", externalId).cookie(manager))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), "$.content[0]");
+	}
+
+	@Test
+	void highReadingCounterIncludesInterpretableDuplicatesButExcludesInvalidReadings() throws Exception {
+		conectzStationWithEnerlinkIdentity("QA", "C1");
+		String high = enerlink("DUP", "21-10-2026 08:00:00", "", "QA", "C1", "1500");
+		String id = upload("ENERLINK", "counter.csv", ENERLINK_HEADER + high + high
+				+ enerlink("BAD", "", "", "QA", "C1", "1500"));
+		assertThat(batch(id)).containsEntry("energyReviewRows", 2).containsEntry("newRows", 1)
+				.containsEntry("duplicateRows", 1).containsEntry("invalidRows", 1);
+		mvc.perform(get("/api/v1/energy/imports/" + id + "/rows").param("aboveThreshold", "true")
+				.cookie(analyst)).andExpect(jsonPath("$.totalElements").value(2));
+		mvc.perform(get("/api/v1/energy/imports/" + id + "/rows").param("aboveThreshold", "true")
+				.param("classification", "DUPLICATE").cookie(analyst)).andExpect(jsonPath("$.totalElements").value(1));
+		mvc.perform(get("/api/v1/energy/imports/" + id + "/rows").param("aboveThreshold", "false")
+				.cookie(analyst)).andExpect(jsonPath("$.totalElements").value(1));
+		confirm(id);
+		assertThat(jdbc.queryForObject("select count(*) from energy_session", Integer.class)).isEqualTo(1);
+	}
+
+	@Test
+	void reportSizeLimitIncludesBothNewExcludedCategories() throws Exception {
+		for (var state : List.of(com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState.ENERGY_REVIEW,
+				com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState.ENERGY_REJECTED)) {
+			doAnswer(invocation -> {
+				SessionCriteria criteria = invocation.getArgument(0);
+				return criteria.state() == state
+						? new com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyTotals(100_001, java.math.BigDecimal.ZERO, 1, 0)
+						: invocation.callRealMethod();
+			}).when(sessionRepository).totals(any());
+			for (String format : List.of("PDF", "XLSX")) {
+				mvc.perform(get("/api/v1/energy/report").param("format", format).param("from", "2026-10-21")
+						.param("to", "2026-10-22").cookie(manager)).andExpect(status().isUnprocessableContent())
+						.andExpect(jsonPath("$.code").value("REPORT_TOO_LARGE"));
+			}
+		}
+	}
+
+	@Test
+	void energyReviewRejectsMissingVersionCsrfUnknownAndUnobservedSessions() throws Exception {
+		confirm(upload("WALLBOX", "high.csv", wallbox("WB-1001", "HIGH", "1500")));
+		var high = energySession("HIGH");
+		String path = "/api/v1/energy/sessions/" + high.get("id") + "/energy-review";
+		send(analyst, HttpMethod.POST, path, "{\"decision\":\"APPROVED\",\"justification\":\"x\"}")
+				.andExpect(status().isBadRequest());
+		mvc.perform(request(HttpMethod.POST, path).cookie(analyst).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"decision\":\"APPROVED\",\"justification\":\"x\",\"version\":0}"))
+				.andExpect(status().isForbidden());
+		review(java.util.UUID.randomUUID().toString(), "APPROVED", "x", 0, analyst).andExpect(status().isNotFound());
+		confirm(upload("WALLBOX", "normal.csv", wallbox("WB-1001", "NORMAL", "5")));
+		var normal = energySession("NORMAL");
+		review(normal.get("id").toString(), "APPROVED", "x", normal.get("version"), analyst)
+				.andExpect(status().isUnprocessableContent());
+		review(high.get("id").toString(), "APPROVED", " x ", high.get("version"), analyst)
+				.andExpect(status().isOk());
+		mvc.perform(get(path + "s").cookie(manager)).andExpect(jsonPath("$[0].justification").value("x"));
+	}
+
+	@Test
+	void correctionsKeepCurrentDecisionsAndReportsUseTheLatestJustificationWithoutRewritingArchives() throws Exception {
+		conectzStationWithEnerlinkIdentity("QA", "C1");
+		confirm(upload("ENERLINK", "high.csv", ENERLINK_HEADER + enerlink("HIGH", "21-10-2026 08:00:00", "", "QA", "C1", "1500")));
+		var session = energySession("HIGH");
+		String id = session.get("id").toString();
+		for (String decision : List.of("APPROVED", "REJECTED")) {
+			review(id, decision, "Decisión " + decision, energySession("HIGH").get("version"), analyst)
+					.andExpect(status().isOk());
+			String correction = ENERLINK_HEADER + enerlink("HIGH", "21-10-2026 08:00:00",
+					decision.equals("APPROVED") ? "21-10-2026 09:10:00" : "21-10-2026 09:20:00", "QA", "C1", "1500.0004");
+			String batch = upload("ENERLINK", "correction.csv", correction);
+			decide(batch, "HIGH", "\"approved\":true").andExpect(status().isOk());
+			confirm(batch);
+			assertThat(energySession("HIGH")).containsEntry("energyReview", decision);
+		}
+		assertThat(jdbc.queryForObject("select count(*) from energy_session_review", Integer.class)).isEqualTo(2);
+		review(id, "APPROVED", "Verificación vigente", energySession("HIGH").get("version"), analyst)
+				.andExpect(status().isOk());
+		byte[] xlsx = reportBytes("XLSX");
+		String archiveBefore = jdbc.queryForObject("select checksum from report_issued order by created_at desc limit 1", String.class);
+		try (var book = new XSSFWorkbook(new ByteArrayInputStream(xlsx))) {
+			String cells = sheetText(book.getSheet("Transacciones"));
+			assertThat(cells).contains("Excepción de energía", "Justificación", "Verificación vigente");
+			assertThat(valueOf(book.getSheet("Resumen"), "Aprobadas sobre umbral (sesiones, incluidas en oficiales)")).isEqualTo(1);
+		}
+		String pdf = pdfText(reportBytes("PDF"));
+		assertThat(pdf).contains("Revisión energética", "Aprobadas sobre umbral");
+		for (String energy : List.of("1800", "1500", "900", "")) {
+			String batch = upload("ENERLINK", "changed.csv", ENERLINK_HEADER + enerlink("HIGH", "21-10-2026 08:00:00", "", "QA", "C1", energy));
+			decide(batch, "HIGH", "\"approved\":true").andExpect(status().isOk());
+			confirm(batch);
+			assertThat(energySession("HIGH").get("energyReview")).isEqualTo(energy.equals("1800") || energy.equals("1500") ? "PENDING" : null);
+		}
+		assertThat(jdbc.queryForList("select checksum from report_issued", String.class)).contains(archiveBefore);
+		assertThat(jdbc.queryForObject("select count(*) from energy_session_review", Integer.class)).isEqualTo(3);
+		assertThat(energySession("HIGH")).containsEntry("revision", 7);
+	}
+
+	@Test
+	void tiedRankingIsSharedBySummaryPdfAndCompleteExcelRegardlessOfUuids() throws Exception {
+		StringBuilder data = new StringBuilder(ENERLINK_HEADER);
+		int[] energies = {100, 90, 80, 70, 70, 70, 60};
+		for (int i = 0; i < energies.length; i++) {
+			String station = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", conectzStation("RANK-" + i)));
+			verifiedIdentity(station, "QA", "C" + i);
+			data.append(enerlink("RANK-" + i, "21-10-2026 08:00:00", "", "QA", "C" + i, Integer.toString(energies[i])));
+		}
+		confirm(upload("ENERLINK", "ranking.csv", data.toString()));
+		String summary = mvc.perform(summary("2026-10-21", "2026-10-22").cookie(manager))
+				.andExpect(jsonPath("$.top.length()").value(6)).andReturn().getResponse().getContentAsString();
+		assertThat(JsonPath.<List<Integer>>read(summary, "$.top[*].position")).containsExactly(1, 2, 3, 4, 4, 4);
+		List<String> names = JsonPath.read(summary, "$.top[*].equipment.name");
+		String pdf = pdfText(reportBytes("PDF"));
+		assertThat(pdf).contains("empate");
+		for (String name : names) assertThat(pdf).contains(name);
+		try (var book = new XSSFWorkbook(new ByteArrayInputStream(reportBytes("XLSX")))) {
+			String all = sheetText(book.getSheet("Por equipo"));
+			for (int i = 0; i < 7; i++) assertThat(all).contains("Estacion RANK-" + i);
+			List<Integer> positions = new java.util.ArrayList<>();
+			for (Row row : book.getSheet("Por equipo")) {
+				if (row.getCell(0) != null && row.getCell(0).getCellType() == org.apache.poi.ss.usermodel.CellType.NUMERIC)
+					positions.add((int) row.getCell(0).getNumericCellValue());
+			}
+			assertThat(positions).containsExactly(1, 2, 3, 4, 4, 4, 7);
+		}
+		// Solo datos sintéticos: simula identificadores diferentes manteniendo equipos/lecturas.
+		for (int i = 0; i < 7; i++) {
+			String replacement = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment",
+					conectzStation("NEW-" + i).replace("Estacion NEW-" + i, "Estacion RANK-" + i)));
+			jdbc.update("update energy_session set equipment_id=?::uuid where external_session_id=?", replacement, "RANK-" + i);
+		}
+		String after = mvc.perform(summary("2026-10-21", "2026-10-22").cookie(manager)).andReturn().getResponse().getContentAsString();
+		assertThat(JsonPath.<List<String>>read(after, "$.top[*].equipment.name")).isEqualTo(names);
+	}
+
+	private byte[] reportBytes(String format) throws Exception {
+		return mvc.perform(get("/api/v1/energy/report").param("format", format).param("from", "2026-10-21")
+				.param("to", "2026-10-22").cookie(manager)).andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+	}
+
+	private static String sheetText(Sheet sheet) {
+		StringBuilder cells = new StringBuilder();
+		sheet.forEach(row -> row.forEach(cell -> cells.append(cell).append('|')));
+		return cells.toString();
+	}
+
+	private static String pdfText(byte[] bytes) throws Exception {
+		try (var reader = new org.openpdf.text.pdf.PdfReader(bytes)) {
+			var extractor = new org.openpdf.text.pdf.parser.PdfTextExtractor(reader);
+			StringBuilder text = new StringBuilder();
+			for (int page = 1; page <= reader.getNumberOfPages(); page++) text.append(extractor.getTextFromPage(page));
+			return text.toString();
+		}
+	}
+
+	private ResultActions review(String id, String decision, String reason, Object version, Cookie user) throws Exception {
+		return send(user, HttpMethod.POST, "/api/v1/energy/sessions/" + id + "/energy-review",
+				"{\"decision\":\"" + decision + "\",\"justification\":\"" + reason + "\",\"version\":" + version + "}");
+	}
+
+	@Test
+	void mixedBatchProtectsFeature002AndKeepsEnergyDecisionsWhenReimported() throws Exception {
+		String first = conectzStationWithEnerlinkIdentity("QA", "C1");
+		confirm(upload("ENERLINK", "before.csv", ENERLINK_HEADER
+				+ enerlink("L", "21-10-2026 08:00:00", "", "Later", "C1", "20")
+				+ enerlink("C", "21-10-2026 08:00:00", "", "QA", "C1", "10")));
+		verifiedIdentity(first, "Later", "C1");
+		verifiedIdentity(first, "Ambiguous", "C1");
+		String second = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment", conectzStation("OTHER")));
+		insertVerifiedIdentity(second, "AMBIGUOUS", "c1");
+		String report = ENERLINK_HEADER
+				+ enerlink("N", "21-10-2026 08:00:00", "", "QA", "C1", "2")
+				+ enerlink("Z", "21-10-2026 08:00:00", "", "QA", "C1", "0")
+				+ enerlink("M", "21-10-2026 08:00:00", "", "QA", "C1", "")
+				+ enerlink("H", "21-10-2026 08:00:00", "", "QA", "C1", "1500")
+				+ enerlink("U", "21-10-2026 08:00:00", "", "Ambiguous", "C1", "5")
+				+ enerlink("L", "21-10-2026 08:00:00", "", "Later", "C1", "20")
+				+ enerlink("N", "21-10-2026 08:00:00", "", "QA", "C1", "2")
+				+ enerlink("C", "21-10-2026 08:00:00", "", "QA", "C1", "12")
+				+ enerlink("X", "21-10-2026 08:00:00", "", "QA", "C1", "-1");
+		String id = upload("ENERLINK", "mixed.csv", report);
+		assertThat(batch(id)).containsEntry("totalRows", 9).containsEntry("newRows", 4)
+				.containsEntry("pendingLinkRows", 1).containsEntry("linkableRows", 1).containsEntry("duplicateRows", 1)
+				.containsEntry("modifiedRows", 1).containsEntry("invalidRows", 1).containsEntry("energyReviewRows", 1);
+		decide(id, "C", "\"approved\":true").andExpect(status().isOk());
+		confirm(id);
+		assertOfficial("2026-10-21", "2026-10-22", 5, 34);
+		mvc.perform(summary("2026-10-21", "2026-10-22").cookie(manager))
+				.andExpect(jsonPath("$.official.sessionsWithoutEnergy").value(1))
+				.andExpect(jsonPath("$.energyReview.sessions").value(1))
+				.andExpect(jsonPath("$.pendingLink.sessions").value(1));
+		for (int i = 0; i < 2; i++) confirm(upload("ENERLINK", "same.csv", report));
+		assertThat(jdbc.queryForObject("select count(*) from energy_session", Integer.class)).isEqualTo(7);
+		assertThat(jdbc.queryForObject("select count(*) from energy_session_revision", Integer.class)).isEqualTo(1);
+		Map<String, Object> high = energySession("H");
+		review(high.get("id").toString(), "APPROVED", "Verificado", high.get("version"), analyst).andExpect(status().isOk());
+		for (int i = 0; i < 2; i++) confirm(upload("ENERLINK", "same.csv", report));
+		assertOfficial("2026-10-21", "2026-10-22", 6, 1534);
+		assertThat(jdbc.queryForObject("select count(*) from energy_session_review", Integer.class)).isEqualTo(1);
+		byte[] xlsx = mvc.perform(get("/api/v1/energy/report").param("format", "XLSX")
+				.param("from", "2026-10-21").param("to", "2026-10-22").cookie(manager))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+		try (var book = new XSSFWorkbook(new ByteArrayInputStream(xlsx))) {
+			assertThat(valueOf(book.getSheet("Resumen"), "Sesiones")).isEqualTo(6);
+			assertThat(valueOf(book.getSheet("Resumen"), "Energía conocida (kWh)")).isEqualTo(1534);
+			assertThat(book.getSheet("Transacciones").getRow(4).getLastCellNum()).isGreaterThan((short) 14);
+		}
+		mvc.perform(get("/api/v1/energy/report").param("format", "PDF")
+				.param("from", "2026-10-21").param("to", "2026-10-22").cookie(manager)).andExpect(status().isOk());
+		high = energySession("H");
+		review(high.get("id").toString(), "REJECTED", "Lectura rechazada", high.get("version"), analyst).andExpect(status().isOk());
+		confirm(upload("ENERLINK", "same.csv", report));
+		assertThat(energySession("H")).containsEntry("energyReview", "REJECTED");
+		assertOfficial("2026-10-21", "2026-10-22", 5, 34);
+	}
+
+	@Test
+	void sourceAndEnergyApprovalsCanBeAppliedInEitherOrderThroughTheApi() throws Exception {
+		conectzStationWithEnerlinkIdentity("QA", "C1");
+		for (boolean sourceFirst : new boolean[] {true, false}) {
+			String external = sourceFirst ? "FIRST" : "LAST";
+			String serial = "SERIAL-" + external;
+			confirm(upload("WALLBOX", "nonpreferred.csv", wallbox(serial, external, "1500,00")));
+			String station = jdbc.queryForObject("select id::text from asset_equipment where serial = 'CZ-4'", String.class);
+			String identity = createdId(send(analyst, HttpMethod.POST, "/api/v1/equipment/" + station + "/external-identities",
+					"{\"platform\":\"WALLBOX\",\"externalId\":\"" + serial + "\"}"));
+			send(analyst, HttpMethod.POST, "/api/v1/external-identities/" + identity + "/verify", "{\"version\":0}").andExpect(status().isOk());
+			send(analyst, HttpMethod.POST, "/api/v1/energy/sessions/link-pending", "").andExpect(status().isOk());
+			Map<String, Object> current = energySession(external);
+			String sid = current.get("id").toString();
+			assertThat(current).containsEntry("canApproveSource", true);
+			if (sourceFirst) send(analyst, HttpMethod.POST, "/api/v1/energy/sessions/" + sid + "/source-approval",
+					"{\"version\":" + current.get("version") + "}").andExpect(status().isOk());
+			current = energySession(external);
+			review(sid, "APPROVED", "Confirmada", current.get("version"), analyst).andExpect(status().isOk());
+			if (!sourceFirst) send(analyst, HttpMethod.POST, "/api/v1/energy/sessions/" + sid + "/source-approval",
+					"{\"version\":" + energySession(external).get("version") + "}").andExpect(status().isOk());
+			assertThat(energySession(external)).containsEntry("state", "VALIDATED");
+		}
+	}
+
 	// ---- idempotencia y formatos (CA-003-01, CA-003-02)
 
 	@Test

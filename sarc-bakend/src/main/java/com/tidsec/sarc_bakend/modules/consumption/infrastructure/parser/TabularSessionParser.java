@@ -93,7 +93,8 @@ abstract class TabularSessionParser implements SessionReportParser {
 		SessionReading reading = new SessionReading(start, end, energy, fields.site(), fields.charger(),
 				fields.serial(), fields.connector());
 		issues.addAll(SessionRules.check(reading));
-		return new ParsedSession(row.number(), id, issues.isEmpty() ? reading : null, fields.lookup(), issues);
+		return new ParsedSession(row.number(), id,
+				issues.stream().anyMatch(SessionRules::isBlocking) ? null : reading, fields.lookup(), issues);
 	}
 
 	private boolean isAbsent(String text) {

@@ -109,8 +109,13 @@ public class SessionImportService {
 
 	@Transactional(readOnly = true)
 	public PageResult<ImportRow> rows(UUID batchId, RowClassification classification, PageQuery pageQuery) {
+		return rows(batchId, classification, null, pageQuery);
+	}
+
+	@Transactional(readOnly = true)
+	public PageResult<ImportRow> rows(UUID batchId, RowClassification classification, Boolean aboveThreshold, PageQuery pageQuery) {
 		load(batchId);
-		return rows.search(batchId, classification, pageQuery);
+		return rows.search(batchId, classification, aboveThreshold, pageQuery);
 	}
 
 	/** Marca filas como prueba o aprueba correcciones mientras la vista previa esta abierta. */

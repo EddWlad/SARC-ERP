@@ -11,6 +11,7 @@ import java.util.Locale;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionSummary;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReviewStatus;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyTotals;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentReference;
 import com.tidsec.sarc_bakend.shared.report.DomainLabels;
@@ -92,6 +93,19 @@ final class ConsumptionLabels {
 			case PENDING_LINK -> "Pendiente de vincular";
 			case AWAITING_APPROVAL -> "Por aprobar";
 			case TEST -> "Prueba";
+			case ENERGY_REVIEW -> "Energía por revisar";
+			case ENERGY_REJECTED -> "Energía rechazada";
+		};
+	}
+
+	static String of(EnergyReviewStatus status) {
+		if (status == null) {
+			return "";
+		}
+		return switch (status) {
+			case PENDING -> "Por revisar";
+			case APPROVED -> "Aprobada sobre umbral";
+			case REJECTED -> "Rechazada";
 		};
 	}
 

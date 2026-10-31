@@ -33,6 +33,9 @@ public record ConsumptionSummaryResponse(
 		Totals pendingLink,
 		Totals awaitingApproval,
 		Totals test,
+		Totals energyReview,
+		Totals energyRejected,
+		Totals approvedAboveThreshold,
 		Instant generatedAt) {
 
 	public record Totals(long sessions, @Schema(nullable = true) BigDecimal energyKwh, long equipment,
@@ -45,10 +48,10 @@ public record ConsumptionSummaryResponse(
 	}
 
 	public record Ranked(@Schema(nullable = true) EquipmentRefResponse equipment, long sessions,
-			BigDecimal energyKwh) {
+			BigDecimal energyKwh, int position) {
 
 		static Ranked from(RankedEquipment ranked) {
-			return new Ranked(EquipmentRefResponse.from(ranked.equipment()), ranked.sessions(), ranked.energyKwh());
+			return new Ranked(EquipmentRefResponse.from(ranked.equipment()), ranked.sessions(), ranked.energyKwh(), ranked.position());
 		}
 	}
 
@@ -84,6 +87,7 @@ public record ConsumptionSummaryResponse(
 				summary.byType().entrySet().stream()
 						.map(e -> new TypeShare(e.getKey(), e.getValue().sessions(), e.getValue().energyKwh())).toList(),
 				Totals.from(summary.pendingLink()), Totals.from(summary.awaitingApproval()),
-				Totals.from(summary.test()), summary.generatedAt());
+				Totals.from(summary.test()), Totals.from(summary.energyReview()), Totals.from(summary.energyRejected()),
+				Totals.from(summary.approvedAboveThreshold()), summary.generatedAt());
 	}
 }

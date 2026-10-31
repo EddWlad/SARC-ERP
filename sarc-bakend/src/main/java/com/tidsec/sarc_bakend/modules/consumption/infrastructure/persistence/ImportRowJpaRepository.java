@@ -14,7 +14,7 @@ import org.springframework.data.repository.query.Param;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.ImportRow;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.batch.RowClassification;
 
-interface ImportRowJpaRepository extends JpaRepository<ImportRow, UUID> {
+interface ImportRowJpaRepository extends JpaRepository<ImportRow, UUID>, org.springframework.data.jpa.repository.JpaSpecificationExecutor<ImportRow> {
 
 	List<ImportRow> findByBatchIdAndIdIn(UUID batchId, Collection<UUID> ids);
 

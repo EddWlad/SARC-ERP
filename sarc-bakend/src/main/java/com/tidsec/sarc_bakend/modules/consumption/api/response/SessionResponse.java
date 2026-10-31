@@ -1,6 +1,7 @@
 package com.tidsec.sarc_bakend.modules.consumption.api.response;
 
 import java.math.BigDecimal;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReviewStatus;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -28,6 +29,8 @@ public record SessionResponse(
 		LocalDate startDate,
 		@Schema(nullable = true) BigDecimal energyKwh,
 		SessionState state,
+		@Schema(nullable = true) EnergyReviewStatus energyReview,
+		boolean canApproveSource,
 		@Schema(nullable = true) LinkIssue linkIssue,
 		@Schema(nullable = true) EquipmentRefResponse equipment,
 		@Schema(nullable = true) String site,
@@ -43,7 +46,7 @@ public record SessionResponse(
 		SessionReading reading = session.reading();
 		return new SessionResponse(session.getId(), session.getSource(), session.getExternalSessionId(),
 				session.getStartedAt(), session.getEndedAt(), session.getStartDate(), session.getEnergyKwh(),
-				session.getState(), session.getLinkIssue(), EquipmentRefResponse.from(view.equipment()), reading.site(), reading.charger(),
+				session.getState(), session.getEnergyReview(), session.canApproveSource(), session.getLinkIssue(), EquipmentRefResponse.from(view.equipment()), reading.site(), reading.charger(),
 				reading.serial(), reading.connector(), session.getRevision(), session.getImportBatchId(),
 				session.getVersion());
 	}

@@ -53,6 +53,14 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 										+ ConsumptionLabels.kwh(summary.awaitingApproval().energyKwh()) + " kWh)"),
 						new Kpi("Pruebas", ConsumptionLabels.count(summary.test().sessions()) + " ("
 								+ ConsumptionLabels.kwh(summary.test().energyKwh()) + " kWh)")))
+				.section("Revisión energética")
+				.kpis(List.of(new Kpi("Energía por revisar", ConsumptionLabels.count(summary.energyReview().sessions())
+						+ " (" + ConsumptionLabels.kwh(summary.energyReview().energyKwh()) + " kWh)"),
+						new Kpi("Energía rechazada", ConsumptionLabels.count(summary.energyRejected().sessions())
+								+ " (" + ConsumptionLabels.kwh(summary.energyRejected().energyKwh()) + " kWh)"),
+						new Kpi("Aprobadas sobre umbral (incluidas en oficiales)",
+								ConsumptionLabels.count(summary.approvedAboveThreshold().sessions()) + " ("
+								+ ConsumptionLabels.kwh(summary.approvedAboveThreshold().energyKwh()) + " kWh)")))
 				.section("Top 5 equipos por energía")
 				.table(List.of("#", "Equipo", "Código", "Red", "Sesiones", "kWh"), ranked(summary.top()),
 						new float[] { 0.5f, 4, 2, 1.5f, 1.5f, 1.5f })
@@ -61,6 +69,7 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 						distribution(summary), new float[] { 1.5f, 3, 1.5f, 1.5f, 1.5f })
 				.section("Tendencia diaria")
 				.table(List.of("Fecha", "Sesiones", "kWh"), daily(summary.daily()), new float[] { 2, 1.5f, 1.5f });
+
 		if (report.ranking().size() > summary.top().size()) {
 			pdf.section("Ranking por equipo (" + report.ranking().size() + ")")
 					.table(List.of("#", "Equipo", "Código", "Red", "Sesiones", "kWh"), ranked(report.ranking()),
@@ -81,6 +90,7 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 			pdf.note(ConsumptionLabels.count(summary.equipmentWithoutEnergy()) + " equipos quedan fuera del ranking "
 					+ "por no tener energía informada en el período.");
 		}
+		if (summary.top().size() > 5) pdf.note("El Top 5 incluye más de cinco equipos por empate en el quinto lugar.");
 		return pdf.finish();
 	}
 
@@ -88,7 +98,7 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 		List<List<String>> rows = new ArrayList<>();
 		for (int index = 0; index < ranking.size(); index++) {
 			RankedEquipment item = ranking.get(index);
-			rows.add(List.of(String.valueOf(index + 1), ConsumptionLabels.name(item.equipment()),
+			rows.add(List.of(String.valueOf(item.position()), ConsumptionLabels.name(item.equipment()),
 					ConsumptionLabels.code(item.equipment()), ConsumptionLabels.network(item.equipment()),
 					ConsumptionLabels.count(item.sessions()), ConsumptionLabels.kwh(item.energyKwh())));
 		}

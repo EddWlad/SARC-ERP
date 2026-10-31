@@ -38,6 +38,11 @@ public class ImportBatch extends BaseImportBatch {
 	private int duplicateRows;
 	private int pendingLinkRows;
 	private int linkableRows;
+	@Column(nullable = false)
+	private int energyReviewRows;
+
+	public int getEnergyReviewRows() { return energyReviewRows; }
+	public void recordEnergyReviewRows(int count) { energyReviewRows = count; }
 
 	protected ImportBatch() {
 	}

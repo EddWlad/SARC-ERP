@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionSummary;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.RankedEquipment;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReviewStatus;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.DailyEnergy;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergySessionRepository;
@@ -64,7 +66,10 @@ class ConsumptionCalculator {
 				complete(InfrastructureType.class, sessions.byType(official)),
 				sessions.totals(criteria.withState(SessionState.PENDING_LINK)),
 				sessions.totals(criteria.withState(SessionState.AWAITING_APPROVAL)),
-				sessions.totals(criteria.withState(SessionState.TEST)), Instant.now(clock));
+				sessions.totals(criteria.withState(SessionState.TEST)),
+				sessions.totals(criteria.withState(SessionState.ENERGY_REVIEW)),
+				sessions.totals(criteria.withState(SessionState.ENERGY_REJECTED)),
+				sessions.totals(official.withEnergyReview(EnergyReviewStatus.APPROVED)), Instant.now(clock));
 	}
 
 	/** Promedio entre sesiones con lectura: una ausencia no opera como cero (FR-014). */
@@ -76,14 +81,32 @@ class ConsumptionCalculator {
 				: totals.energyKwh().divide(BigDecimal.valueOf(totals.readings()), 3, RoundingMode.HALF_UP);
 	}
 
-	/** Equipos con energia oficial conocida ordenados por energia; {@code limit} <= 0 los trae todos. */
+	/**
+	 * Ranking de energia oficial conocida con posiciones compartidas y saltos. Incluye todos los
+	 * empatados con el corte; {@code limit} <= 0 devuelve el ranking completo, sin limite SQL previo.
+	 */
 	List<RankedEquipment> ranking(SessionCriteria official, int limit) {
-		List<EquipmentEnergy> ranked = sessions.byEquipment(official, limit);
+		List<EquipmentEnergy> ranked = new ArrayList<>(sessions.byEquipment(official));
 		Map<UUID, EquipmentReference> equipment = directory.findByIds(
 				ranked.stream().map(EquipmentEnergy::equipmentId).toList());
-		return ranked.stream()
-				.map(item -> new RankedEquipment(equipment.get(item.equipmentId()), item.sessions(), item.energyKwh()))
-				.toList();
+		ranked.sort(Comparator.comparing(EquipmentEnergy::energyKwh).reversed()
+				.thenComparing(item -> equipment.containsKey(item.equipmentId()) ? equipment.get(item.equipmentId()).name() : "",
+						Comparator.nullsFirst(String::compareTo))
+				.thenComparing(EquipmentEnergy::equipmentId));
+		List<RankedEquipment> result = new ArrayList<>();
+		BigDecimal previous = null;
+		int position = 0;
+		for (int index = 0; index < ranked.size(); index++) {
+			EquipmentEnergy item = ranked.get(index);
+			if (previous == null || previous.compareTo(item.energyKwh()) != 0) {
+				position = index + 1;
+			}
+			previous = item.energyKwh();
+			if (limit <= 0 || position <= limit) {
+				result.add(new RankedEquipment(equipment.get(item.equipmentId()), item.sessions(), item.energyKwh(), position));
+			}
+		}
+		return List.copyOf(result);
 	}
 
 	static void requirePeriod(SessionCriteria criteria) {

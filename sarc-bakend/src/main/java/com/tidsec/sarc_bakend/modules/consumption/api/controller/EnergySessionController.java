@@ -1,6 +1,10 @@
 package com.tidsec.sarc_bakend.modules.consumption.api.controller;
 
 import java.time.LocalDate;
+import java.util.List;
+import com.tidsec.sarc_bakend.modules.consumption.api.request.EnergyReviewRequest;
+import com.tidsec.sarc_bakend.modules.consumption.api.response.EnergyReviewResponse;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReviewStatus;
 import java.util.UUID;
 
 import org.springframework.format.annotation.DateTimeFormat;
@@ -55,11 +59,22 @@ class EnergySessionController {
 			@RequestParam(required = false) SessionSource source,
 			@RequestParam(required = false) UUID equipmentId,
 			@RequestParam(required = false) SessionState state,
+			@RequestParam(required = false) EnergyReviewStatus energyReview,
 			@RequestParam(required = false) @Size(max = 100) String text,
 			@RequestParam(defaultValue = "0") @Min(0) int page,
 			@RequestParam(defaultValue = "20") @Min(1) @Max(PageQuery.MAX_SIZE) int size) {
-		return queries.search(new SessionCriteria(from, to, network, type, source, equipmentId, state, text),
+		return queries.search(new SessionCriteria(from, to, network, type, source, equipmentId, state, text, energyReview),
 				new PageQuery(page, size)).map(SessionResponse::from);
+	}
+
+	@PostMapping("/{id}/energy-review")
+	SessionResponse decideEnergy(@PathVariable UUID id, @Valid @RequestBody EnergyReviewRequest body) {
+		return SessionResponse.from(sessions.decideEnergy(body.toCommand(id)));
+	}
+
+	@GetMapping("/{id}/energy-reviews")
+	List<EnergyReviewResponse> reviews(@PathVariable UUID id) {
+		return queries.energyReviews(id).stream().map(EnergyReviewResponse::from).toList();
 	}
 
 	/** Excluye o reincorpora una sesion de los indicadores oficiales, sin eliminarla. */

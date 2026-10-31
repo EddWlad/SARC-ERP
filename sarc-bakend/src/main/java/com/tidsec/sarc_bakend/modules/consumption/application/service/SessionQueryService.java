@@ -1,6 +1,10 @@
 package com.tidsec.sarc_bakend.modules.consumption.application.service;
 
 import java.util.Map;
+import java.util.List;
+import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyReviewRepository;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReview;
+import com.tidsec.sarc_bakend.shared.error.NotFoundException;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -25,12 +29,14 @@ public class SessionQueryService {
 	private final EnergySessionRepository sessions;
 	private final ConsumptionCalculator calculator;
 	private final EquipmentDirectory directory;
+	private final EnergyReviewRepository reviews;
 
 	SessionQueryService(EnergySessionRepository sessions, ConsumptionCalculator calculator,
-			EquipmentDirectory directory) {
+			EquipmentDirectory directory, EnergyReviewRepository reviews) {
 		this.sessions = sessions;
 		this.calculator = calculator;
 		this.directory = directory;
+		this.reviews = reviews;
 	}
 
 	public PageResult<SessionView> search(SessionCriteria criteria, PageQuery pageQuery) {
@@ -39,6 +45,11 @@ public class SessionQueryService {
 				.map(EnergySession::getEquipmentId).filter(Objects::nonNull).distinct().toList());
 		return page.map(session -> new SessionView(session,
 				session.getEquipmentId() == null ? null : equipment.get(session.getEquipmentId())));
+	}
+
+	public List<EnergyReview> energyReviews(UUID id) {
+		if (sessions.findById(id).isEmpty()) throw new NotFoundException("SESSION_NOT_FOUND", "La sesión no existe");
+		return reviews.history(id);
 	}
 
 	public ConsumptionSummary summary(SessionCriteria criteria) {

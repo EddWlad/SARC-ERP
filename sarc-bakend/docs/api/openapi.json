@@ -852,6 +852,43 @@
         }
       }
     },
+    "/api/v1/energy/sessions/{id}/energy-review" : {
+      "post" : {
+        "tags" : [ "energy-session-controller" ],
+        "operationId" : "decideEnergy",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EnergyReviewRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/energy/sessions/link-pending" : {
       "post" : {
         "tags" : [ "energy-session-controller" ],
@@ -1836,7 +1873,15 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "enum" : [ "VALIDATED", "PENDING_LINK", "AWAITING_APPROVAL", "TEST" ]
+            "enum" : [ "VALIDATED", "PENDING_LINK", "AWAITING_APPROVAL", "TEST", "ENERGY_REVIEW", "ENERGY_REJECTED" ]
+          }
+        }, {
+          "name" : "energyReview",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "APPROVED", "REJECTED" ]
           }
         }, {
           "name" : "text",
@@ -1876,6 +1921,36 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PageResultSessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/energy/sessions/{id}/energy-reviews" : {
+      "get" : {
+        "tags" : [ "energy-session-controller" ],
+        "operationId" : "reviews",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/EnergyReviewResponse"
+                  }
                 }
               }
             }
@@ -2005,6 +2080,13 @@
           "schema" : {
             "type" : "string",
             "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "EQUIPMENT_CHANGED", "LINKABLE", "INVALID", "DUPLICATE", "PENDING_LINK" ]
+          }
+        }, {
+          "name" : "aboveThreshold",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
           }
         }, {
           "name" : "page",
@@ -3014,7 +3096,14 @@
           },
           "state" : {
             "type" : "string",
-            "enum" : [ "VALIDATED", "PENDING_LINK", "AWAITING_APPROVAL", "TEST" ]
+            "enum" : [ "VALIDATED", "PENDING_LINK", "AWAITING_APPROVAL", "TEST", "ENERGY_REVIEW", "ENERGY_REJECTED" ]
+          },
+          "energyReview" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "PENDING", "APPROVED", "REJECTED" ]
+          },
+          "canApproveSource" : {
+            "type" : "boolean"
           },
           "linkIssue" : {
             "type" : [ "string", "null" ],
@@ -3049,7 +3138,26 @@
             "format" : "int64"
           }
         },
-        "required" : [ "externalSessionId", "id", "importBatchId", "revision", "source", "startDate", "startedAt", "state", "version" ]
+        "required" : [ "canApproveSource", "externalSessionId", "id", "importBatchId", "revision", "source", "startDate", "startedAt", "state", "version" ]
+      },
+      "EnergyReviewRequest" : {
+        "type" : "object",
+        "properties" : {
+          "decision" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "APPROVED", "REJECTED" ]
+          },
+          "justification" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "decision", "justification", "version" ]
       },
       "PendingLinkResponse" : {
         "type" : "object",
@@ -3065,9 +3173,13 @@
           "stillPending" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "awaitingEnergyReview" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         },
-        "required" : [ "awaitingApproval", "linked", "stillPending" ]
+        "required" : [ "awaitingApproval", "awaitingEnergyReview", "linked", "stillPending" ]
       },
       "ImportBatchResponse" : {
         "type" : "object",
@@ -3139,6 +3251,10 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "energyReviewRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "appliedRows" : {
             "type" : "integer",
             "format" : "int32"
@@ -3156,7 +3272,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "appliedRows", "checksum", "createdAt", "duplicateRows", "equipmentChangedRows", "fileName", "id", "identicalRows", "invalidRows", "linkableRows", "modifiedRows", "newRows", "origin", "pendingLinkRows", "scope", "source", "status", "totalRows", "version" ]
+        "required" : [ "appliedRows", "checksum", "createdAt", "duplicateRows", "energyReviewRows", "equipmentChangedRows", "fileName", "id", "identicalRows", "invalidRows", "linkableRows", "modifiedRows", "newRows", "origin", "pendingLinkRows", "scope", "source", "status", "totalRows", "version" ]
       },
       "PasteImportRequest" : {
         "type" : "object",
@@ -3711,12 +3827,21 @@
           "test" : {
             "$ref" : "#/components/schemas/Totals"
           },
+          "energyReview" : {
+            "$ref" : "#/components/schemas/Totals"
+          },
+          "energyRejected" : {
+            "$ref" : "#/components/schemas/Totals"
+          },
+          "approvedAboveThreshold" : {
+            "$ref" : "#/components/schemas/Totals"
+          },
           "generatedAt" : {
             "type" : "string",
             "format" : "date-time"
           }
         },
-        "required" : [ "awaitingApproval", "byNetwork", "bySource", "byType", "daily", "equipmentWithoutEnergy", "from", "generatedAt", "official", "pendingLink", "test", "to", "top" ]
+        "required" : [ "approvedAboveThreshold", "awaitingApproval", "byNetwork", "bySource", "byType", "daily", "energyRejected", "energyReview", "equipmentWithoutEnergy", "from", "generatedAt", "official", "pendingLink", "test", "to", "top" ]
       },
       "Day" : {
         "type" : "object",
@@ -3769,9 +3894,13 @@
           },
           "energyKwh" : {
             "type" : "number"
+          },
+          "position" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         },
-        "required" : [ "energyKwh", "sessions" ]
+        "required" : [ "energyKwh", "position", "sessions" ]
       },
       "SourceShare" : {
         "type" : "object",
@@ -3855,6 +3984,38 @@
           }
         },
         "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "EnergyReviewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "decision" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "APPROVED", "REJECTED" ]
+          },
+          "justification" : {
+            "type" : "string"
+          },
+          "energyKwh" : {
+            "type" : "number"
+          },
+          "sessionRevision" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sessionVersion" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "decidedBy" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "decidedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "decidedAt", "decision", "energyKwh", "justification", "sessionRevision", "sessionVersion" ]
       },
       "PageResultImportBatchResponse" : {
         "type" : "object",

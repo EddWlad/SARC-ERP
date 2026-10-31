@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,6 +27,9 @@ import com.tidsec.sarc_bakend.modules.consumption.application.result.Consumption
 import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionSummary;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.SessionView;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergySession;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReview;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReviewStatus;
+import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyReviewRepository;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergySessionRepository;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.SessionCriteria;
@@ -52,9 +57,10 @@ public class ConsumptionReportService {
 	private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 	/** Estados que se informan fuera de los indicadores oficiales. */
 	private static final List<SessionState> EXCLUDED = List.of(SessionState.PENDING_LINK,
-			SessionState.AWAITING_APPROVAL, SessionState.TEST);
+			SessionState.AWAITING_APPROVAL, SessionState.TEST, SessionState.ENERGY_REVIEW, SessionState.ENERGY_REJECTED);
 
 	private final EnergySessionRepository sessions;
+	private final EnergyReviewRepository reviews;
 	private final ConsumptionCalculator calculator;
 	private final EquipmentDirectory directory;
 	private final Map<ReportFormat, ConsumptionReportRenderer> renderers;
@@ -64,8 +70,9 @@ public class ConsumptionReportService {
 
 	ConsumptionReportService(EnergySessionRepository sessions, ConsumptionCalculator calculator,
 			EquipmentDirectory directory, List<ConsumptionReportRenderer> renderers, ReportArchive archive,
-			PlatformTransactionManager transactionManager, Clock clock) {
+			PlatformTransactionManager transactionManager, Clock clock, EnergyReviewRepository reviews) {
 		this.sessions = sessions;
+		this.reviews = reviews;
 		this.calculator = calculator;
 		this.directory = directory;
 		this.renderers = renderers.stream()
@@ -96,7 +103,8 @@ public class ConsumptionReportService {
 		ConsumptionSummary summary = calculator.summarize(criteria);
 		SessionCriteria official = criteria.withState(SessionState.VALIDATED);
 		long rows = summary.official().sessions() + summary.pendingLink().sessions()
-				+ summary.awaitingApproval().sessions() + summary.test().sessions();
+				+ summary.awaitingApproval().sessions() + summary.test().sessions()
+				+ summary.energyReview().sessions() + summary.energyRejected().sessions();
 		if (rows > MAX_SESSIONS) {
 			throw new BusinessRuleException("REPORT_TOO_LARGE",
 					"El reporte supera " + MAX_SESSIONS + " sesiones; acorte el periodo o aplique mas filtros");
@@ -106,8 +114,14 @@ public class ConsumptionReportService {
 		List<EnergySession> validated = sessions.findAll(official);
 		Map<UUID, EquipmentReference> equipment = directory.findByIds(Stream.concat(validated.stream(), excluded.stream())
 				.map(EnergySession::getEquipmentId).filter(Objects::nonNull).distinct().toList());
+		Map<UUID, String> justifications = new HashMap<>();
+		var orderedReviews = reviews.findForSessions(validated.stream()
+				.filter(s -> s.getEnergyReview() == EnergyReviewStatus.APPROVED).map(EnergySession::getId).toList());
+		orderedReviews.stream().filter(r -> r.getDecision() == EnergyReviewStatus.APPROVED)
+				.sorted(Comparator.comparingLong(EnergyReview::getSessionVersion).reversed())
+				.forEach(r -> justifications.putIfAbsent(r.getSessionId(), r.getJustification()));
 		return new ConsumptionReport(describe(criteria, equipment), Instant.now(clock), summary,
-				calculator.ranking(official, 0), views(validated, equipment), views(excluded, equipment));
+				calculator.ranking(official, 0), views(validated, equipment), views(excluded, equipment), Map.copyOf(justifications));
 	}
 
 	/** Alcance legible: periodo y filtros; se imprime en el encabezado y se audita. */

@@ -6,6 +6,8 @@ import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -31,6 +33,10 @@ public class SessionRevision {
 
 	@Column(updatable = false, precision = 12, scale = SessionReading.ENERGY_SCALE)
 	private BigDecimal energyKwh;
+
+	@Enumerated(EnumType.STRING)
+	@Column(updatable = false, length = 20)
+	private EnergyReviewStatus energyReview;
 
 	@Column(updatable = false, length = 150)
 	private String sourceSite;
@@ -72,6 +78,7 @@ public class SessionRevision {
 		revision.startedAt = reading.startedAt();
 		revision.endedAt = reading.endedAt();
 		revision.energyKwh = reading.energyKwh();
+		revision.energyReview = session.getEnergyReview();
 		revision.sourceSite = reading.site();
 		revision.sourceCharger = reading.charger();
 		revision.sourceSerial = reading.serial();
@@ -98,5 +105,9 @@ public class SessionRevision {
 
 	public UUID getEquipmentId() {
 		return equipmentId;
+	}
+
+	public EnergyReviewStatus getEnergyReview() {
+		return energyReview;
 	}
 }

@@ -20,7 +20,10 @@ public interface ImportRowRepository {
 	List<ImportRow> findByIds(UUID batchId, Collection<UUID> ids);
 
 	/** Filas del lote en orden; {@code classification} nula = todas. */
-	PageResult<ImportRow> search(UUID batchId, RowClassification classification, PageQuery pageQuery);
+	default PageResult<ImportRow> search(UUID batchId, RowClassification classification, PageQuery pageQuery) {
+		return search(batchId, classification, null, pageQuery);
+	}
+	PageResult<ImportRow> search(UUID batchId, RowClassification classification, Boolean aboveThreshold, PageQuery pageQuery);
 
 	/**
 	 * Siguientes filas por incorporar: sin resultado registrado, que escriben una sesion y, si la
