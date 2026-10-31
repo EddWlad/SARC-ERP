@@ -67,7 +67,7 @@ const SLOT_COLORS: readonly SeriesColor[] = ['series-1', 'series-2', 'series-3']
     .swatch {
       width: 12px;
       height: 12px;
-      border-radius: 3px;
+      border-radius: var(--sarc-radius-sm);
     }
 
     .value {

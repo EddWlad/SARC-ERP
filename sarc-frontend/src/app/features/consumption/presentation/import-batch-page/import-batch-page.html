@@ -34,21 +34,16 @@
     @if (facade.reviewable() && pendingApproval().length > 0) {
       <div class="bulk">
         <span>
-          {{
-            quantities.amount(
-              pendingApproval().length,
-              'fila visible espera',
-              'filas visibles esperan'
-            )
-          }}
-          aprobación.
+          {{ quantities.amount(pendingApproval().length, 'fila', 'filas') }} de esta página
+          {{ pendingApproval().length === 1 ? 'espera' : 'esperan' }} aprobación.
+          <span class="scope-note">Confirmar aplica a todo el lote, no solo a esta página.</span>
         </span>
         <button
           matButton="tonal"
           type="button"
           (click)="decide(pendingApproval(), { approved: true })"
         >
-          Aprobar las visibles
+          Aprobar las {{ quantities.count(pendingApproval().length) }} de esta página
         </button>
       </div>
     }
@@ -56,25 +51,34 @@
     @if (facade.reviewable() && pendingReassign().length > 0) {
       <div class="bulk">
         <span>
-          {{
-            quantities.amount(
-              pendingReassign().length,
-              'fila visible cambia',
-              'filas visibles cambian'
-            )
-          }}
-          de cargador.
+          {{ quantities.amount(pendingReassign().length, 'fila', 'filas') }} de esta página
+          {{ pendingReassign().length === 1 ? 'cambia' : 'cambian' }} de cargador.
         </span>
         <button
           matButton="tonal"
           type="button"
           (click)="decide(pendingReassign(), { reassign: true })"
         >
-          Reasignar las visibles
+          Reasignar las {{ quantities.count(pendingReassign().length) }} de esta página
         </button>
       </div>
     }
 
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Lecturas superiores a 1.000 kWh</mat-label>
+      <mat-select
+        [value]="facade.aboveThreshold() ?? ''"
+        (selectionChange)="facade.filterAboveThreshold($event.value)"
+      >
+        <mat-option value="">Todas las filas</mat-option>
+        <mat-option [value]="true">Solo superiores al umbral</mat-option>
+        <mat-option [value]="false">Resto de filas</mat-option>
+      </mat-select>
+      <mat-hint>
+        {{ quantities.amount(batch.energyReviewRows, 'lectura supera', 'lecturas superan') }} el
+        umbral en este lote; es un conteo aparte de las clasificaciones.
+      </mat-hint>
+    </mat-form-field>
     <section class="results" aria-label="Filas del lote" [attr.aria-busy]="facade.rowsLoading()">
       @if (facade.rowsFailed()) {
         <div class="state" role="alert">
@@ -101,7 +105,7 @@
               <ng-container *ngTemplateOutlet="charger; context: { $implicit: item }" />
               <ng-container *ngTemplateOutlet="issues; context: { $implicit: item }" />
               <div class="card-foot">
-                <strong>{{ energyOf(item) }} kWh</strong>
+                <strong>{{ energyLabelOf(item) }}</strong>
                 <ng-container
                   *ngTemplateOutlet="
                     facade.reviewable() ? decision : outcome;

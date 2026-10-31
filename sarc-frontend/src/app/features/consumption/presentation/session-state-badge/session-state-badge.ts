@@ -8,9 +8,9 @@ import { SESSION_STATE_HINTS, SESSION_STATE_LABELS, SessionState } from '../../d
   template: `
     <span
       class="badge"
-      [class.badge-warn]="state() === 'PENDING_LINK'"
+      [class.badge-warn]="state() === 'PENDING_LINK' || state() === 'ENERGY_REVIEW'"
       [class.badge-accent]="state() === 'AWAITING_APPROVAL'"
-      [class.badge-off]="state() === 'TEST'"
+      [class.badge-off]="state() === 'TEST' || state() === 'ENERGY_REJECTED'"
       [title]="hints[state()]"
       >{{ labels[state()] }}</span
     >

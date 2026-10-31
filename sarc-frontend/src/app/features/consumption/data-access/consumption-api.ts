@@ -7,13 +7,21 @@ import {
 } from '../../../core/api/generated';
 import { API_BASE } from '../../../core/http/api';
 import { ReportFormat } from '../../../shared/reports/report-format';
-import { ConsumptionFilters, Session, SessionState } from '../domain/consumption';
+import {
+  ConsumptionFilters,
+  Session,
+  SessionState,
+  EnergyReview,
+  EnergyReviewStatus,
+  EnergyDecision,
+} from '../domain/consumption';
 import { DateRange } from '../domain/period';
 
 export interface SessionQuery {
   readonly range: DateRange;
   readonly filters: ConsumptionFilters;
   readonly state: SessionState | '';
+  readonly energyReview?: EnergyReviewStatus | '';
   readonly text: string;
   readonly page: number;
   readonly size: number;
@@ -48,6 +56,7 @@ export class ConsumptionApi {
     if (query.state !== '') {
       params['state'] = query.state;
     }
+    if (query.energyReview) params['energyReview'] = query.energyReview;
     if (query.text.trim() !== '') {
       params['text'] = query.text.trim();
     }
@@ -64,6 +73,18 @@ export class ConsumptionApi {
   /** Una fuente no preferente para su equipo suma solo cuando un analista la aprueba. */
   approveSource(session: Session) {
     return this.http.post<Session>(`${this.baseUrl}/sessions/${session.id}/source-approval`, {
+      version: session.version,
+    });
+  }
+
+  energyReviews(id: string) {
+    return this.http.get<EnergyReview[]>(`${this.baseUrl}/sessions/${id}/energy-reviews`);
+  }
+
+  decideEnergy(session: Session, decision: EnergyDecision, justification: string) {
+    return this.http.post<Session>(`${this.baseUrl}/sessions/${session.id}/energy-review`, {
+      decision,
+      justification: justification.trim(),
       version: session.version,
     });
   }

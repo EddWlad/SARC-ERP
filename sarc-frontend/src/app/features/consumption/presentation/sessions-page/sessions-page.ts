@@ -1,6 +1,11 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  EnergyReviewDialog,
+  EnergyReviewDialogData,
+} from '../energy-review-dialog/energy-review-dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
@@ -55,6 +60,7 @@ import { SessionStateBadge } from '../session-state-badge/session-state-badge';
 })
 export class SessionsPage {
   private readonly notifier = inject(Notifier);
+  private readonly dialog = inject(MatDialog);
 
   protected readonly facade = inject(SessionsFacade);
   protected readonly quantities = inject(QuantityFormat);
@@ -86,6 +92,17 @@ export class SessionsPage {
     return row;
   }
 
+  protected openEnergyReview(session: Session): void {
+    const data: EnergyReviewDialogData = {
+      session,
+      canEdit: this.canEdit && session.energyReview != null,
+      history: () => this.facade.energyReviews(session.id),
+      save: (decision, reason) => this.facade.decideEnergy(session, decision, reason),
+      stale: () => this.facade.reload(),
+    };
+    this.dialog.open(EnergyReviewDialog, { data, maxWidth: '95vw', width: '600px' });
+  }
+
   protected async toggleTest(session: Session): Promise<void> {
     const marking = session.state !== 'TEST';
     try {
@@ -103,7 +120,9 @@ export class SessionsPage {
   protected async approveSource(session: Session): Promise<void> {
     try {
       await this.facade.approveSource(session);
-      this.notifier.success('Fuente aprobada; la sesión ya suma en los indicadores.');
+      this.notifier.success(
+        'Fuente aprobada. El estado de la sesión refleja los controles restantes.',
+      );
     } catch (error) {
       const problem = toProblem(error);
       this.notifier.error(problem.detail);
@@ -119,7 +138,7 @@ export class SessionsPage {
       const result = await this.facade.linkPending();
       const amount = this.quantities.amount.bind(this.quantities);
       const linked =
-        result.linked + result.awaitingApproval === 0
+        result.linked + result.awaitingApproval + result.awaitingEnergyReview === 0
           ? 'Ninguna sesión se pudo vincular'
           : amount(result.linked, 'sesión vinculada', 'sesiones vinculadas');
       const awaiting =
@@ -127,7 +146,9 @@ export class SessionsPage {
           ? ''
           : `; ${amount(result.awaitingApproval, 'queda', 'quedan')} por aprobar (fuente no preferente)`;
       const pending = amount(result.stillPending, 'sigue pendiente', 'siguen pendientes');
-      this.notifier.success(`${linked}${awaiting}; ${pending}.`);
+      this.notifier.success(
+        `${linked}${awaiting}; ${result.awaitingEnergyReview} vinculadas con revisión energética; ${pending}.`,
+      );
     } catch (error) {
       this.notifier.error(toProblem(error).detail);
     } finally {

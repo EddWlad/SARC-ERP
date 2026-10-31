@@ -28,6 +28,7 @@ function batch(status: ImportStatus): ImportBatch {
     duplicateRows: 0,
     pendingLinkRows: 0,
     linkableRows: 0,
+    energyReviewRows: 0,
     appliedRows: 0,
     createdAt: '2026-10-23T10:00:00Z',
     version: 1,
@@ -132,5 +133,24 @@ describe('ImportBatchFacade', () => {
 
     expect(facade.notFound()).toBe(true);
     expect(facade.failed()).toBe(false);
+  });
+
+  it('filters high readings independently of classification and keeps the preview counter', async () => {
+    await answer(BATCH_URL, {
+      ...batch('READY'),
+      identicalRows: 2,
+      newRows: 0,
+      energyReviewRows: 2,
+    });
+    await answer(`${BATCH_URL}/rows`, { content: [], page: 0, size: 50, totalElements: 2 });
+    facade.filterAboveThreshold(true);
+    TestBed.tick();
+    const filtered = http.expectOne((request) => request.url === `${BATCH_URL}/rows`);
+    expect(filtered.request.params.get('aboveThreshold')).toBe('true');
+    expect(filtered.request.params.has('classification')).toBe(false);
+    filtered.flush({ content: [], page: 0, size: 50, totalElements: 2 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(facade.batch()?.energyReviewRows).toBe(2);
+    expect(facade.batch()?.totalRows).toBe(2);
   });
 });

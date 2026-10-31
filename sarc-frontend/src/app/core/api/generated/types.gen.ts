@@ -276,7 +276,9 @@ export type SessionResponse = {
     endedAt?: string | null;
     startDate: string;
     energyKwh?: number | null;
-    state: 'VALIDATED' | 'PENDING_LINK' | 'AWAITING_APPROVAL' | 'TEST';
+    state: 'VALIDATED' | 'PENDING_LINK' | 'AWAITING_APPROVAL' | 'TEST' | 'ENERGY_REVIEW' | 'ENERGY_REJECTED';
+    energyReview?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    canApproveSource: boolean;
     linkIssue?: 'IDENTITY_INCOMPLETE' | 'IDENTITY_NOT_REGISTERED' | 'IDENTITY_NOT_VERIFIED' | 'IDENTITY_AMBIGUOUS';
     equipment?: EquipmentRefResponse;
     site?: string | null;
@@ -288,10 +290,17 @@ export type SessionResponse = {
     version: number;
 };
 
+export type EnergyReviewRequest = {
+    decision: 'PENDING' | 'APPROVED' | 'REJECTED';
+    justification: string;
+    version: number;
+};
+
 export type PendingLinkResponse = {
     linked: number;
     awaitingApproval: number;
     stillPending: number;
+    awaitingEnergyReview: number;
 };
 
 export type ImportBatchResponse = {
@@ -313,6 +322,7 @@ export type ImportBatchResponse = {
     duplicateRows: number;
     pendingLinkRows: number;
     linkableRows: number;
+    energyReviewRows: number;
     appliedRows: number;
     createdAt: string;
     confirmedAt?: string | null;
@@ -490,6 +500,9 @@ export type ConsumptionSummaryResponse = {
     pendingLink: Totals;
     awaitingApproval: Totals;
     test: Totals;
+    energyReview: Totals;
+    energyRejected: Totals;
+    approvedAboveThreshold: Totals;
     generatedAt: string;
 };
 
@@ -510,6 +523,7 @@ export type Ranked = {
     equipment?: EquipmentRefResponse;
     sessions: number;
     energyKwh: number;
+    position: number;
 };
 
 export type SourceShare = {
@@ -537,6 +551,16 @@ export type PageResultSessionResponse = {
     size: number;
     totalElements: number;
     totalPages: number;
+};
+
+export type EnergyReviewResponse = {
+    decision: 'PENDING' | 'APPROVED' | 'REJECTED';
+    justification: string;
+    energyKwh: number;
+    sessionRevision: number;
+    sessionVersion: number;
+    decidedBy?: string | null;
+    decidedAt: string;
 };
 
 export type PageResultImportBatchResponse = {
@@ -962,6 +986,24 @@ export type ApproveSourceResponses = {
 };
 
 export type ApproveSourceResponse = ApproveSourceResponses[keyof ApproveSourceResponses];
+
+export type DecideEnergyData = {
+    body: EnergyReviewRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/energy/sessions/{id}/energy-review';
+};
+
+export type DecideEnergyResponses = {
+    /**
+     * OK
+     */
+    200: SessionResponse;
+};
+
+export type DecideEnergyResponse = DecideEnergyResponses[keyof DecideEnergyResponses];
 
 export type LinkPendingData = {
     body?: never;
@@ -1419,7 +1461,8 @@ export type SearchData = {
         type?: 'CHARGING_POINT' | 'CHARGING_STATION';
         source?: 'ENERLINK' | 'WALLBOX';
         equipmentId?: string;
-        state?: 'VALIDATED' | 'PENDING_LINK' | 'AWAITING_APPROVAL' | 'TEST';
+        state?: 'VALIDATED' | 'PENDING_LINK' | 'AWAITING_APPROVAL' | 'TEST' | 'ENERGY_REVIEW' | 'ENERGY_REJECTED';
+        energyReview?: 'PENDING' | 'APPROVED' | 'REJECTED';
         text?: string;
         page?: number;
         size?: number;
@@ -1435,6 +1478,24 @@ export type SearchResponses = {
 };
 
 export type SearchResponse = SearchResponses[keyof SearchResponses];
+
+export type ReviewsData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/energy/sessions/{id}/energy-reviews';
+};
+
+export type ReviewsResponses = {
+    /**
+     * OK
+     */
+    200: Array<EnergyReviewResponse>;
+};
+
+export type ReviewsResponse = ReviewsResponses[keyof ReviewsResponses];
 
 export type Report1Data = {
     body?: never;
@@ -1485,6 +1546,7 @@ export type RowsData = {
     };
     query?: {
         classification?: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'EQUIPMENT_CHANGED' | 'LINKABLE' | 'INVALID' | 'DUPLICATE' | 'PENDING_LINK';
+        aboveThreshold?: boolean;
         page?: number;
         size?: number;
     };

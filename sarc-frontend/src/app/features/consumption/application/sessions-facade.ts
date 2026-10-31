@@ -14,6 +14,8 @@ import {
   Session,
   SessionPage,
   SessionState,
+  EnergyReviewStatus,
+  EnergyDecision,
 } from '../domain/consumption';
 import { PeriodSelection } from './period-selection';
 
@@ -28,6 +30,7 @@ export class SessionsFacade {
   readonly period = new PeriodSelection('thisMonth', inject(LocalDay).today);
   readonly filters = signal<ConsumptionFilters>(NO_CONSUMPTION_FILTERS);
   readonly state = signal<SessionState | ''>('');
+  readonly energyReview = signal<EnergyReviewStatus | ''>('');
   readonly text = signal('');
   readonly pageIndex = signal(0);
   readonly pageSize = signal(DEFAULT_PAGE_SIZE);
@@ -42,6 +45,7 @@ export class SessionsFacade {
       range: this.period.range(),
       filters: this.filters(),
       state: this.state(),
+      energyReview: this.energyReview(),
       text: this.searchText(),
       page: this.pageIndex(),
       size: this.pageSize(),
@@ -63,7 +67,9 @@ export class SessionsFacade {
   readonly loading = this.result.isLoading;
   readonly failed = computed(() => this.result.error() !== undefined);
   /** Filtros propios del historico (estado y busqueda), ademas de los compartidos. */
-  readonly hasOwnFilters = computed(() => this.state() !== '' || this.text() !== '');
+  readonly hasOwnFilters = computed(
+    () => this.state() !== '' || this.text() !== '' || this.energyReview() !== '',
+  );
 
   constructor() {
     // Los datos los cambian tambien otros usuarios: se actualizan solos mientras se miran.
@@ -77,6 +83,7 @@ export class SessionsFacade {
 
   clearFilters(): void {
     this.state.set('');
+    this.energyReview.set('');
     this.text.set('');
     this.updateFilters(NO_CONSUMPTION_FILTERS);
   }
@@ -84,6 +91,25 @@ export class SessionsFacade {
   filterState(state: SessionState | ''): void {
     this.state.set(state);
     this.pageIndex.set(0);
+  }
+
+  filterEnergyReview(review: EnergyReviewStatus | ''): void {
+    this.energyReview.set(review);
+    this.pageIndex.set(0);
+  }
+
+  energyReviews(id: string) {
+    return firstValueFrom(this.api.energyReviews(id));
+  }
+
+  async decideEnergy(
+    session: Session,
+    decision: EnergyDecision,
+    justification: string,
+  ): Promise<Session> {
+    const updated = await firstValueFrom(this.api.decideEnergy(session, decision, justification));
+    this.reload();
+    return updated;
   }
 
   search(text: string): void {

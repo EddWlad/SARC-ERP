@@ -1,0 +1,95 @@
+<h2 mat-dialog-title>Revisión energética</h2>
+<form novalidate (submit)="onSubmit($event)">
+  <mat-dialog-content class="fields">
+    <dl class="summary" aria-label="Sesión revisada">
+      <div>
+        <dt>Equipo</dt>
+        <dd>
+          @if (data.session.equipment; as equipment) {
+            {{ equipment.name }}
+            @if (equipment.assignedCode) {
+              <span class="muted">· {{ equipment.assignedCode }}</span>
+            }
+          } @else {
+            <span class="muted">Sin vincular</span>
+          }
+        </dd>
+      </div>
+      <div>
+        <dt>Inicio</dt>
+        <dd>{{ data.session.startedAt | date: 'dd/MM/yyyy HH:mm' : '-0500' }}</dd>
+      </div>
+      <div>
+        <dt>Fuente</dt>
+        <dd>
+          {{ data.session.source === 'ENERLINK' ? 'Enerlink' : 'Wallbox' }}
+          <span class="muted mono">· {{ data.session.externalSessionId }}</span>
+        </dd>
+      </div>
+      <div>
+        <dt>Energía leída</dt>
+        <dd class="energy">{{ quantities.reportedEnergy(data.session.energyKwh) }}</dd>
+      </div>
+    </dl>
+    <p class="note">
+      La decisión energética no sustituye la vinculación, la aprobación de fuente ni la exclusión de
+      pruebas. Es reversible: cada decisión queda en el historial.
+    </p>
+    @if (error()) {
+      <div class="form-alert" role="alert">
+        <svg lucideTriangleAlert [size]="20" aria-hidden="true"></svg>
+        <p>{{ error() }}</p>
+      </div>
+    }
+    @if (data.canEdit) {
+      <mat-form-field appearance="outline">
+        <mat-label>Decisión</mat-label>
+        <mat-select [formField]="reviewForm.decision">
+          <mat-option value="APPROVED">Aprobar energía</mat-option>
+          <mat-option value="REJECTED">Rechazar energía</mat-option>
+        </mat-select>
+        @for (error of reviewForm.decision().errors(); track error.kind) {
+          <mat-error>{{ error.message }}</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Justificación</mat-label>
+        <textarea matInput [formField]="reviewForm.justification" rows="3"></textarea>
+        <mat-hint>Obligatoria; se conserva en el historial.</mat-hint>
+        <mat-hint align="end">{{ remaining() }} / {{ maxLength }}</mat-hint>
+        @for (error of reviewForm.justification().errors(); track error.kind) {
+          <mat-error>{{ error.message }}</mat-error>
+        }
+      </mat-form-field>
+    }
+    <h3>Historial de decisiones</h3>
+    @if (loading()) {
+      <p role="status">Cargando historial…</p>
+    } @else if (history().length === 0) {
+      <p class="note">No hay decisiones registradas.</p>
+    }
+    <ol class="history">
+      @for (item of history(); track item.sessionVersion) {
+        <li>
+          <p>
+            <strong>{{ item.decision === 'APPROVED' ? 'Aprobada' : 'Rechazada' }}</strong>
+            · {{ quantities.kwh(item.energyKwh) }} kWh ·
+            {{ item.decidedAt | date: 'dd/MM/yyyy HH:mm' : '-0500' }}
+          </p>
+          <p>{{ item.justification }}</p>
+          <p class="muted">Decidida por {{ item.decidedBy ?? 'un usuario eliminado' }}</p>
+        </li>
+      }
+    </ol>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button matButton type="button" [disabled]="busy()" (click)="unsaved.cancel()">
+      {{ data.canEdit ? 'Cancelar' : 'Cerrar' }}
+    </button>
+    @if (data.canEdit) {
+      <button matButton="filled" type="submit" [disabled]="busy() || stale()">
+        {{ busy() ? 'Guardando…' : 'Registrar decisión' }}
+      </button>
+    }
+  </mat-dialog-actions>
+</form>

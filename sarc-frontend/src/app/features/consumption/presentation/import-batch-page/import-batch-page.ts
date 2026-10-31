@@ -2,6 +2,8 @@ import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 import { MatPaginatorIntl, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
@@ -53,6 +55,8 @@ const TESTABLE: ReadonlySet<RowClassification> = new Set([
     RouterLink,
     MatButtonModule,
     MatCheckboxModule,
+    MatFormFieldModule,
+    MatSelectModule,
     MatPaginatorModule,
     MatProgressBarModule,
     MatTableModule,
@@ -118,8 +122,16 @@ export class ImportBatchPage {
     return TESTABLE.has(row.classification);
   }
 
+  /** Lectura de la fila para la columna kWh, que ya lleva la unidad en su encabezado. */
   protected energyOf(row: ImportRow): string {
     return row.classification === 'INVALID' ? '—' : this.quantities.reportedKwh(row.energyKwh);
+  }
+
+  /** Lectura con su unidad, para la tarjeta de telefono, que no tiene encabezado de columna. */
+  protected energyLabelOf(row: ImportRow): string {
+    return row.classification === 'INVALID'
+      ? 'Sin lectura válida'
+      : this.quantities.reportedEnergy(row.energyKwh);
   }
 
   // Las filas de mat-table llegan sin tipo a la plantilla: este metodo las tipa.

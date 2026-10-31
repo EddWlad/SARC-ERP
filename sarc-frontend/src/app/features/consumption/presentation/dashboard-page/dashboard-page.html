@@ -79,6 +79,12 @@
     </ul>
   </section>
 
+  <p class="dashboard-note">
+    Aprobadas sobre el umbral, incluidas en los indicadores oficiales:
+    {{ quantities.amount(summary.approvedAboveThreshold.sessions, 'sesión', 'sesiones') }} ·
+    {{ quantities.knownEnergy(summary.approvedAboveThreshold.energyKwh) }}.
+  </p>
+
   <section class="excluded panel" aria-labelledby="excluded-title">
     <h2 id="excluded-title">Fuera de los indicadores oficiales</h2>
     <ul>
@@ -97,6 +103,20 @@
             · {{ quantities.knownEnergy(summary.awaitingApproval.energyKwh) }}</span
           >
         </span>
+      </li>
+      <li class="metric-row">
+        <span>Energía por revisar</span>
+        <span
+          ><strong>{{ quantities.count(summary.energyReview.sessions) }}</strong> ·
+          {{ quantities.knownEnergy(summary.energyReview.energyKwh) }}</span
+        >
+      </li>
+      <li class="metric-row">
+        <span>Energía rechazada</span>
+        <span
+          ><strong>{{ quantities.count(summary.energyRejected.sessions) }}</strong> ·
+          {{ quantities.knownEnergy(summary.energyRejected.energyKwh) }}</span
+        >
       </li>
       <li class="metric-row">
         <span>Pruebas</span>

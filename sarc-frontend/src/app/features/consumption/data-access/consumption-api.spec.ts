@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 
-import { NO_CONSUMPTION_FILTERS } from '../domain/consumption';
+import { NO_CONSUMPTION_FILTERS, Session } from '../domain/consumption';
 import { ConsumptionApi } from './consumption-api';
 import { EnergyImportsApi } from './energy-imports-api';
 
@@ -86,5 +86,51 @@ describe('consumption data access', () => {
     expect(body.get('source')).toBe('WALLBOX');
     expect(body.get('file')).toBe(file);
     request.flush({});
+  });
+
+  it('sends the reviewed version and trimmed reason and reads the decision history', async () => {
+    const session = { id: 's-1', version: 7 } as Session;
+    const saved = firstValueFrom(
+      consumptionApi.decideEnergy(session, 'REJECTED', ' Error confirmado '),
+    );
+    const request = http.expectOne('/api/v1/energy/sessions/s-1/energy-review');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      decision: 'REJECTED',
+      justification: 'Error confirmado',
+      version: 7,
+    });
+    request.flush({ ...session, version: 8, energyReview: 'REJECTED' });
+    expect((await saved).version).toBe(8);
+    const history = firstValueFrom(consumptionApi.energyReviews('s-1'));
+    http
+      .expectOne('/api/v1/energy/sessions/s-1/energy-reviews')
+      .flush([{ sessionVersion: 7, decision: 'REJECTED' }]);
+    expect((await history)[0].sessionVersion).toBe(7);
+  });
+
+  it('combines independent energy filters with existing classifications and states', () => {
+    expect(importsApi.rowsRequest('b', 'IDENTICAL', 0, 25, true).params).toEqual({
+      classification: 'IDENTICAL',
+      page: 0,
+      size: 25,
+      aboveThreshold: true,
+    });
+    expect(importsApi.rowsRequest('b', '', 0, 25, false).params).toEqual({
+      page: 0,
+      size: 25,
+      aboveThreshold: false,
+    });
+    expect(
+      consumptionApi.sessionsRequest({
+        range,
+        filters: NO_CONSUMPTION_FILTERS,
+        state: 'TEST',
+        energyReview: 'PENDING',
+        text: '',
+        page: 0,
+        size: 20,
+      }).params,
+    ).toMatchObject({ state: 'TEST', energyReview: 'PENDING' });
   });
 });

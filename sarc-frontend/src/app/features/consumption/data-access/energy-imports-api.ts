@@ -35,8 +35,10 @@ export class EnergyImportsApi {
     classification: RowClassification | '',
     page: number,
     size: number,
+    aboveThreshold?: boolean,
   ): HttpResourceRequest {
-    const params: Record<string, string | number> = { page, size };
+    const params: Record<string, string | number | boolean> = { page, size };
+    if (aboveThreshold !== undefined) params['aboveThreshold'] = aboveThreshold;
     if (classification !== '') {
       params['classification'] = classification;
     }

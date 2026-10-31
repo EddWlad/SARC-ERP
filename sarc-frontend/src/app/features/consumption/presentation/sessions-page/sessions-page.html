@@ -30,6 +30,18 @@
     </mat-select>
   </mat-form-field>
   <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Revisión energética</mat-label>
+    <mat-select
+      [value]="facade.energyReview()"
+      (selectionChange)="facade.filterEnergyReview($event.value)"
+    >
+      <mat-option value="">Todas</mat-option>
+      <mat-option value="PENDING">Por revisar</mat-option>
+      <mat-option value="APPROVED">Aprobada</mat-option>
+      <mat-option value="REJECTED">Rechazada</mat-option>
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
     <mat-label>Buscar</mat-label>
     <svg lucideSearch matPrefix [size]="18" class="prefix-icon"></svg>
     <input
@@ -94,9 +106,12 @@
           }
           <div class="card-foot">
             <sarc-session-state-badge [state]="session.state" />
+            <button matButton type="button" (click)="openEnergyReview(session)">
+              {{ canEdit && session.energyReview ? 'Revisar energía' : 'Historial energético' }}
+            </button>
             @if (canEdit) {
               <span class="card-actions">
-                @if (session.state === 'AWAITING_APPROVAL') {
+                @if (session.canApproveSource) {
                   <button matButton type="button" (click)="approveSource(session)">
                     Aprobar fuente
                   </button>
@@ -172,6 +187,11 @@
           <span class="sarc-visually-hidden">Acciones</span>
         </th>
         <td mat-cell *matCellDef="let row" class="actions-cell">
+          <button matButton type="button" (click)="openEnergyReview(sessionOf(row))">
+            {{
+              canEdit && sessionOf(row).energyReview ? 'Revisar energía' : 'Historial energético'
+            }}
+          </button>
           @if (canEdit) {
             @let session = sessionOf(row);
             <button
@@ -183,7 +203,7 @@
               <svg lucideEllipsisVertical [size]="20"></svg>
             </button>
             <mat-menu #menu="matMenu" xPosition="before">
-              @if (session.state === 'AWAITING_APPROVAL') {
+              @if (session.canApproveSource) {
                 <button mat-menu-item type="button" (click)="approveSource(session)">
                   Aprobar fuente no preferente
                 </button>

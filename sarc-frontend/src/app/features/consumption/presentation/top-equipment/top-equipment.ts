@@ -10,6 +10,7 @@ import { RankedEquipment } from '../../domain/consumption';
   imports: [ChartView],
   template: `
     <sarc-chart-view
+      [style.--sarc-chart-height]="chartHeight()"
       kind="bar"
       [horizontal]="true"
       [labels]="labels()"
@@ -18,9 +19,9 @@ import { RankedEquipment } from '../../domain/consumption';
       description="Los equipos con más energía entregada en el periodo"
     />
     <ol class="ranking">
-      @for (item of items(); track item.equipment?.id; let index = $index) {
+      @for (item of items(); track item.equipment?.id ?? $index) {
         <li>
-          <span class="position">{{ index + 1 }}</span>
+          <span class="position">{{ item.position }}</span>
           <span class="name">
             {{ item.equipment?.name ?? 'Sin nombre' }}
             @if (item.equipment?.assignedCode) {
@@ -32,6 +33,9 @@ import { RankedEquipment } from '../../domain/consumption';
         </li>
       }
     </ol>
+    @if (items().length > 5) {
+      <p class="muted">El Top 5 incluye más de cinco equipos por empate en el quinto lugar.</p>
+    }
     @if (withoutEnergy() > 0) {
       <p class="muted excluded">
         {{
@@ -116,6 +120,7 @@ export class TopEquipment {
   protected readonly quantities = inject(QuantityFormat);
   protected readonly formatKwh = (value: number) => this.quantities.kwh(value);
 
+  protected readonly chartHeight = computed(() => `${Math.max(220, this.items().length * 36)}px`);
   protected readonly labels = computed(() =>
     this.items().map((item) => item.equipment?.name ?? 'Sin nombre'),
   );

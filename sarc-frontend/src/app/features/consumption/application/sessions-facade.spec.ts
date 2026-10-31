@@ -26,6 +26,7 @@ describe('SessionsFacade', () => {
 
   it('resume el histórico con el período y filtros de la lista, sin estado ni búsqueda', async () => {
     facade.filterState('PENDING_LINK');
+    facade.filterEnergyReview('PENDING');
     facade.updateFilters({ network: 'JAC' });
     TestBed.tick();
 
@@ -33,10 +34,12 @@ describe('SessionsFacade', () => {
     const summary = http.expectOne((request) => request.url === SUMMARY_URL);
 
     expect(list.request.params.get('state')).toBe('PENDING_LINK');
+    expect(list.request.params.get('energyReview')).toBe('PENDING');
     expect(summary.request.params.get('network')).toBe('JAC');
     expect(summary.request.params.get('from')).toBe(list.request.params.get('from'));
     expect(summary.request.params.has('state')).toBe(false);
     expect(summary.request.params.has('text')).toBe(false);
+    expect(summary.request.params.has('energyReview')).toBe(false);
 
     list.flush({ content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 });
     summary.flush({
