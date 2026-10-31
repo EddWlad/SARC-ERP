@@ -1,0 +1,360 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-30T00:00:00.000Z",
+  "title": "Design System: SARC",
+  "extensions": {
+    "note": "Los valores normativos los genera mat.theme() en src/app/design-system/_theme.scss a partir de $azure-palette (primary/secondary/neutral) y $blue-palette (tertiary), con theme-type: color-scheme. El frontmatter de DESIGN.md registra el modo claro; darkValue registra el modo oscuro de cada rol.",
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Azul Operación",
+        "canonical": "#005cbb",
+        "darkValue": "#abc7ff",
+        "tonalRamp": ["#001b3f", "#002f65", "#00458f", "#005cbb", "#438fff", "#abc7ff", "#d7e3ff", "#ecf0ff"]
+      },
+      "on-primary": {
+        "role": "primary",
+        "displayName": "Tinta sobre Marca",
+        "canonical": "#ffffff",
+        "darkValue": "#002f65"
+      },
+      "primary-container": {
+        "role": "primary",
+        "displayName": "Azul Tablero",
+        "canonical": "#d7e3ff",
+        "darkValue": "#00458f",
+        "tonalRamp": ["#001b3f", "#002f65", "#00458f", "#005cbb", "#438fff", "#abc7ff", "#d7e3ff", "#ecf0ff"]
+      },
+      "on-primary-container": {
+        "role": "primary",
+        "displayName": "Tinta sobre Azul Tablero",
+        "canonical": "#00458f",
+        "darkValue": "#d7e3ff"
+      },
+      "secondary-container": {
+        "role": "secondary",
+        "displayName": "Azul Acero",
+        "canonical": "#dae2f9",
+        "darkValue": "#3e4759",
+        "tonalRamp": ["#131c2b", "#283041", "#3e4759", "#565e71", "#8891a5", "#bec6dc", "#dae2f9", "#ecf0ff"]
+      },
+      "on-secondary-container": {
+        "role": "secondary",
+        "displayName": "Tinta sobre Azul Acero",
+        "canonical": "#3e4759",
+        "darkValue": "#dae2f9"
+      },
+      "tertiary": {
+        "role": "tertiary",
+        "displayName": "Índigo Señal",
+        "canonical": "#343dff",
+        "darkValue": "#bec2ff",
+        "tonalRamp": ["#00006e", "#0001ac", "#0000ef", "#343dff", "#7c84ff", "#bec2ff", "#e0e0ff", "#f1efff"]
+      },
+      "tertiary-container": {
+        "role": "tertiary",
+        "displayName": "Índigo Señal Contenedor",
+        "canonical": "#e0e0ff",
+        "darkValue": "#0000ef",
+        "tonalRamp": ["#00006e", "#0001ac", "#0000ef", "#343dff", "#7c84ff", "#bec2ff", "#e0e0ff", "#f1efff"]
+      },
+      "on-tertiary-container": {
+        "role": "tertiary",
+        "displayName": "Tinta sobre Índigo Señal",
+        "canonical": "#0000ef",
+        "darkValue": "#e0e0ff"
+      },
+      "error": {
+        "role": "error",
+        "displayName": "Rojo Error",
+        "canonical": "#ba1a1a",
+        "darkValue": "#ffb4ab",
+        "tonalRamp": ["#410002", "#690005", "#93000a", "#ba1a1a", "#ff5449", "#ffb4ab", "#ffdad6", "#ffedea"]
+      },
+      "error-container": {
+        "role": "error",
+        "displayName": "Rojo Rechazo",
+        "canonical": "#ffdad6",
+        "darkValue": "#93000a",
+        "tonalRamp": ["#410002", "#690005", "#93000a", "#ba1a1a", "#ff5449", "#ffb4ab", "#ffdad6", "#ffedea"]
+      },
+      "on-error-container": {
+        "role": "error",
+        "displayName": "Tinta sobre Rojo Rechazo",
+        "canonical": "#93000a",
+        "darkValue": "#ffdad6"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Superficie",
+        "canonical": "#faf9fd",
+        "darkValue": "#121316",
+        "tonalRamp": ["#1a1b1f", "#2f3033", "#46464a", "#5e5e62", "#919094", "#c7c6ca", "#e3e2e6", "#faf9fd"]
+      },
+      "surface-container-lowest": {
+        "role": "neutral",
+        "displayName": "Superficie Mínima",
+        "canonical": "#ffffff",
+        "darkValue": "#0d0e11"
+      },
+      "surface-container-low": {
+        "role": "neutral",
+        "displayName": "Superficie Hundida",
+        "canonical": "#f4f3f6",
+        "darkValue": "#1a1b1f"
+      },
+      "surface-container": {
+        "role": "neutral",
+        "displayName": "Superficie Contenedora",
+        "canonical": "#efedf0",
+        "darkValue": "#1f2022"
+      },
+      "surface-container-high": {
+        "role": "neutral",
+        "displayName": "Superficie Alta",
+        "canonical": "#e9e7eb",
+        "darkValue": "#292a2c"
+      },
+      "surface-container-highest": {
+        "role": "neutral",
+        "displayName": "Superficie Máxima",
+        "canonical": "#e3e2e6",
+        "darkValue": "#343537"
+      },
+      "on-surface": {
+        "role": "neutral",
+        "displayName": "Tinta",
+        "canonical": "#1a1b1f",
+        "darkValue": "#e3e2e6"
+      },
+      "on-surface-variant": {
+        "role": "neutral",
+        "displayName": "Tinta Atenuada",
+        "canonical": "#44474e",
+        "darkValue": "#e0e2ec",
+        "tonalRamp": ["#181c22", "#2d3038", "#44474e", "#5b5e66", "#74777f", "#8e9099", "#c4c6d0", "#e0e2ec"]
+      },
+      "outline": {
+        "role": "neutral",
+        "displayName": "Trazo Fuerte",
+        "canonical": "#74777f",
+        "darkValue": "#8e9099"
+      },
+      "outline-variant": {
+        "role": "neutral",
+        "displayName": "Trazo",
+        "canonical": "#c4c6d0",
+        "darkValue": "#44474e",
+        "tonalRamp": ["#181c22", "#2d3038", "#44474e", "#5b5e66", "#74777f", "#8e9099", "#c4c6d0", "#e0e2ec"]
+      },
+      "series-1": {
+        "role": "chart",
+        "displayName": "Azul Serie",
+        "canonical": "#2a78d6",
+        "darkValue": "#3987e5",
+        "purpose": "Primera categoría de una gráfica. Orden fijo: la categoría conserva su color entre gráficas."
+      },
+      "series-2": {
+        "role": "chart",
+        "displayName": "Naranja Serie",
+        "canonical": "#eb6834",
+        "darkValue": "#d95926",
+        "purpose": "Segunda categoría. Paleta validada para daltonismo y contraste en claro y oscuro."
+      },
+      "series-3": {
+        "role": "chart",
+        "displayName": "Verde Serie",
+        "canonical": "#1baf7a",
+        "darkValue": "#199e70",
+        "purpose": "Tercera categoría."
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Cifra de indicador en el tablero. Peso 700 sobre el 400 de Material: a 2.25rem el regular se lee frágil junto al rótulo. Baja a headline-medium en teléfono."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "h1 de pantalla y cifra fuerte de una fila de panel. Techo tipográfico dentro de la aplicación."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Título de barra superior, unidad al lado de la cifra, total de un ranking, acceso directo de inicio. title-large (1.375rem) para el logotipo SARC; title-small (0.875rem) para rótulo de indicador y h2 de panel."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Texto corriente y nota aclaratoria. body-large (1rem) para la fila etiqueta-cifra de un panel; body-small (0.75rem) para detalle atenuado: incidencia de fila, roles del usuario."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Texto de píldora de estado. label-large (0.875rem) para ítem de menú y texto de botón."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Identificadores literales: serie, UID/PUK, clave externa de una fila importada. Con overflow-wrap: anywhere, porque llegan sin límite de longitud desde un Excel ajeno."
+      }
+    },
+    "shadows": [
+      {
+        "name": "level1",
+        "value": "0px 2px 1px -1px rgba(0,0,0,.2), 0px 1px 1px 0px rgba(0,0,0,.14), 0px 1px 3px 0px rgba(0,0,0,.12)",
+        "purpose": "Contenedor de datos en reposo: tarjeta de resultados, panel de tablero, tarjeta de listado en teléfono. Acompaña al escalón tonal, no lo sustituye."
+      },
+      {
+        "name": "level2",
+        "value": "0px 3px 3px -2px rgba(0,0,0,.2), 0px 3px 4px 0px rgba(0,0,0,.14), 0px 1px 8px 0px rgba(0,0,0,.12)",
+        "purpose": "Superficie que flota sobre el fondo de la pantalla: tarjeta de ingreso y de cambio de clave, sobre surface-container."
+      },
+      {
+        "name": "level3",
+        "value": "0px 3px 5px -1px rgba(0,0,0,.2), 0px 6px 10px 0px rgba(0,0,0,.14), 0px 1px 18px 0px rgba(0,0,0,.12)",
+        "purpose": "Overlays de Material: diálogo, menú, snackbar. Lo aplica el componente; no se replica a mano."
+      }
+    ],
+    "motion": [
+      { "name": "fast", "value": "150ms", "purpose": "Cambio de fondo por hover o estado: ítem de menú, acceso directo de inicio." },
+      { "name": "base", "value": "220ms", "purpose": "Entrada de una superficie: animación sarc-fade-in de la tarjeta de autenticación." },
+      { "name": "easing", "value": "cubic-bezier(0.2, 0, 0, 1)", "purpose": "Curva única del sistema. Material 3 emphasized-decelerate: entra rápido y se asienta." },
+      { "name": "reduced-motion", "value": "prefers-reduced-motion: reduce", "purpose": "Anula animación, transición y scroll suave en todo el documento (0.01ms), y desactiva la animación de las gráficas Chart.js." }
+    ],
+    "breakpoints": [
+      { "name": "handset", "value": "767.98px", "purpose": "Ancho de teléfono (injectIsHandset): los filtros se apilan y las tablas de listado pasan a tarjetas. Único quiebre que cambia el componente." },
+      { "name": "tablet", "value": "1023.98px", "purpose": "La rejilla de gráficas del tablero pasa de tres columnas a dos." },
+      { "name": "compact", "value": "599.98px", "purpose": "Relleno de página 24px a 16px, título de barra superior a title-small, cifra de indicador a headline-medium." },
+      { "name": "content-max", "value": "1280px", "purpose": "Ancho máximo del contenido centrado (--sarc-content-max-width)." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Baldosa de indicador",
+      "kind": "custom",
+      "refersTo": "kpi-tile",
+      "description": "El componente firma del sistema: la cifra oficial del periodo, legible de un vistazo desde el otro lado del escritorio.",
+      "html": "<ul class=\"ds-kpi-grid\"><li class=\"ds-kpi-tile\"><span class=\"ds-kpi-value\">1.284,6<span class=\"ds-kpi-unit\">kWh</span></span><span class=\"ds-kpi-label\">Energía entregada</span></li><li class=\"ds-kpi-tile\"><span class=\"ds-kpi-value\">347</span><span class=\"ds-kpi-label\">Sesiones</span></li></ul>",
+      "css": ".ds-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; } .ds-kpi-tile { display: flex; flex-direction: column; gap: 4px; padding: 16px; border-radius: 12px; background: var(--mat-sys-primary-container, #d7e3ff); color: var(--mat-sys-on-primary-container, #00458f); } .ds-kpi-value { font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif; font-size: 2.25rem; font-weight: 700; line-height: 1; overflow-wrap: anywhere; } .ds-kpi-unit { display: inline-block; margin-left: 4px; font-size: 1rem; font-weight: 500; } .ds-kpi-label { font-size: 0.875rem; font-weight: 500; line-height: 1.25rem; letter-spacing: 0.006rem; } @media (max-width: 599.98px) { .ds-kpi-value { font-size: 1.75rem; } }"
+    },
+    {
+      "name": "Píldoras de estado",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Estado de una sesión, un lote o un equipo. Cinco variantes por significado, cada una con su texto en español.",
+      "html": "<span class=\"ds-badge\">Validada</span> <span class=\"ds-badge ds-badge-info\">Lista</span> <span class=\"ds-badge ds-badge-accent\">Espera aprobación</span> <span class=\"ds-badge ds-badge-warn\">Energía por revisar</span> <span class=\"ds-badge ds-badge-off\">Prueba</span>",
+      "css": ".ds-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--mat-sys-primary-container, #d7e3ff); color: var(--mat-sys-on-primary-container, #00458f); font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif; font-size: 0.688rem; font-weight: 500; line-height: 1rem; letter-spacing: 0.031rem; white-space: nowrap; } .ds-badge-info { background: var(--mat-sys-secondary-container, #dae2f9); color: var(--mat-sys-on-secondary-container, #3e4759); } .ds-badge-accent { background: var(--mat-sys-tertiary-container, #e0e0ff); color: var(--mat-sys-on-tertiary-container, #0000ef); } .ds-badge-warn { background: var(--mat-sys-error-container, #ffdad6); color: var(--mat-sys-on-error-container, #93000a); } .ds-badge-off { background: var(--mat-sys-surface-container-highest, #e3e2e6); color: var(--mat-sys-on-surface-variant, #44474e); }"
+    },
+    {
+      "name": "Botón principal (filled)",
+      "kind": "button",
+      "refersTo": "button-filled",
+      "description": "Acción principal de un formulario o diálogo: ingresar, guardar, confirmar. Una sola por vista.",
+      "html": "<button class=\"ds-btn ds-btn-filled\" type=\"button\">Guardar cambios</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 24px; border: none; border-radius: 999px; font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.25rem; letter-spacing: 0.006rem; cursor: pointer; transition: background-color 150ms cubic-bezier(0.2, 0, 0, 1); } .ds-btn:focus-visible { outline: 2px solid var(--mat-sys-primary, #005cbb); outline-offset: 2px; } .ds-btn-filled { background: var(--mat-sys-primary, #005cbb); color: var(--mat-sys-on-primary, #ffffff); } .ds-btn-filled:hover { background: color-mix(in srgb, var(--mat-sys-primary, #005cbb) 92%, var(--mat-sys-on-primary, #fff)); } .ds-btn-filled:disabled { background: color-mix(in srgb, var(--mat-sys-on-surface, #1a1b1f) 12%, transparent); color: color-mix(in srgb, var(--mat-sys-on-surface, #1a1b1f) 38%, transparent); cursor: default; }"
+    },
+    {
+      "name": "Botón secundario (tonal)",
+      "kind": "button",
+      "refersTo": "button-tonal",
+      "description": "La variante más usada del sistema: reintentar tras un error, abrir un diálogo, aplicar una decisión en lote.",
+      "html": "<button class=\"ds-btn ds-btn-tonal\" type=\"button\">Reintentar</button>",
+      "css": ".ds-btn-tonal { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 24px; border: none; border-radius: 999px; background: var(--mat-sys-secondary-container, #dae2f9); color: var(--mat-sys-on-secondary-container, #3e4759); font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; letter-spacing: 0.006rem; cursor: pointer; transition: background-color 150ms cubic-bezier(0.2, 0, 0, 1); } .ds-btn-tonal:hover { background: color-mix(in srgb, var(--mat-sys-secondary-container, #dae2f9) 88%, var(--mat-sys-on-secondary-container, #3e4759)); } .ds-btn-tonal:focus-visible { outline: 2px solid var(--mat-sys-primary, #005cbb); outline-offset: 2px; }"
+    },
+    {
+      "name": "Botón de descarga (outlined)",
+      "kind": "button",
+      "refersTo": "button-outlined",
+      "description": "Acción de descarga o salida de pantalla, en la cabecera a la derecha. Ocupado se deshabilita y cambia su texto, no se reemplaza por un spinner.",
+      "html": "<button class=\"ds-btn-outlined\" type=\"button\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z\"/><path d=\"M14 2v4a2 2 0 0 0 2 2h4\"/><path d=\"M16 13H8\"/><path d=\"M16 17H8\"/></svg>Reporte PDF</button>",
+      "css": ".ds-btn-outlined { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 24px; border: 1px solid var(--mat-sys-outline, #74777f); border-radius: 999px; background: transparent; color: var(--mat-sys-primary, #005cbb); font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; letter-spacing: 0.006rem; cursor: pointer; transition: background-color 150ms cubic-bezier(0.2, 0, 0, 1); } .ds-btn-outlined > svg { flex-shrink: 0; } .ds-btn-outlined:hover { background: color-mix(in srgb, var(--mat-sys-primary, #005cbb) 8%, transparent); } .ds-btn-outlined:focus-visible { outline: 2px solid var(--mat-sys-primary, #005cbb); outline-offset: 2px; }"
+    },
+    {
+      "name": "Panel de tablero",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Agrupa indicadores o una gráfica. Título en pequeño y atenuado: el contenido manda. Las filas etiqueta-cifra se separan con un trazo de 1px.",
+      "html": "<section class=\"ds-panel\"><h2>Excluido de los indicadores</h2><ul class=\"ds-metric-list\"><li class=\"ds-metric-row\"><span>Pendientes de vincular</span><strong>12</strong></li><li class=\"ds-metric-row\"><span>Energía por revisar</span><strong>3</strong></li></ul></section>",
+      "css": ".ds-panel { min-width: 0; padding: 16px; border: 1px solid var(--mat-sys-outline-variant, #c4c6d0); border-radius: 12px; background: var(--mat-sys-surface-container-low, #f4f3f6); box-shadow: 0px 2px 1px -1px rgba(0,0,0,.2), 0px 1px 1px 0px rgba(0,0,0,.14), 0px 1px 3px 0px rgba(0,0,0,.12); font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif; } .ds-panel h2 { margin: 0 0 12px; color: var(--mat-sys-on-surface-variant, #44474e); font-size: 0.875rem; font-weight: 500; line-height: 1.25rem; letter-spacing: 0.006rem; } .ds-metric-list { margin: 0; padding: 0; list-style: none; } .ds-metric-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 4px 0; color: var(--mat-sys-on-surface, #1a1b1f); font-size: 1rem; line-height: 1.5rem; letter-spacing: 0.031rem; } .ds-metric-row + .ds-metric-row { border-top: 1px solid var(--mat-sys-outline-variant, #c4c6d0); } .ds-metric-row strong { color: var(--mat-sys-primary, #005cbb); font-size: 1.5rem; font-weight: 700; line-height: 2rem; }"
+    },
+    {
+      "name": "Ítem de menú lateral",
+      "kind": "nav",
+      "refersTo": "nav-link-active",
+      "description": "Navegación de módulo. El activo se marca con fondo, no con negrita; el hover sube un escalón de superficie.",
+      "html": "<nav class=\"ds-sidebar\"><span class=\"ds-brand\"><svg width=\"28\" height=\"28\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z\"/></svg>SARC</span><ul class=\"ds-nav-list\"><li><a class=\"ds-nav-link ds-nav-link-active\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8\"/><path d=\"M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/></svg>Inicio</a></li><li><a class=\"ds-nav-link\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M13 2 3 14h9l-1 8 10-12h-9z\"/></svg>Consumo</a></li></ul></nav>",
+      "css": ".ds-sidebar { width: 256px; padding-bottom: 8px; border-right: 1px solid var(--mat-sys-outline-variant, #c4c6d0); background: var(--mat-sys-surface-container-low, #f4f3f6); font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif; } .ds-brand { display: flex; align-items: center; gap: 8px; height: 64px; padding: 0 24px; color: var(--mat-sys-primary, #005cbb); font-size: 1.375rem; line-height: 1.75rem; } .ds-nav-list { margin: 0; padding: 8px; list-style: none; } .ds-nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 16px; color: var(--mat-sys-on-surface-variant, #44474e); font-size: 0.875rem; font-weight: 500; line-height: 1.25rem; letter-spacing: 0.006rem; text-decoration: none; transition: background-color 150ms cubic-bezier(0.2, 0, 0, 1); } .ds-nav-link:hover { background: var(--mat-sys-surface-container-high, #e9e7eb); } .ds-nav-link:focus-visible { outline: 2px solid var(--mat-sys-primary, #005cbb); outline-offset: 2px; } .ds-nav-link-active { background: var(--mat-sys-secondary-container, #dae2f9); color: var(--mat-sys-on-secondary-container, #3e4759); }"
+    },
+    {
+      "name": "Campo de formulario",
+      "kind": "input",
+      "refersTo": "input-outline",
+      "description": "Siempre appearance=\"outline\" con etiqueta flotante. El error del campo va debajo, en español y describiendo qué corregir.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-field-label\" for=\"ds-serie\">Serie del equipo</label><input class=\"ds-input\" id=\"ds-serie\" type=\"text\" value=\"WB-4418-A\" /><span class=\"ds-field-error\">La serie ya está registrada en otro equipo.</span></div>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 4px; max-width: 320px; font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif; } .ds-field-label { color: var(--mat-sys-on-surface-variant, #44474e); font-size: 0.75rem; line-height: 1rem; letter-spacing: 0.025rem; } .ds-input { padding: 12px 16px; border: 1px solid var(--mat-sys-outline, #74777f); border-radius: 8px; background: transparent; color: var(--mat-sys-on-surface, #1a1b1f); font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: 0.875rem; line-height: 1.25rem; } .ds-input:hover { border-color: var(--mat-sys-on-surface, #1a1b1f); } .ds-input:focus-visible { border-color: var(--mat-sys-primary, #005cbb); outline: 1px solid var(--mat-sys-primary, #005cbb); outline-offset: 0; } .ds-field-error { color: var(--mat-sys-error, #ba1a1a); font-size: 0.75rem; line-height: 1rem; letter-spacing: 0.025rem; }"
+    },
+    {
+      "name": "Alerta de formulario",
+      "kind": "custom",
+      "refersTo": "form-alert",
+      "description": "Error devuelto por el backend. Va al inicio del formulario con role=\"alert\", nunca inyectado en un campo.",
+      "html": "<div class=\"ds-form-alert\" role=\"alert\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\"/><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/></svg><p>No se pudo guardar el equipo: la serie ya está registrada.</p></div>",
+      "css": ".ds-form-alert { display: flex; align-items: flex-start; gap: 8px; padding: 12px; border-radius: 8px; background: var(--mat-sys-error-container, #ffdad6); color: var(--mat-sys-on-error-container, #93000a); font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif; font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.016rem; } .ds-form-alert > svg { flex-shrink: 0; } .ds-form-alert p { margin: 0; }"
+    },
+    {
+      "name": "Tarjeta de resultados",
+      "kind": "card",
+      "refersTo": "results-card",
+      "description": "Envuelve la tabla de un listado. overflow: hidden para que la tabla no se escape del radio; en teléfono su contenido pasa a tarjetas apiladas.",
+      "html": "<div class=\"ds-results\"><table class=\"ds-table\"><thead><tr><th>Equipo</th><th>Red</th><th class=\"ds-number\">Energía</th></tr></thead><tbody><tr><td>Estación 4<span class=\"ds-muted ds-block\">KIA-0412</span></td><td>KIA</td><td class=\"ds-number\">418,2 kWh</td></tr><tr><td>Estación 7<span class=\"ds-muted ds-block\">JAC-0071</span></td><td>JAC</td><td class=\"ds-number\">266,9 kWh</td></tr></tbody></table></div>",
+      "css": ".ds-results { overflow: hidden; border: 1px solid var(--mat-sys-outline-variant, #c4c6d0); border-radius: 12px; background: var(--mat-sys-surface, #faf9fd); box-shadow: 0px 2px 1px -1px rgba(0,0,0,.2), 0px 1px 1px 0px rgba(0,0,0,.14), 0px 1px 3px 0px rgba(0,0,0,.12); font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif; } .ds-table { width: 100%; border-collapse: collapse; color: var(--mat-sys-on-surface, #1a1b1f); font-size: 0.875rem; line-height: 1.25rem; } .ds-table th { padding: 12px 16px; border-bottom: 1px solid var(--mat-sys-outline-variant, #c4c6d0); color: var(--mat-sys-on-surface-variant, #44474e); font-weight: 500; text-align: start; } .ds-table td { padding: 12px 16px; border-bottom: 1px solid var(--mat-sys-outline-variant, #c4c6d0); } .ds-table tbody tr:last-child td { border-bottom: none; } .ds-number { text-align: end; white-space: nowrap; } .ds-muted { color: var(--mat-sys-on-surface-variant, #44474e); font-size: 0.75rem; line-height: 1rem; } .ds-block { display: block; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "La Sala de Control",
+    "overview": "SARC se lee de un vistazo o no sirve. Quien abre el tablero de consumo necesita saber, en el primer segundo, cuánta energía es oficial, cuántas sesiones hay detrás y qué quedó fuera de los indicadores. De ahí la cifra grande en contenedor de marca, el estado del sistema siempre presente y una regla de color estricta: el azul de marca y el rojo de error no decoran, señalan. Todo lo que no es cifra ni estado baja de tono.\n\nLa densidad es alta pero jerárquica. La aplicación es una herramienta de trabajo diario sobre laptops corporativas de 1366×768, con sesiones largas de importación y revisión; cada pantalla sigue la misma estructura — cabecera, filtros, resultados, estados vacío y error — para que el usuario aprenda la forma una vez y la reconozca en los seis módulos. Los colores no se escriben a mano: salen de los roles --mat-sys-* que genera mat.theme() en src/app/design-system/_theme.scss, y el espaciado, los radios y las medidas de layout salen de los tokens --sarc-* en _tokens.scss. Un valor literal en un componente es una fuga del sistema, no una excepción.\n\nEl tema claro y el oscuro son el mismo diseño: theme-type: color-scheme resuelve cada rol con light-dark(), así que el modo se cambia con la propiedad color-scheme del <html> y ningún componente duplica reglas por tema. Un color que no pase por un rol de Material se rompe en modo oscuro.",
+    "keyCharacteristics": [
+      "Cifra primero: el indicador es el objeto más grande de la pantalla, no el título.",
+      "Estado etiquetado: toda sesión, lote o equipo lleva su píldora de estado con texto, nunca solo color.",
+      "Estructura repetida: cabecera, filtros, resultados y estados en el mismo orden en cada listado.",
+      "Color escaso: azul de marca para cifras y enlaces, rojo para error, gris para lo accesorio.",
+      "Un solo juego de roles: --mat-sys-* para color, --sarc-* para espacio, radio, motion y series.",
+      "Claro y oscuro desde el mismo CSS, por light-dark()."
+    ],
+    "rules": [
+      { "name": "La Regla de la Señal", "body": "El azul de marca marca cifras, enlaces y foco; nunca rellena un área decorativa. La baldosa de indicador es la única excepción autorizada, y lo es porque la cifra *es* el contenido.", "section": "colors" },
+      { "name": "La Regla del Par", "body": "Un color de fondo solo se usa junto a su on-* del mismo rol (primary-container con on-primary-container). Mezclar pares rompe el contraste en modo oscuro sin avisar en claro.", "section": "colors" },
+      { "name": "La Regla del Estado Escrito", "body": "Ningún estado se comunica solo con color: la píldora lleva su texto en español y, cuando hace falta, su title explicativo. El color refuerza, no informa.", "section": "colors" },
+      { "name": "La Regla de la Serie Fija", "body": "Una categoría conserva su --sarc-series-* en todas las gráficas. Reasignar colores por posición en el conjunto de datos hace que dos gráficas de la misma pantalla se contradigan.", "section": "colors" },
+      { "name": "La Regla del font Compuesto", "body": "La tipografía se aplica con la propiedad abreviada y un token completo (font: var(--mat-sys-title-small)), no con font-size y font-weight separados. Un solo token trae tamaño, peso, interlínea y tracking coherentes; partirlo los desincroniza.", "section": "typography" },
+      { "name": "La Regla del Literal Monoespaciado", "body": "Serie, UID/PUK y clave externa van en monoespaciada con overflow-wrap: anywhere. Son datos que se comparan carácter por carácter y que llegan sin límite de longitud desde un Excel ajeno.", "section": "typography" },
+      { "name": "La Regla de la Tabla que no se Aprieta", "body": "Una tabla con muchas columnas no se comprime: se desplaza. La vista previa de un lote fija min-width: 860px dentro de un contenedor overflow-x: auto. Reducir columnas o tipografía para que quepa falsea la lectura del dato.", "section": "layout" },
+      { "name": "La Regla de la Tarjeta en Teléfono", "body": "Por debajo de 768px un listado deja de ser tabla y pasa a tarjetas con cabecera, cuerpo y pie. No hay tabla responsiva intermedia.", "section": "layout" },
+      { "name": "La Regla de la Rejilla Declarada", "body": "Las columnas de filtros se declaran por pantalla en --sarc-filter-columns; el parcial no las adivina. En teléfono siempre colapsan a una.", "section": "layout" },
+      { "name": "La Regla del Nivel Único", "body": "Un contenedor tiene un nivel, no una sombra propia. Si hace falta una box-shadow literal en un componente, falta un nivel en la escala o el componente está en el nivel equivocado.", "section": "elevation" },
+      { "name": "La Regla del Tono Primero", "body": "La elevación acompaña al escalón tonal, no lo sustituye. Un panel elevado sigue estando en surface-container-low: en modo oscuro el tono es lo único que separa.", "section": "elevation" },
+      { "name": "La Regla de la Baldosa Plana", "body": "La baldosa de indicador (.kpi-tile) no se eleva ni se bordea. Su contenedor de color ya la separa del fondo; añadir sombra la convierte en botón.", "section": "elevation" },
+      { "name": "La Regla del Trazo Único", "body": "1px, outline-variant, siempre. Un borde más grueso o más oscuro grita sin informar.", "section": "shapes" },
+      { "name": "La Regla del Radio por Función", "body": "El radio dice qué es la pieza: insertada (8px), contenedora (12px), navegable (16px), de estado o de acción (píldora). No se elige por el tamaño del elemento.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do tomar el color de un rol --mat-sys-* y el espacio, radio, motion o color de serie de un token --sarc-*.",
+      "Do aplicar tipografía con la abreviada y un token completo: font: var(--mat-sys-body-medium).",
+      "Do usar un fondo junto a su on-* del mismo rol, para que el contraste se sostenga en claro y en oscuro.",
+      "Do componer un listado nuevo con @use '../../shared/ui/list-page' y declarar solo lo propio de la pantalla, incluidas sus --sarc-filter-columns.",
+      "Do acompañar cada estado de una píldora con su texto en español y, si hace falta, su title.",
+      "Do desplazar horizontalmente una tabla ancha dentro de overflow-x: auto con su min-width.",
+      "Do dar a cada gráfica una sola serie y dejar las cifras visibles en la leyenda o en una tabla, no solo en el tooltip.",
+      "Do verificar toda pantalla nueva en claro y en oscuro, a 1366×768 y a 360px de ancho."
+    ],
+    "donts": [
+      "Don't escribir un color literal —hex, rgb() o nombre— en un componente. Si falta un rol, falta en _theme.scss.",
+      "Don't usar ngClass ni ngStyle: enlaces class y style.",
+      "Don't separar font-size de font-weight cuando existe un token de typescale que trae ambos.",
+      "Don't comunicar un estado solo con color, ni asignar colores de serie por posición en el conjunto de datos.",
+      "Don't poner dos medidas de escala distinta en una gráfica ni usar doble eje.",
+      "Don't añadir una box-shadow literal a un componente: se usa un nivel (--mat-sys-level1…level5).",
+      "Don't elevar ni bordear la baldosa de indicador.",
+      "Don't apretar una tabla reduciendo columnas o tipografía para que quepa en una pantalla angosta.",
+      "Don't usar appearance=\"fill\" en un campo: el sistema es outline en sus 60 instancias.",
+      "Don't importar un módulo de Material con overlay, ni un pipe de @angular/common, desde el bundle inicial: el presupuesto es de 500 kB y ambos arrastran el CDK o el chunk compartido."
+    ]
+  }
+}
