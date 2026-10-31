@@ -12,6 +12,18 @@
   justify-content: space-between;
   gap: var(--sarc-space-2);
   margin-bottom: var(--sarc-space-3);
+
+  > span {
+    min-width: 0;
+  }
+}
+
+// Una accion masiva solo alcanza la pagina visible; confirmar alcanza el lote. Se dice aqui para
+// que no haya que inferirlo del plural del boton.
+.scope-note {
+  display: block;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
 }
 
 // La tabla de filas tiene muchas columnas: en pantallas angostas se desplaza horizontalmente.

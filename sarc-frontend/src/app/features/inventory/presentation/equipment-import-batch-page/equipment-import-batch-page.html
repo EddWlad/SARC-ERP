@@ -18,7 +18,7 @@
   <sarc-import-batch-header
     [state]="facade"
     kind="Equipos"
-    [confirmMessage]="confirmMessage"
+    [confirmSummary]="confirmSummary()"
     applyingMessage="Registrando y actualizando los equipos aprobados..."
     [completedMessage]="completedMessage()"
   />
@@ -34,17 +34,12 @@
     @if (facade.reviewable() && pendingApproval().length > 0) {
       <div class="bulk">
         <span>
-          {{
-            quantities.amount(
-              pendingApproval().length,
-              'equipo visible espera',
-              'equipos visibles esperan'
-            )
-          }}
-          aprobación.
+          {{ quantities.amount(pendingApproval().length, 'equipo', 'equipos') }} de esta página
+          {{ pendingApproval().length === 1 ? 'espera' : 'esperan' }} aprobación.
+          <span class="scope-note">Confirmar aplica a todo el lote, no solo a esta página.</span>
         </span>
         <button matButton="tonal" type="button" (click)="approve(pendingApproval(), true)">
-          Aprobar los visibles
+          Aprobar los {{ quantities.count(pendingApproval().length) }} de esta página
         </button>
       </div>
     }

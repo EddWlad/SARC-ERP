@@ -8,26 +8,44 @@
       </p>
       <sarc-import-status-badge [status]="batch.status" />
     </div>
-    <div class="header-actions">
-      @if (canDiscard()) {
-        <button matButton="outlined" type="button" [disabled]="state().busy()" (click)="discard()">
-          Descartar
-        </button>
-      }
-      @if (canRetry()) {
-        <button matButton="filled" type="button" [disabled]="state().busy()" (click)="retry()">
-          Reintentar
-        </button>
-      }
-      @if (state().reviewable()) {
-        <button
-          matButton="filled"
-          type="button"
-          [disabled]="state().busy() || !state().canConfirm()"
-          (click)="confirm()"
-        >
-          Confirmar importación
-        </button>
+    <div class="actions-column">
+      <div class="header-actions">
+        @if (canDiscard()) {
+          <button
+            matButton="outlined"
+            type="button"
+            [disabled]="state().busy()"
+            [attr.aria-describedby]="blockedReason() ? blockedNoteId : null"
+            (click)="discard()"
+          >
+            Descartar
+          </button>
+        }
+        @if (canRetry()) {
+          <button
+            matButton="filled"
+            type="button"
+            [disabled]="state().busy()"
+            [attr.aria-describedby]="blockedReason() ? blockedNoteId : null"
+            (click)="retry()"
+          >
+            Reintentar
+          </button>
+        }
+        @if (state().reviewable()) {
+          <button
+            matButton="filled"
+            type="button"
+            [disabled]="state().busy() || !state().canConfirm()"
+            [attr.aria-describedby]="blockedReason() ? blockedNoteId : null"
+            (click)="confirm()"
+          >
+            Confirmar importación
+          </button>
+        }
+      </div>
+      @if (blockedReason(); as reason) {
+        <p class="actions-note" [id]="blockedNoteId">{{ reason }}</p>
       }
     </div>
   </header>

@@ -16,6 +16,31 @@
   }
 }
 
+// Las acciones y el aviso de por que una esta deshabilitada van juntos, alineados a la derecha.
+.actions-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--sarc-space-2);
+  min-width: 0;
+
+  @media (max-width: 767.98px) {
+    align-items: flex-start;
+  }
+}
+
+.actions-note {
+  max-width: 44ch;
+  margin: 0;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+  text-align: end;
+
+  @media (max-width: 767.98px) {
+    text-align: start;
+  }
+}
+
 .banner {
   display: flex;
   flex-wrap: wrap;

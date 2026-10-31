@@ -59,3 +59,12 @@ export function canDiscard(batch: ImportBatchLike): boolean {
 export function canRetry(batch: ImportBatchLike): boolean {
   return batch.status === 'FAILED' && !!batch.confirmedAt;
 }
+
+/**
+ * Lo que confirmar compromete, igual para toda importacion: el lote queda archivado y no hay
+ * operacion de deshacer ({@link canDiscard} solo aplica antes de confirmar). Si falla a medio
+ * aplicar se reintenta y las filas ya aplicadas no se repiten ({@link canRetry}).
+ */
+export const CONFIRM_COMMITMENT_NOTE =
+  'Al confirmar, el lote queda archivado y no se puede deshacer. Si la incorporación falla a ' +
+  'medio camino, se puede reintentar y las filas ya aplicadas no se repiten.';

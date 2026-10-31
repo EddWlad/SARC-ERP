@@ -32,6 +32,7 @@ import {
   OUTCOME_LABELS,
   RowClassification,
   RowDecision,
+  sessionConfirmSummary,
 } from '../../domain/energy-import';
 
 const TESTABLE: ReadonlySet<RowClassification> = new Set([
@@ -98,6 +99,11 @@ export class ImportBatchPage {
       ? ''
       : `Importación completada: ${this.quantities.amount(batch.appliedRows, 'sesión aplicada', 'sesiones aplicadas')} ` +
           `(nuevas, corregidas, reasignadas o vinculadas) de ${this.quantities.amount(batch.totalRows, 'fila', 'filas')}.`;
+  });
+  /** Lo que hace confirmar, con los conteos del lote; alimenta el dialogo de confirmacion. */
+  protected readonly confirmSummary = computed(() => {
+    const batch = this.facade.batch();
+    return batch === undefined ? undefined : sessionConfirmSummary(batch);
   });
   protected readonly columns = computed(() => [
     'row',

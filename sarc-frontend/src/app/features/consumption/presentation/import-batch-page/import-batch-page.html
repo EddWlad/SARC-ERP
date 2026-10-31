@@ -18,7 +18,7 @@
   <sarc-import-batch-header
     [state]="facade"
     [kind]="sourceLabels[batch.source]"
-    confirmMessage="Se incorporarán las sesiones nuevas y las pendientes de vincular; las modificadas y las de fuente no preferente solo si las aprobó, y las que cambian de cargador solo si las reasignó. Las inválidas, duplicadas e idénticas no se tocan."
+    [confirmSummary]="confirmSummary()"
     applyingMessage="Incorporando las sesiones aprobadas..."
     [completedMessage]="completedMessage()"
   />

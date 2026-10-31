@@ -25,15 +25,10 @@ import {
   EQUIPMENT_CLASSIFICATIONS,
   EQUIPMENT_OUTCOME_LABELS,
   equipmentClassificationCount,
+  equipmentConfirmSummary,
   EquipmentImportRow,
   EquipmentRowClassification,
 } from '../../domain/equipment-import';
-
-const CONFIRM_MESSAGE =
-  'Se registrarán los equipos nuevos, se completarán las identidades Enerlink y se actualizarán ' +
-  'los modificados que aprobó, con sus identidades externas verificadas. Los modificados sin ' +
-  'aprobar se omiten completos, también su identidad. Las filas inválidas, duplicadas, en ' +
-  'conflicto o de equipos eliminados no se tocan.';
 
 /**
  * Vista previa de una carga masiva de equipos (ADR 0007): conteos por clasificacion, filas con sus
@@ -67,7 +62,6 @@ export class EquipmentImportBatchPage {
   protected readonly facade = inject(EquipmentImportBatchFacade);
   protected readonly quantities = inject(QuantityFormat);
   protected readonly isHandset = injectIsHandset();
-  protected readonly confirmMessage = CONFIRM_MESSAGE;
   protected readonly classificationLabels = EQUIPMENT_CLASSIFICATION_LABELS;
   protected readonly classificationHints = EQUIPMENT_CLASSIFICATION_HINTS;
   protected readonly outcomeLabels = EQUIPMENT_OUTCOME_LABELS;
@@ -90,6 +84,11 @@ export class EquipmentImportBatchPage {
       ? ''
       : `Carga completada: ${this.quantities.amount(batch.appliedRows, 'equipo registrado o actualizado', 'equipos registrados o actualizados')} ` +
           `de ${this.quantities.amount(batch.totalRows, 'fila', 'filas')}.`;
+  });
+  /** Lo que hace confirmar, con los conteos del lote; alimenta el dialogo de confirmacion. */
+  protected readonly confirmSummary = computed(() => {
+    const batch = this.facade.batch();
+    return batch === undefined ? undefined : equipmentConfirmSummary(batch);
   });
   protected readonly columns = computed(() => [
     'row',

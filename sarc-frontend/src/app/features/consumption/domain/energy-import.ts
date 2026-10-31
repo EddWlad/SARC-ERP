@@ -4,6 +4,7 @@ import {
   PageResultImportBatchResponse,
   PageResultImportRowResponse,
 } from '../../../core/api/generated';
+import { ImportConfirmSummary } from '../../../shared/imports/import-confirm-summary';
 import { SessionSource } from './consumption';
 
 /** Contrato del backend para importaciones de sesiones (PRD 3.1). */
@@ -76,6 +77,85 @@ export function classificationCount(batch: ImportBatch, classification: RowClass
     case 'PENDING_LINK':
       return batch.pendingLinkRows;
   }
+}
+
+/**
+ * Que hace confirmar este lote, agrupado por destino y con los conteos que trae el lote. El total
+ * de filas aprobadas o reasignadas no esta en la respuesta (es una decision por fila y solo se
+ * cargan las de la pagina visible): el grupo condicional lo dice en vez de estimarlo.
+ */
+export function sessionConfirmSummary(batch: ImportBatch): ImportConfirmSummary {
+  return {
+    title: 'Confirmar importación de sesiones',
+    fileName: batch.fileName,
+    totalRows: batch.totalRows,
+    confirmLabel: 'Confirmar importación',
+    groups: [
+      {
+        title: 'Se incorporan al confirmar',
+        tone: 'applies',
+        items: [
+          {
+            label: CLASSIFICATION_LABELS.NEW,
+            count: batch.newRows,
+            detail: 'sesiones que todavía no estaban importadas',
+          },
+          {
+            label: CLASSIFICATION_LABELS.LINKABLE,
+            count: batch.linkableRows,
+            detail: 'pendientes cuya identidad ya resuelve un equipo',
+          },
+        ],
+      },
+      {
+        title: 'Solo las que haya decidido fila por fila',
+        note: 'El lote no lleva el total de decisiones tomadas: lo que no haya aprobado o reasignado se omite.',
+        tone: 'conditional',
+        items: [
+          {
+            label: CLASSIFICATION_LABELS.MODIFIED,
+            count: batch.modifiedRows,
+            detail: 'se corrigen solo si las aprobó',
+          },
+          {
+            label: CLASSIFICATION_LABELS.EQUIPMENT_CHANGED,
+            count: batch.equipmentChangedRows,
+            detail: 'se mueven de cargador solo si las reasignó',
+          },
+        ],
+      },
+      {
+        title: 'Se guardan sin sumar a los indicadores',
+        tone: 'conditional',
+        items: [
+          {
+            label: CLASSIFICATION_LABELS.PENDING_LINK,
+            count: batch.pendingLinkRows,
+            detail: 'quedan sin equipo hasta que alguien las vincule',
+          },
+        ],
+      },
+      {
+        title: 'No se tocan',
+        tone: 'untouched',
+        items: [
+          { label: CLASSIFICATION_LABELS.IDENTICAL, count: batch.identicalRows },
+          { label: CLASSIFICATION_LABELS.DUPLICATE, count: batch.duplicateRows },
+          {
+            label: CLASSIFICATION_LABELS.INVALID,
+            count: batch.invalidRows,
+            detail: 'no se pudieron interpretar',
+          },
+        ],
+      },
+    ],
+    aside: {
+      label: 'Lecturas superiores a 1.000 kWh',
+      count: batch.energyReviewRows,
+      detail:
+        'conteo aparte de las clasificaciones; se guardan por revisar y no suman hasta que alguien las decida',
+    },
+  };
 }
 
 /** Columnas que el analista debe ver en el reporte original de cada fuente (ayuda en pantalla). */
