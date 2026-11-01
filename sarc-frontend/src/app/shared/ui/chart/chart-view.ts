@@ -46,10 +46,11 @@ export type ChartKind = 'line' | 'bar' | 'doughnut';
 /**
  * Una sola serie por grafica: dos medidas de distinta escala van en graficas separadas, nunca en
  * doble eje. En un pastel, {@code colors} trae un color por porcion, en el orden de las etiquetas.
+ * Un valor nulo es un dato desconocido: deja un hueco, nunca se interpola ni se dibuja como cero.
  */
 export interface ChartSeries {
   readonly label: string;
-  readonly values: readonly number[];
+  readonly values: readonly (number | null)[];
   readonly colors: SeriesColor | readonly SeriesColor[];
 }
 
@@ -150,6 +151,7 @@ export class ChartView {
             borderRadius: this.kind() === 'bar' ? 4 : 0,
             maxBarThickness: 36,
             fill: this.kind() === 'line',
+            spanGaps: false,
             // Monotona: la curva nunca inventa picos ni valles entre dos dias.
             cubicInterpolationMode: 'monotone',
             pointRadius: this.labels().length > 45 ? 0 : 3,

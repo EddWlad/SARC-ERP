@@ -1,0 +1,33 @@
+{
+  "at": "2026-10-31T19:36:27.702Z",
+  "url": "http://127.0.0.1:58808",
+  "workload": "30 closed-loop workers,2 warmups,3 rounds by default; 250k rows opt-in fixture; reports2 days",
+  "results": [
+    {
+      "endpoint": "/api/v1/energy/sessions?from=2026-10-01&to=2026-11-01&size=20",
+      "concurrency": 30,
+      "rounds": 3,
+      "count": 90,
+      "p95Ms": 3550.2819,
+      "maxMs": 4185.583699999999
+    },
+    {
+      "endpoint": "/api/v1/energy/summary?from=2026-10-01&to=2026-11-01",
+      "concurrency": 30,
+      "rounds": 3,
+      "count": 90,
+      "p95Ms": 20857.2504,
+      "maxMs": 21068.7218
+    },
+    {
+      "format": "PDF",
+      "durationMs": 1500.029800000004,
+      "bytes": 102660
+    },
+    {
+      "format": "XLSX",
+      "durationMs": 3342.4821999999986,
+      "bytes": 930307
+    }
+  ]
+}

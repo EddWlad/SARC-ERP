@@ -64,12 +64,18 @@ export class SessionsPage {
 
   protected readonly facade = inject(SessionsFacade);
   protected readonly quantities = inject(QuantityFormat);
-  protected readonly canEdit = inject(SessionStore).hasAnyRole(CONSUMPTION_EDITORS);
+  private readonly sessionStore = inject(SessionStore);
+  protected get canEdit(): boolean {
+    return this.sessionStore.hasAnyRole(CONSUMPTION_EDITORS);
+  }
   protected readonly isHandset = injectIsHandset();
   protected readonly linking = signal(false);
   protected readonly columns = ['start', 'equipment', 'source', 'energy', 'state', 'actions'];
   protected readonly pageSizeOptions = [10, 20, 50, 100];
-  protected readonly states = SESSION_STATES;
+  /** Un lector gerencial solo consulta oficiales: el servidor rechaza los estados operativos. */
+  protected get states(): readonly SessionState[] {
+    return this.canEdit ? SESSION_STATES : ['VALIDATED'];
+  }
   protected readonly stateLabels = SESSION_STATE_LABELS;
   protected readonly linkIssueLabels = LINK_ISSUE_LABELS;
   protected readonly sourceLabels = SOURCE_LABELS;
@@ -90,6 +96,13 @@ export class SessionsPage {
   // Las filas de mat-table llegan sin tipo a la plantilla: estos metodos las tipan.
   protected sessionOf(row: Session): Session {
     return row;
+  }
+
+  protected energyAction(session: Session): string {
+    if (!this.canEdit) {
+      return 'Justificación aprobada';
+    }
+    return session.energyReview ? 'Revisar energía' : 'Historial energético';
   }
 
   protected openEnergyReview(session: Session): void {

@@ -1,4 +1,6 @@
-<a class="skip-link" href="#contenido">Saltar al contenido</a>
+<a class="skip-link" href="#contenido" (click)="skipToContent($event, content)">
+  Saltar al contenido
+</a>
 
 <mat-sidenav-container class="shell">
   <mat-sidenav
@@ -6,6 +8,7 @@
     [mode]="isHandset() ? 'over' : 'side'"
     [opened]="!isHandset() || menuOpen()"
     (closedStart)="menuOpen.set(false)"
+    (closed)="restoreMenuFocus()"
   >
     <div class="brand">
       <svg lucideZap class="brand-icon"></svg>
@@ -35,11 +38,20 @@
   <mat-sidenav-content class="content-area">
     <mat-toolbar class="topbar">
       @if (isHandset()) {
-        <button matIconButton type="button" aria-label="Abrir menú" (click)="menuOpen.set(true)">
+        <button
+          #menuButton
+          matIconButton
+          type="button"
+          aria-label="Abrir menú"
+          (click)="menuOpen.set(true)"
+        >
           <svg lucideMenu></svg>
         </button>
       }
-      <span class="topbar-title">Sistema Administrativo de Reportes de Carga</span>
+      <span class="topbar-title">
+        <span class="title-full">Sistema Administrativo de Reportes de Carga</span>
+        <span class="title-short">SARC</span>
+      </span>
       <span class="spacer"></span>
 
       <button matIconButton type="button" [matMenuTriggerFor]="themeMenu" aria-label="Cambiar tema">
@@ -97,7 +109,7 @@
       </mat-menu>
     </mat-toolbar>
 
-    <main id="contenido" class="page" tabindex="-1">
+    <main #content id="contenido" class="page" tabindex="-1">
       <router-outlet />
     </main>
   </mat-sidenav-content>

@@ -3,17 +3,37 @@ package com.tidsec.sarc_bakend.shared.report;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.util.AreaReference;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.xddf.usermodel.chart.AxisCrosses;
+import org.apache.poi.xddf.usermodel.chart.AxisOrientation;
+import org.apache.poi.xddf.usermodel.chart.AxisPosition;
+import org.apache.poi.xddf.usermodel.chart.BarDirection;
+import org.apache.poi.xddf.usermodel.chart.ChartTypes;
+import org.apache.poi.xddf.usermodel.chart.DisplayBlanks;
+import org.apache.poi.xddf.usermodel.chart.MarkerStyle;
+import org.apache.poi.xddf.usermodel.chart.XDDFBarChartData;
+import org.apache.poi.xddf.usermodel.chart.XDDFCategoryAxis;
+import org.apache.poi.xddf.usermodel.chart.XDDFChartData;
+import org.apache.poi.xddf.usermodel.chart.XDDFDataSourcesFactory;
+import org.apache.poi.xddf.usermodel.chart.XDDFLineChartData;
+import org.apache.poi.xddf.usermodel.chart.XDDFValueAxis;
+import org.apache.poi.xssf.usermodel.XSSFChart;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFDrawing;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
@@ -27,6 +47,14 @@ public final class CorporateWorkbook {
 
 	private static final int ROWS_IN_MEMORY = 200;
 	private static final int MAX_COLUMN_CHARS = 60;
+	private static final int HEADER_ROW = 4;
+	private static final int COLUMNS_PER_CHART = 3;
+	private static final int CHART_COLUMNS = 12;
+	private static final int CHART_ROWS = 18;
+
+	/** Una grafica: {@code line} para tendencia, barras en otro caso; un valor nulo es desconocido. */
+	public record Chart(String title, String unit, boolean line, List<String> labels, List<BigDecimal> values) {
+	}
 
 	private final SXSSFWorkbook workbook = new SXSSFWorkbook(ROWS_IN_MEMORY);
 	private final CellStyle titleStyle;
@@ -58,13 +86,91 @@ public final class CorporateWorkbook {
 
 	/** Agrega una hoja. Los valores numericos se escriben como numeros para poder sumarlos. */
 	public CorporateWorkbook sheet(String name, String title, List<String> headers, List<List<Object>> rows) {
+		write(name, title, headers, rows, true);
+		return this;
+	}
+
+	/**
+	 * Agrega una hoja con los datos de cada grafica y su grafica nativa. Los rangos apuntan a esas
+	 * celdas y la cache se llena desde los mismos valores: nunca se releen filas ya expulsadas del
+	 * streaming. Un valor nulo queda como celda vacia y corta la linea.
+	 */
+	public CorporateWorkbook charts(String name, String title, List<Chart> charts) {
+		List<String> headers = new ArrayList<>();
+		int rowCount = 0;
+		for (Chart chart : charts) {
+			headers.addAll(List.of(chart.title(), chart.unit(), ""));
+			rowCount = Math.max(rowCount, chart.labels().size());
+		}
+		List<List<Object>> rows = new ArrayList<>();
+		for (int row = 0; row < rowCount; row++) {
+			List<Object> values = new ArrayList<>();
+			for (Chart chart : charts) {
+				boolean present = row < chart.labels().size();
+				values.add(present ? chart.labels().get(row) : null);
+				values.add(present ? chart.values().get(row) : null);
+				values.add(null);
+			}
+			rows.add(values);
+		}
+		write(name, title, headers, rows, false);
+		XSSFDrawing drawing = workbook.getXSSFWorkbook().getSheet(name).createDrawingPatriarch();
+		for (int index = 0; index < charts.size(); index++) {
+			draw(drawing, name, charts.get(index), index, charts.size() * COLUMNS_PER_CHART);
+		}
+		return this;
+	}
+
+	private static void draw(XSSFDrawing drawing, String sheet, Chart data, int index, int firstColumn) {
+		int firstRow = HEADER_ROW + index * CHART_ROWS;
+		XSSFChart chart = drawing.createChart(drawing.createAnchor(0, 0, 0, 0, firstColumn, firstRow,
+				firstColumn + CHART_COLUMNS, firstRow + CHART_ROWS - 1));
+		chart.setTitleText(data.title() + " (" + data.unit() + ")");
+		chart.setTitleOverlay(false);
+		chart.displayBlanksAs(DisplayBlanks.GAP);
+		XDDFCategoryAxis categories = chart.createCategoryAxis(AxisPosition.BOTTOM);
+		XDDFValueAxis values = chart.createValueAxis(AxisPosition.LEFT);
+		categories.setVisible(true);
+		values.setVisible(true);
+		values.setCrosses(data.line() ? AxisCrosses.AUTO_ZERO : AxisCrosses.MAX);
+		values.setMinimum(0);
+		int column = index * COLUMNS_PER_CHART;
+		int size = data.labels().size();
+		XDDFChartData plot = chart.createData(data.line() ? ChartTypes.LINE : ChartTypes.BAR, categories, values);
+		XDDFChartData.Series series = plot.addSeries(
+				XDDFDataSourcesFactory.fromArray(data.labels().toArray(String[]::new), range(sheet, column, size)),
+				XDDFDataSourcesFactory.fromArray(numbers(data.values()), range(sheet, column + 1, size)));
+		series.setTitle(data.unit(), null);
+		plot.setVaryColors(false);
+		if (plot instanceof XDDFBarChartData bars) {
+			bars.setBarDirection(BarDirection.BAR);
+			categories.setOrientation(AxisOrientation.MAX_MIN);
+		}
+		if (series instanceof XDDFLineChartData.Series line) {
+			line.setSmooth(false);
+			line.setMarkerStyle(MarkerStyle.CIRCLE);
+		}
+		chart.plot(plot);
+	}
+
+	private static Double[] numbers(List<BigDecimal> values) {
+		return values.stream().map(value -> value == null ? null : value.doubleValue()).toArray(Double[]::new);
+	}
+
+	private static String range(String sheet, int column, int size) {
+		return new AreaReference(new CellReference(sheet, HEADER_ROW + 1, column, true, true),
+				new CellReference(sheet, HEADER_ROW + size, column, true, true), SpreadsheetVersion.EXCEL2007)
+				.formatAsString();
+	}
+
+	private void write(String name, String title, List<String> headers, List<List<Object>> rows, boolean filter) {
 		SXSSFSheet sheet = workbook.createSheet(name);
 		Row titleRow = sheet.createRow(0);
 		titleRow.createCell(0).setCellValue(title);
 		titleRow.getCell(0).setCellStyle(titleStyle);
 		sheet.createRow(1).createCell(0).setCellValue(scope);
 		sheet.createRow(2).createCell(0).setCellValue(generated);
-		int headerIndex = 4;
+		int headerIndex = HEADER_ROW;
 		Row headerRow = sheet.createRow(headerIndex);
 		int[] widths = new int[headers.size()];
 		for (int column = 0; column < headers.size(); column++) {
@@ -77,7 +183,10 @@ public final class CorporateWorkbook {
 			List<Object> values = rows.get(index);
 			for (int column = 0; column < values.size(); column++) {
 				Object value = values.get(column);
-				String text = value == null ? "" : value.toString();
+				if (value == null) {
+					continue;
+				}
+				String text = value.toString();
 				if (value instanceof Number number) {
 					row.createCell(column).setCellValue(number.doubleValue());
 				}
@@ -90,7 +199,7 @@ public final class CorporateWorkbook {
 			}
 		}
 		sheet.createFreezePane(0, headerIndex + 1);
-		if (!rows.isEmpty()) {
+		if (filter && !rows.isEmpty()) {
 			sheet.setAutoFilter(new CellRangeAddress(headerIndex, headerIndex + rows.size(), 0,
 					headers.size() - 1));
 		}
@@ -98,7 +207,6 @@ public final class CorporateWorkbook {
 		for (int column = 0; column < widths.length; column++) {
 			sheet.setColumnWidth(column, Math.min(widths[column] + 3, MAX_COLUMN_CHARS) * 256);
 		}
-		return this;
 	}
 
 	public byte[] finish() {

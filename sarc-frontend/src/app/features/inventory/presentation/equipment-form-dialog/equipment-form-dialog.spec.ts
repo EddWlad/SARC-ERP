@@ -145,6 +145,15 @@ describe('EquipmentFormDialog', () => {
     );
   });
 
+  it('lets the connector hint grow instead of overlapping the next field', async () => {
+    await open({ replaces: JAC_STATION });
+
+    const hint = [...(fixture.nativeElement as HTMLElement).querySelectorAll('mat-hint')].find(
+      (element) => element.textContent?.includes('De 1 a 3 tipos'),
+    );
+    expect(hint?.closest('.mat-mdc-form-field-subscript-dynamic-size')).toBeTruthy();
+  });
+
   it('offers to open the equipment that already uses the identifiers', async () => {
     save.mockRejectedValue(
       new HttpErrorResponse({

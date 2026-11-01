@@ -408,6 +408,13 @@ export type IssuedReportResponse = {
     archived: boolean;
     issuedAt: string;
     issuedBy?: string | null;
+    canDownload: boolean;
+    accessReason?: string | null;
+    canIssueManagerial: boolean;
+    cutOff?: string | null;
+    criteria?: {
+        [key: string]: string;
+    } | null;
 };
 
 export type PageResultIssuedReportResponse = {
@@ -416,10 +423,6 @@ export type PageResultIssuedReportResponse = {
     size: number;
     totalElements: number;
     totalPages: number;
-};
-
-export type DownloadResponse = {
-    url: string;
 };
 
 export type InventorySummaryResponse = {
@@ -497,11 +500,11 @@ export type ConsumptionSummaryResponse = {
     byNetwork: Array<NetworkShare>;
     bySource: Array<SourceShare>;
     byType: Array<TypeShare>;
-    pendingLink: Totals;
-    awaitingApproval: Totals;
-    test: Totals;
-    energyReview: Totals;
-    energyRejected: Totals;
+    pendingLink?: Totals;
+    awaitingApproval?: Totals;
+    test?: Totals;
+    energyReview?: Totals;
+    energyRejected?: Totals;
     approvedAboveThreshold: Totals;
     generatedAt: string;
 };
@@ -1298,9 +1301,9 @@ export type IssuedReportDownloadData = {
 
 export type IssuedReportDownloadResponses = {
     /**
-     * OK
+     * Copia archivada exacta; nunca una URL del proveedor
      */
-    200: DownloadResponse;
+    200: Blob | File;
 };
 
 export type IssuedReportDownloadResponse = IssuedReportDownloadResponses[keyof IssuedReportDownloadResponses];
@@ -1514,9 +1517,9 @@ export type Report1Data = {
 
 export type Report1Responses = {
     /**
-     * OK
+     * Documento nuevo; X-Report-Id y X-Report-Cut-Off lo identifican
      */
-    200: string;
+    200: Blob | File;
 };
 
 export type Report1Response = Report1Responses[keyof Report1Responses];

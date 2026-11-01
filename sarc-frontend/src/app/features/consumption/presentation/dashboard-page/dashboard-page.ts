@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { LucideFileSpreadsheet, LucideFileText } from '@lucide/angular';
 
+import { SessionStore } from '../../../../core/auth/session-store';
 import { Problem } from '../../../../core/http/problem';
 import { Notifier } from '../../../../core/notifications/notifier';
 import { QuantityFormat } from '../../../../shared/format/quantity-format';
@@ -43,6 +44,18 @@ import { TopEquipment } from '../top-equipment/top-equipment';
 })
 export class DashboardPage {
   private readonly notifier = inject(Notifier);
+  private readonly session = inject(SessionStore);
+  /** La tarjeta exige el rol y los datos: un rol sin datos nunca se pinta como cero. */
+  protected readonly operational = computed(() => {
+    const summary = this.facade.summary();
+    if (!summary || !this.session.hasAnyRole(['ADMINISTRADOR', 'ANALISTA'])) {
+      return undefined;
+    }
+    const { pendingLink, awaitingApproval, test, energyReview, energyRejected } = summary;
+    return pendingLink && awaitingApproval && test && energyReview && energyRejected
+      ? { pendingLink, awaitingApproval, test, energyReview, energyRejected }
+      : undefined;
+  });
   private readonly dayLabel = new Intl.DateTimeFormat(inject(LOCALE_ID), {
     day: '2-digit',
     month: 'short',
@@ -58,7 +71,7 @@ export class DashboardPage {
   );
   protected readonly dailyEnergy = computed<ChartSeries>(() => ({
     label: 'Energía (kWh)',
-    values: (this.facade.summary()?.daily ?? []).map((day) => day.energyKwh ?? 0),
+    values: (this.facade.summary()?.daily ?? []).map((day) => day.energyKwh ?? null),
     colors: 'series-1',
   }));
   protected readonly dailySessions = computed<ChartSeries>(() => ({

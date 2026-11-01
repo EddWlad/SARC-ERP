@@ -42,6 +42,8 @@
           #picker
           type="file"
           class="sarc-visually-hidden"
+          aria-label="Archivo a importar"
+          tabindex="-1"
           [accept]="accepted"
           (change)="onFile(picker)"
         />

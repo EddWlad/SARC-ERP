@@ -23,22 +23,26 @@
   <mat-form-field appearance="outline" subscriptSizing="dynamic">
     <mat-label>Estado</mat-label>
     <mat-select [value]="facade.state()" (selectionChange)="onState($event.value)">
-      <mat-option value="">Todos</mat-option>
+      <mat-option value="">{{ canEdit ? 'Todos' : 'Oficiales' }}</mat-option>
       @for (state of states; track state) {
         <mat-option [value]="state">{{ stateLabels[state] }}</mat-option>
       }
     </mat-select>
   </mat-form-field>
   <mat-form-field appearance="outline" subscriptSizing="dynamic">
-    <mat-label>Revisión energética</mat-label>
+    <mat-label>Revisión</mat-label>
     <mat-select
       [value]="facade.energyReview()"
       (selectionChange)="facade.filterEnergyReview($event.value)"
     >
       <mat-option value="">Todas</mat-option>
-      <mat-option value="PENDING">Por revisar</mat-option>
+      @if (canEdit) {
+        <mat-option value="PENDING">Por revisar</mat-option>
+      }
       <mat-option value="APPROVED">Aprobada</mat-option>
-      <mat-option value="REJECTED">Rechazada</mat-option>
+      @if (canEdit) {
+        <mat-option value="REJECTED">Rechazada</mat-option>
+      }
     </mat-select>
   </mat-form-field>
   <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -106,9 +110,11 @@
           }
           <div class="card-foot">
             <sarc-session-state-badge [state]="session.state" />
-            <button matButton type="button" (click)="openEnergyReview(session)">
-              {{ canEdit && session.energyReview ? 'Revisar energía' : 'Historial energético' }}
-            </button>
+            @if (canEdit || session.energyReview === 'APPROVED') {
+              <button matButton type="button" (click)="openEnergyReview(session)">
+                {{ energyAction(session) }}
+              </button>
+            }
             @if (canEdit) {
               <span class="card-actions">
                 @if (session.canApproveSource) {
@@ -187,11 +193,11 @@
           <span class="sarc-visually-hidden">Acciones</span>
         </th>
         <td mat-cell *matCellDef="let row" class="actions-cell">
-          <button matButton type="button" (click)="openEnergyReview(sessionOf(row))">
-            {{
-              canEdit && sessionOf(row).energyReview ? 'Revisar energía' : 'Historial energético'
-            }}
-          </button>
+          @if (canEdit || sessionOf(row).energyReview === 'APPROVED') {
+            <button matButton type="button" (click)="openEnergyReview(sessionOf(row))">
+              {{ energyAction(sessionOf(row)) }}
+            </button>
+          }
           @if (canEdit) {
             @let session = sessionOf(row);
             <button

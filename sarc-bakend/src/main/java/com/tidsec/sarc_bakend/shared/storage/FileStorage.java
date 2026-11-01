@@ -2,6 +2,8 @@ package com.tidsec.sarc_bakend.shared.storage;
 
 import java.util.Optional;
 
+import com.tidsec.sarc_bakend.shared.error.ServiceUnavailableException;
+
 /**
  * Puerto de almacenamiento externo privado (TRD 02.1: imagenes y documentos no van al disco de
  * la VPS). Las referencias son opacas: solo este puerto sabe convertirlas en una URL.
@@ -33,4 +35,10 @@ public interface FileStorage {
 	 * vacio si no hay almacenamiento.
 	 */
 	Optional<String> documentUrl(String reference);
+
+	/** Lee un documento privado; la URL del proveedor nunca sale al cliente. */
+	default byte[] readDocument(String reference) {
+		throw new ServiceUnavailableException(NOT_CONFIGURED,
+				"El almacenamiento de archivos no está configurado en este entorno");
+	}
 }

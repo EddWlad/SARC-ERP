@@ -27,6 +27,8 @@ const MAX_BYTES = 10 * 1024 * 1024;
           #picker
           type="file"
           class="sarc-visually-hidden"
+          aria-label="Archivo de imagen del equipo"
+          tabindex="-1"
           [accept]="accepted"
           (change)="onPicked(picker)"
         />

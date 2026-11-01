@@ -3,17 +3,21 @@ package com.tidsec.sarc_bakend.modules.consumption.infrastructure.report;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionChartData;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionSummary;
+import com.tidsec.sarc_bakend.modules.consumption.application.result.RankedEquipment;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReviewStatus;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyTotals;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentReference;
+import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 import com.tidsec.sarc_bakend.shared.report.DomainLabels;
 
 /** Textos y formatos en espanol (Ecuador) para los reportes de consumo. */
@@ -26,6 +30,30 @@ final class ConsumptionLabels {
 
 	private static final Locale ES_EC = Locale.forLanguageTag("es-EC");
 	static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd/MM/yyyy", ES_EC);
+
+	/** Etiquetas de las graficas: posicion del ranking incluida, porque una posicion puede repetirse. */
+	static final ConsumptionChartData.Labels CHARTS = new ConsumptionChartData.Labels() {
+
+		@Override
+		public String day(LocalDate date) {
+			return DAY.format(date);
+		}
+
+		@Override
+		public String equipment(RankedEquipment item) {
+			return item.position() + ". " + name(item.equipment());
+		}
+
+		@Override
+		public String source(SessionSource source) {
+			return of(source);
+		}
+
+		@Override
+		public String type(InfrastructureType type) {
+			return DomainLabels.of(type);
+		}
+	};
 
 	private ConsumptionLabels() {
 	}

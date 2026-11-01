@@ -54,7 +54,7 @@ interface ExternalIdentityFormValue {
           identifica por sí sola un equipo.
         </p>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Plataforma</mat-label>
           <mat-select [formField]="identityForm.platform">
             @for (platform of platforms; track platform) {
@@ -66,7 +66,7 @@ interface ExternalIdentityFormValue {
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Identificador en la plataforma</mat-label>
           <input matInput autocomplete="off" [formField]="identityForm.externalId" />
           @for (error of identityForm.externalId().errors(); track error.kind) {
@@ -74,7 +74,7 @@ interface ExternalIdentityFormValue {
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Ámbito</mat-label>
           <input matInput autocomplete="off" [formField]="identityForm.scope" />
           <mat-hint
@@ -85,7 +85,7 @@ interface ExternalIdentityFormValue {
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Alias</mat-label>
           <input matInput autocomplete="off" [formField]="identityForm.alias" />
           @for (error of identityForm.alias().errors(); track error.kind) {
@@ -110,7 +110,7 @@ interface ExternalIdentityFormValue {
     .fields {
       display: flex;
       flex-direction: column;
-      gap: var(--sarc-space-2);
+      gap: var(--sarc-space-3);
       min-width: min(480px, 80vw);
     }
   `,

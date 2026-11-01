@@ -6,10 +6,12 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.tidsec.sarc_bakend.modules.consumption.application.port.ConsumptionReportRenderer;
+import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionChartData;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionReport;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionSummary;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.RankedEquipment;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.DailyEnergy;
+import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyTotals;
 import com.tidsec.sarc_bakend.shared.report.CorporateBranding;
 import com.tidsec.sarc_bakend.shared.report.CorporatePdf;
 import com.tidsec.sarc_bakend.shared.report.Kpi;
@@ -43,24 +45,24 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 								ConsumptionLabels.kwh(summary.official().energyKwh())),
 						new Kpi("Sesiones", ConsumptionLabels.count(summary.official().sessions())),
 						new Kpi("Equipos con actividad", ConsumptionLabels.count(summary.official().equipment())),
-						new Kpi("kWh por sesión", ConsumptionLabels.kwh(summary.averageKwhPerSession()))))
-				.section("Fuera de los indicadores oficiales")
-				.kpis(List.of(
-						new Kpi("Pendientes de vincular", ConsumptionLabels.count(summary.pendingLink().sessions())
-								+ " (" + ConsumptionLabels.kwh(summary.pendingLink().energyKwh()) + " kWh)"),
-						new Kpi("Por aprobar (fuente no preferente)",
-								ConsumptionLabels.count(summary.awaitingApproval().sessions()) + " ("
-										+ ConsumptionLabels.kwh(summary.awaitingApproval().energyKwh()) + " kWh)"),
-						new Kpi("Pruebas", ConsumptionLabels.count(summary.test().sessions()) + " ("
-								+ ConsumptionLabels.kwh(summary.test().energyKwh()) + " kWh)")))
-				.section("Revisión energética")
-				.kpis(List.of(new Kpi("Energía por revisar", ConsumptionLabels.count(summary.energyReview().sessions())
-						+ " (" + ConsumptionLabels.kwh(summary.energyReview().energyKwh()) + " kWh)"),
-						new Kpi("Energía rechazada", ConsumptionLabels.count(summary.energyRejected().sessions())
-								+ " (" + ConsumptionLabels.kwh(summary.energyRejected().energyKwh()) + " kWh)"),
-						new Kpi("Aprobadas sobre umbral (incluidas en oficiales)",
-								ConsumptionLabels.count(summary.approvedAboveThreshold().sessions()) + " ("
-								+ ConsumptionLabels.kwh(summary.approvedAboveThreshold().energyKwh()) + " kWh)")))
+						new Kpi("kWh por sesión", ConsumptionLabels.kwh(summary.averageKwhPerSession()))));
+		if (report.operationalAllowed()) {
+			pdf.section("Fuera de los indicadores oficiales")
+					.kpis(List.of(new Kpi("Pendientes de vincular", totals(summary.pendingLink())),
+							new Kpi("Por aprobar (fuente no preferente)", totals(summary.awaitingApproval())),
+							new Kpi("Pruebas", totals(summary.test()))))
+					.section("Revisión energética")
+					.kpis(List.of(new Kpi("Energía por revisar", totals(summary.energyReview())),
+							new Kpi("Energía rechazada", totals(summary.energyRejected()))));
+		}
+		pdf.kpis(List.of(new Kpi("Aprobadas sobre umbral (incluidas en oficiales)",
+				totals(summary.approvedAboveThreshold()))));
+		pdf.ensureSpace(ConsumptionPdfCharts.INTRO_SPACE)
+				.section("Gráficos oficiales")
+				.note(report.scope() + ". Hora de Ecuador; misma fecha de corte y filtros que "
+						+ "las tablas. Un tramo interrumpido indica energía no informada, no 0 kWh.");
+		ConsumptionPdfCharts.render(pdf, ConsumptionChartData.from(summary, ConsumptionLabels.CHARTS));
+		pdf
 				.section("Top 5 equipos por energía")
 				.table(List.of("#", "Equipo", "Código", "Red", "Sesiones", "kWh"), ranked(summary.top()),
 						new float[] { 0.5f, 4, 2, 1.5f, 1.5f, 1.5f })
@@ -83,8 +85,11 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 				.note("La red y el tipo de cada sesión provienen del equipo del inventario, no del archivo de "
 						+ "origen. Los equipos con actividad se cuentan por su identificador interno.");
 		if (summary.official().sessionsWithoutEnergy() > 0) {
-			pdf.note(ConsumptionLabels.count(summary.official().sessionsWithoutEnergy()) + " sesiones oficiales no "
-					+ "informan energía: cuentan como sesiones, no como 0 kWh, y el total es solo energía conocida.");
+			long withoutEnergy = summary.official().sessionsWithoutEnergy();
+			pdf.note(withoutEnergy == 1
+					? "1 sesión oficial no informa energía: cuenta como sesión, no como 0 kWh, y el total es solo energía conocida."
+					: ConsumptionLabels.count(withoutEnergy) + " sesiones oficiales no informan energía: cuentan como "
+							+ "sesiones, no como 0 kWh, y el total es solo energía conocida.");
 		}
 		if (summary.equipmentWithoutEnergy() > 0) {
 			pdf.note(ConsumptionLabels.count(summary.equipmentWithoutEnergy()) + " equipos quedan fuera del ranking "
@@ -92,6 +97,10 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 		}
 		if (summary.top().size() > 5) pdf.note("El Top 5 incluye más de cinco equipos por empate en el quinto lugar.");
 		return pdf.finish();
+	}
+
+	private static String totals(EnergyTotals totals) {
+		return ConsumptionLabels.count(totals.sessions()) + " (" + ConsumptionLabels.kwh(totals.energyKwh()) + " kWh)";
 	}
 
 	private static List<List<String>> ranked(List<RankedEquipment> ranking) {

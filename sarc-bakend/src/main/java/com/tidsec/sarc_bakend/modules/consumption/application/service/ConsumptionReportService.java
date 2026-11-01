@@ -26,19 +26,22 @@ import com.tidsec.sarc_bakend.modules.consumption.application.port.ConsumptionRe
 import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionReport;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionSummary;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.SessionView;
-import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergySession;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReview;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReviewStatus;
-import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyReviewRepository;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergySession;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState;
+import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyReviewRepository;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergySessionRepository;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.SessionCriteria;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentDirectory;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentReference;
 import com.tidsec.sarc_bakend.shared.catalog.ReportArchive;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
+import com.tidsec.sarc_bakend.shared.report.ReportContentProfile;
 import com.tidsec.sarc_bakend.shared.report.ReportFile;
 import com.tidsec.sarc_bakend.shared.report.ReportFormat;
+import com.tidsec.sarc_bakend.shared.report.ReportPublication;
+import com.tidsec.sarc_bakend.shared.security.ConsumptionReadAccess;
 
 /**
  * Reporte de consumo en PDF o Excel (PRD RF-003.15/16) con el mismo calculo del tablero, por eso
@@ -67,12 +70,19 @@ public class ConsumptionReportService {
 	private final ReportArchive archive;
 	private final TransactionTemplate snapshot;
 	private final Clock clock;
+	private final ConsumptionReadAccess access;
+
+	/** Documento emitido con la identidad que lo distingue en el historial. */
+	public record GeneratedReport(ReportFile file, UUID id, Instant cutOff) {
+	}
 
 	ConsumptionReportService(EnergySessionRepository sessions, ConsumptionCalculator calculator,
 			EquipmentDirectory directory, List<ConsumptionReportRenderer> renderers, ReportArchive archive,
-			PlatformTransactionManager transactionManager, Clock clock, EnergyReviewRepository reviews) {
+			PlatformTransactionManager transactionManager, Clock clock, EnergyReviewRepository reviews,
+			ConsumptionReadAccess access) {
 		this.sessions = sessions;
 		this.reviews = reviews;
+		this.access = access;
 		this.calculator = calculator;
 		this.directory = directory;
 		this.renderers = renderers.stream()
@@ -86,7 +96,7 @@ public class ConsumptionReportService {
 
 	/** Lee en una instantanea, renderiza fuera de la transaccion y archiva la copia emitida. */
 	@Transactional(propagation = Propagation.NOT_SUPPORTED)
-	public ReportFile generate(SessionCriteria criteria, ReportFormat format) {
+	public GeneratedReport generateIssued(SessionCriteria criteria, ReportFormat format) {
 		ConsumptionReportRenderer renderer = renderers.get(format);
 		if (renderer == null) {
 			throw new BusinessRuleException("REPORT_FORMAT_NOT_SUPPORTED", "Formato de reporte no disponible");
@@ -94,23 +104,27 @@ public class ConsumptionReportService {
 		ConsumptionReport report = Objects.requireNonNull(snapshot.execute(status -> read(criteria)));
 		ReportFile file = new ReportFile("consumo-" + FILE_STAMP.format(report.cutOff()) + "." + format.extension(),
 				format, renderer.render(report));
-		archive.archive(new ReportArchive.IssuedReportFile(KIND, report.scope(), file,
-				Map.of("sessions", String.valueOf(report.summary().official().sessions()))));
-		return file;
+		UUID issuedId = archive.archive(new ReportArchive.IssuedReportFile(KIND, report.scope(), file,
+				Map.of("sessions", String.valueOf(report.summary().official().sessions())),
+				publication(report, criteria)));
+		return new GeneratedReport(file, issuedId, report.cutOff());
 	}
 
 	private ConsumptionReport read(SessionCriteria criteria) {
-		ConsumptionSummary summary = calculator.summarize(criteria);
+		boolean operational = access.canReadOperational();
+		ConsumptionSummary summary = calculator.summarize(criteria, operational);
 		SessionCriteria official = criteria.withState(SessionState.VALIDATED);
-		long rows = summary.official().sessions() + summary.pendingLink().sessions()
+		long rows = summary.official().sessions() + (operational ? summary.pendingLink().sessions()
 				+ summary.awaitingApproval().sessions() + summary.test().sessions()
-				+ summary.energyReview().sessions() + summary.energyRejected().sessions();
+				+ summary.energyReview().sessions() + summary.energyRejected().sessions() : 0);
 		if (rows > MAX_SESSIONS) {
 			throw new BusinessRuleException("REPORT_TOO_LARGE",
 					"El reporte supera " + MAX_SESSIONS + " sesiones; acorte el periodo o aplique mas filtros");
 		}
 		List<EnergySession> excluded = new ArrayList<>();
-		EXCLUDED.forEach(state -> excluded.addAll(sessions.findAll(criteria.withState(state))));
+		if (operational) {
+			EXCLUDED.forEach(state -> excluded.addAll(sessions.findAll(criteria.withState(state))));
+		}
 		List<EnergySession> validated = sessions.findAll(official);
 		Map<UUID, EquipmentReference> equipment = directory.findByIds(Stream.concat(validated.stream(), excluded.stream())
 				.map(EnergySession::getEquipmentId).filter(Objects::nonNull).distinct().toList());
@@ -122,6 +136,28 @@ public class ConsumptionReportService {
 				.forEach(r -> justifications.putIfAbsent(r.getSessionId(), r.getJustification()));
 		return new ConsumptionReport(describe(criteria, equipment), Instant.now(clock), summary,
 				calculator.ranking(official, 0), views(validated, equipment), views(excluded, equipment), Map.copyOf(justifications));
+	}
+
+	private static ReportPublication publication(ConsumptionReport report, SessionCriteria criteria) {
+		Map<String, String> filters = new HashMap<>();
+		filters.put("from", criteria.from().toString());
+		filters.put("to", criteria.to().toString());
+		filters.put("timeZone", ReportPublication.TIME_ZONE);
+		if (criteria.network() != null) {
+			filters.put("network", criteria.network().name());
+		}
+		if (criteria.type() != null) {
+			filters.put("type", criteria.type().name());
+		}
+		if (criteria.source() != null) {
+			filters.put("source", criteria.source().name());
+		}
+		if (criteria.equipmentId() != null) {
+			filters.put("equipmentId", criteria.equipmentId().toString());
+		}
+		ReportContentProfile profile = report.operationalAllowed() ? ReportContentProfile.WITH_OPERATIONS
+				: ReportContentProfile.OFFICIAL_ONLY;
+		return new ReportPublication(profile, report.cutOff(), filters);
 	}
 
 	/** Alcance legible: periodo y filtros; se imprime en el encabezado y se audita. */

@@ -33,6 +33,14 @@ describe('EnergyReviewDialog', () => {
     return { fixture, dialog: fixture.componentInstance, data, close };
   }
 
+  it('lets readers scroll the justification with the keyboard', async () => {
+    const reader = await setup(false);
+    const content = (reader.fixture.nativeElement as HTMLElement).querySelector(
+      'mat-dialog-content',
+    );
+    expect(content?.getAttribute('tabindex')).toBe('0');
+  });
+
   it('rejects blank or long reasons and submits trimmed limits', async () => {
     const { fixture, dialog, data } = await setup();
     for (const reason of ['   ', 'x'.repeat(501)]) {
@@ -66,7 +74,8 @@ describe('EnergyReviewDialog', () => {
 
   it('shows history without editing controls to readers', async () => {
     const { fixture, dialog, data } = await setup(false);
-    expect(fixture.nativeElement.textContent).toContain('Historial de decisiones');
+    expect(fixture.nativeElement.textContent).toContain('Justificación aprobada');
+    expect(fixture.nativeElement.textContent).not.toContain('Historial de decisiones');
     expect(fixture.nativeElement.querySelector('textarea')).toBeNull();
     dialog.onSubmit(new Event('submit'));
     expect(data.save).not.toHaveBeenCalled();

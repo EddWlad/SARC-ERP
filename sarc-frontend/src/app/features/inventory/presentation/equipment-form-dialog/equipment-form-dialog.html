@@ -106,7 +106,7 @@
       </mat-form-field>
 
       @if (!equipmentForm.assignedCode().hidden()) {
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Código asignado</mat-label>
           <input
             matInput
@@ -150,7 +150,7 @@
         </mat-form-field>
       }
       @if (!equipmentForm.stationConnectors().hidden()) {
-        <mat-form-field appearance="outline" class="wide">
+        <mat-form-field appearance="outline" class="wide" subscriptSizing="dynamic">
           <mat-label>Tipos de conector</mat-label>
           <mat-select multiple [formField]="equipmentForm.stationConnectors">
             @for (option of connectorOptions(); track option.id) {

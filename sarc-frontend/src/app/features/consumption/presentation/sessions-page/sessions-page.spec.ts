@@ -22,7 +22,7 @@ describe('SessionsPage', () => {
             startedAt: '2026-10-21T15:00:00Z',
             source: 'WALLBOX',
             energyKwh: 1500,
-            energyReview: 'PENDING',
+            energyReview: editor ? 'PENDING' : 'APPROVED',
             state,
             canApproveSource: true,
             version: 7,
@@ -87,7 +87,7 @@ describe('SessionsPage', () => {
             expect(notifier.success.mock.calls[0][0]).not.toContain('ya suma');
           }
           const history = Array.from(host.querySelectorAll('button')).find((b) =>
-            b.textContent?.includes(editor ? 'Revisar energía' : 'Historial energético'),
+            b.textContent?.includes(editor ? 'Revisar energía' : 'Justificación aprobada'),
           );
           history?.click();
           expect(dialog.open).toHaveBeenCalled();

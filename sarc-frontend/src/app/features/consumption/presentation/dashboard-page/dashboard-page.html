@@ -85,51 +85,55 @@
     {{ quantities.knownEnergy(summary.approvedAboveThreshold.energyKwh) }}.
   </p>
 
-  <section class="excluded panel" aria-labelledby="excluded-title">
-    <h2 id="excluded-title">Fuera de los indicadores oficiales</h2>
-    <ul>
-      <li class="metric-row">
-        <span>Pendientes de vincular</span>
-        <span>
-          <strong>{{ quantities.count(summary.pendingLink.sessions) }}</strong>
-          <span class="muted"> · {{ quantities.knownEnergy(summary.pendingLink.energyKwh) }}</span>
-        </span>
-      </li>
-      <li class="metric-row">
-        <span>Por aprobar (fuente no preferente)</span>
-        <span>
-          <strong>{{ quantities.count(summary.awaitingApproval.sessions) }}</strong>
-          <span class="muted">
-            · {{ quantities.knownEnergy(summary.awaitingApproval.energyKwh) }}</span
+  @if (operational(); as operational) {
+    <section class="excluded panel" aria-labelledby="excluded-title">
+      <h2 id="excluded-title">Fuera de los indicadores oficiales</h2>
+      <ul>
+        <li class="metric-row">
+          <span>Pendientes de vincular</span>
+          <span>
+            <strong>{{ quantities.count(operational.pendingLink.sessions) }}</strong>
+            <span class="muted">
+              · {{ quantities.knownEnergy(operational.pendingLink.energyKwh) }}</span
+            >
+          </span>
+        </li>
+        <li class="metric-row">
+          <span>Por aprobar (fuente no preferente)</span>
+          <span>
+            <strong>{{ quantities.count(operational.awaitingApproval.sessions) }}</strong>
+            <span class="muted">
+              · {{ quantities.knownEnergy(operational.awaitingApproval.energyKwh) }}</span
+            >
+          </span>
+        </li>
+        <li class="metric-row">
+          <span>Energía por revisar</span>
+          <span
+            ><strong>{{ quantities.count(operational.energyReview.sessions) }}</strong> ·
+            {{ quantities.knownEnergy(operational.energyReview.energyKwh) }}</span
           >
-        </span>
-      </li>
-      <li class="metric-row">
-        <span>Energía por revisar</span>
-        <span
-          ><strong>{{ quantities.count(summary.energyReview.sessions) }}</strong> ·
-          {{ quantities.knownEnergy(summary.energyReview.energyKwh) }}</span
-        >
-      </li>
-      <li class="metric-row">
-        <span>Energía rechazada</span>
-        <span
-          ><strong>{{ quantities.count(summary.energyRejected.sessions) }}</strong> ·
-          {{ quantities.knownEnergy(summary.energyRejected.energyKwh) }}</span
-        >
-      </li>
-      <li class="metric-row">
-        <span>Pruebas</span>
-        <span>
-          <strong>{{ quantities.count(summary.test.sessions) }}</strong>
-          <span class="muted"> · {{ quantities.knownEnergy(summary.test.energyKwh) }}</span>
-        </span>
-      </li>
-    </ul>
-    <p class="dashboard-note">
-      Se conservan y se informan aparte; no suman en los totales (PRD 3.3).
-    </p>
-  </section>
+        </li>
+        <li class="metric-row">
+          <span>Energía rechazada</span>
+          <span
+            ><strong>{{ quantities.count(operational.energyRejected.sessions) }}</strong> ·
+            {{ quantities.knownEnergy(operational.energyRejected.energyKwh) }}</span
+          >
+        </li>
+        <li class="metric-row">
+          <span>Pruebas</span>
+          <span>
+            <strong>{{ quantities.count(operational.test.sessions) }}</strong>
+            <span class="muted"> · {{ quantities.knownEnergy(operational.test.energyKwh) }}</span>
+          </span>
+        </li>
+      </ul>
+      <p class="dashboard-note">
+        Se conservan y se informan aparte; no suman en los totales (PRD 3.3).
+      </p>
+    </section>
+  }
 
   @if (summary.official.sessions === 0) {
     <div class="state">

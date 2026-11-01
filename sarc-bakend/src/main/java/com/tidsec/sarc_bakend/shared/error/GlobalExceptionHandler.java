@@ -59,6 +59,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return problem(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Credenciales invalidas", request);
 	}
 
+	@ExceptionHandler(OperationalAccessDeniedException.class)
+	ResponseEntity<Object> handleOperationalAccess(OperationalAccessDeniedException ex, WebRequest request) {
+		ResponseEntity<Object> response = problem(HttpStatus.FORBIDDEN, ex.code(), ex.getMessage(), request);
+		if ("REPORT_OPERATIONAL_CONTENT_RESTRICTED".equals(ex.code())
+				&& response.getBody() instanceof ProblemDetail detail) {
+			detail.setProperty("action", "ISSUE_MANAGERIAL_REPORT");
+		}
+		return response;
+	}
+
 	@ExceptionHandler(AccessDeniedException.class)
 	ResponseEntity<Object> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
 		return problem(HttpStatus.FORBIDDEN, "ACCESS_DENIED", "No tiene permisos para esta operacion", request);

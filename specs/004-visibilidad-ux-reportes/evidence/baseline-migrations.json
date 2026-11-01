@@ -1,0 +1,12 @@
+{
+  "V001__init_roles_usuarios.sql": "ccef1a4b1de3c7de5394d731b02890de9f35904d1fe0be33612fee54f278b0e3",
+  "V002__auditoria.sql": "74157c76512b7ec81b9fca18fea5473557693300ee065dd2bb6d5742138d5e00",
+  "V003__spring_session.sql": "aedaf7e519a92d39a29d8c42991224a65332bba6fe3c228d3b6d43233382a5dd",
+  "V004__inventario_equipos.sql": "774e8127c25f1ca0d790795a500fae2dd6837ab3f2db38b6fb221d43032a6a11",
+  "V005__consumo_energia.sql": "3e802a889d549b0945b891954cae7ca5139e0dc73232c167bc8d6182b5759059",
+  "V006__importacion_equipos.sql": "84b5dca7b89ea96a90f6061547ff446d50ab6b8aeecb171ea32cce2eca2f47a9",
+  "V007__correcciones_qa.sql": "1fb6d16792deed9249e7b6ce60382dbe02a7330e7f1e1097c35ba76e2f6a618a",
+  "V008__codigo_kia_segun_uso.sql": "3ff27c0da7e916353dc5512f0f6d728137f69fd3a0e5103802986dfd30c57337",
+  "V009__vinculacion_enerlink_sesiones.sql": "d6855eb1bdf657fef271b9e12fd8a80161edb29da65d461c25e01835f60557f7",
+  "V010__revision_energia.sql": "43478a5f5bd03a57f8468d7cd10a855e004ce901d099ed23585d5cbd0c4212df"
+}

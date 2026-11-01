@@ -11,4 +11,7 @@ import java.util.UUID;
  */
 public record ConsumptionReport(String scope, Instant cutOff, ConsumptionSummary summary,
 		List<RankedEquipment> ranking, List<SessionView> official, List<SessionView> excluded, Map<UUID, String> energyJustifications) {
+	public boolean operationalAllowed() {
+		return summary.pendingLink() != null;
+	}
 }

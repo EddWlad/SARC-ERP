@@ -52,7 +52,7 @@ class ReportArchiveService implements ReportArchive {
 		String reference = store(id, issued);
 		transactions.executeWithoutResult(status -> {
 			reports.save(IssuedReport.issued(id, issued.kind(), file.format(), file.filename(), issued.scope(), checksum,
-					file.content().length, reference));
+					file.content().length, reference, issued.publication()));
 			Map<String, String> details = new HashMap<>(issued.details());
 			details.put("format", file.format().name());
 			details.put("filters", issued.scope());

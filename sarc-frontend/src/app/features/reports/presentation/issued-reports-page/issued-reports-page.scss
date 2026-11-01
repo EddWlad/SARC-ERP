@@ -27,3 +27,17 @@
   text-align: end;
   white-space: nowrap;
 }
+
+.restricted {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--sarc-space-1);
+  min-width: 220px;
+  text-align: end;
+  white-space: normal;
+
+  button {
+    white-space: nowrap;
+  }
+}

@@ -1,6 +1,7 @@
-import { DatePipe, DOCUMENT, NgTemplateOutlet } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { Component, inject, Injector, LOCALE_ID, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatPaginatorIntl, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -8,7 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { LucideDownload } from '@lucide/angular';
 
-import { toProblem } from '../../../../core/http/problem';
+import { Problem } from '../../../../core/http/problem';
 import { SpanishPaginatorIntl } from '../../../../core/i18n/spanish-paginator-intl';
 import { Notifier } from '../../../../core/notifications/notifier';
 import { QuantityFormat } from '../../../../shared/format/quantity-format';
@@ -19,8 +20,13 @@ import {
   KIND_LABELS,
   kindLabel,
   REPORT_KINDS,
+  REPORT_TIME_ZONE,
   ReportKind,
 } from '../../domain/issued-report';
+import { ManagerialReportDialog } from '../managerial-report-dialog/managerial-report-dialog';
+
+/** Motivo del backend para un original que los roles actuales no pueden abrir. */
+const RESTRICTED = 'REPORT_OPERATIONAL_CONTENT_RESTRICTED';
 
 /**
  * Reportes emitidos (RF-RPT-08): que se entrego, con que alcance y huella, y la copia exacta para
@@ -45,7 +51,13 @@ import {
 })
 export class IssuedReportsPage {
   private readonly notifier = inject(Notifier);
-  private readonly document = inject(DOCUMENT);
+  private readonly dialog = inject(MatDialog);
+  private readonly injector = inject(Injector);
+  private readonly cutOffFormat = new Intl.DateTimeFormat(inject(LOCALE_ID), {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: REPORT_TIME_ZONE,
+  });
 
   protected readonly facade = inject(IssuedReportsFacade);
   protected readonly isHandset = injectIsHandset();
@@ -77,15 +89,36 @@ export class IssuedReportsPage {
       : `${this.quantities.kwh(bytes / (1024 * 1024))} MB`;
   }
 
-  /** La URL firmada entrega el archivo como adjunto: se descarga sin salir de SARC. */
+  protected restricted(report: IssuedReport): boolean {
+    return report.accessReason === RESTRICTED;
+  }
+
+  /** El original nunca se reemplaza: una negativa actualiza la fila y no emite por su cuenta. */
   protected async download(report: IssuedReport): Promise<void> {
     this.downloading.set(report.id);
     try {
-      this.document.location.assign(await this.facade.downloadUrl(report));
+      await this.facade.download(report);
     } catch (error) {
-      this.notifier.error(toProblem(error).detail);
+      const problem = error as Problem;
+      this.notifier.error(problem.detail);
+      if (problem.code === RESTRICTED) {
+        this.facade.reload();
+      }
     } finally {
       this.downloading.set(null);
     }
+  }
+
+  /** La fachada de esta pantalla llega al dialogo por el inyector: no es un servicio raiz. */
+  protected issue(report: IssuedReport): void {
+    this.dialog
+      .open(ManagerialReportDialog, { data: { report }, injector: this.injector })
+      .afterClosed()
+      .subscribe((issued) => {
+        if (issued) {
+          const cutOff = issued.cutOff ? this.cutOffFormat.format(new Date(issued.cutOff)) : '—';
+          this.notifier.success(`Informe ${issued.id ?? ''} emitido con corte ${cutOff}`);
+        }
+      });
   }
 }

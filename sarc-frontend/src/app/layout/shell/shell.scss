@@ -114,8 +114,22 @@
   }
 }
 
+.title-short {
+  display: none;
+}
+
 @media (max-width: 599.98px) {
   .topbar-title {
     font: var(--mat-sys-title-small);
+  }
+}
+
+@media (max-width: 479.98px) {
+  .title-full {
+    display: none;
+  }
+
+  .title-short {
+    display: inline;
   }
 }

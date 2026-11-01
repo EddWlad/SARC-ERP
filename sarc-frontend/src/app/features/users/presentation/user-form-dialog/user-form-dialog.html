@@ -28,7 +28,7 @@
       }
     </mat-form-field>
 
-    <mat-form-field appearance="outline">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
       <mat-label>Roles</mat-label>
       <mat-select multiple [formField]="userForm.roles">
         @for (role of roles; track role) {

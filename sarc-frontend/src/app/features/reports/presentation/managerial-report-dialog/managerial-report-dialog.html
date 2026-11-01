@@ -1,0 +1,108 @@
+<h2 mat-dialog-title>Emitir informe gerencial</h2>
+<form novalidate (submit)="onSubmit($event)">
+  <mat-dialog-content class="fields">
+    <p class="note">
+      Se emite un documento nuevo, con su propio identificador y fecha de corte, que solo contiene
+      información oficial. El original no cambia.
+    </p>
+    @if (legacy) {
+      <p class="note">
+        El original no registró sus filtros. Alcance anterior: {{ data.report.scope }}. Confirme
+        período y filtros.
+      </p>
+    }
+    @if (error(); as message) {
+      <div class="form-alert" role="alert">
+        <svg lucideTriangleAlert [size]="20" aria-hidden="true"></svg>
+        <p>{{ message }}</p>
+      </div>
+    }
+    <div class="row">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Desde</mat-label>
+        <input matInput type="date" [formField]="reportForm.from" />
+        @for (fieldError of reportForm.from().errors(); track fieldError.kind) {
+          <mat-error>{{ fieldError.message }}</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Hasta (incluido)</mat-label>
+        <input matInput type="date" [formField]="reportForm.to" />
+        @for (fieldError of reportForm.to().errors(); track fieldError.kind) {
+          <mat-error>{{ fieldError.message }}</mat-error>
+        }
+      </mat-form-field>
+    </div>
+    <div class="row">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Red</mat-label>
+        <mat-select [formField]="reportForm.network">
+          <mat-option value="">Todas</mat-option>
+          @for (network of networks; track network) {
+            <mat-option [value]="network">{{ networkLabels[network] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Tipo</mat-label>
+        <mat-select [formField]="reportForm.type">
+          <mat-option value="">Todos</mat-option>
+          @for (type of types; track type) {
+            <mat-option [value]="type">{{ typeLabels[type] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <div class="row">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Plataforma</mat-label>
+        <mat-select [formField]="reportForm.source">
+          <mat-option value="">Todas</mat-option>
+          @for (source of sources; track source) {
+            <mat-option [value]="source">{{ sourceLabels[source] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Formato</mat-label>
+        <mat-select [formField]="reportForm.format">
+          <mat-option value="PDF">PDF</mat-option>
+          <mat-option value="XLSX">Excel</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Equipo</mat-label>
+      <input
+        matInput
+        type="search"
+        placeholder="Nombre, código o serie"
+        [value]="equipmentLabel()"
+        [matAutocomplete]="auto"
+        (input)="onEquipmentText($event)"
+      />
+      @if (model().equipmentId !== '') {
+        <button
+          matIconButton
+          matSuffix
+          type="button"
+          aria-label="Quitar filtro de equipo"
+          (click)="clearEquipment()"
+        >
+          <svg lucideX [size]="18" aria-hidden="true"></svg>
+        </button>
+      }
+      <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onEquipment($event)">
+        @for (option of equipmentOptions(); track option.id) {
+          <mat-option [value]="option">{{ equipmentName(option) }}</mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button matButton type="button" [disabled]="busy()" (click)="unsaved.cancel()">Cancelar</button>
+    <button matButton="filled" type="submit" [disabled]="busy()">
+      {{ busy() ? 'Emitiendo...' : 'Emitir y descargar' }}
+    </button>
+  </mat-dialog-actions>
+</form>

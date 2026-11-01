@@ -34,13 +34,13 @@ const SLOT_COLORS: readonly SeriesColor[] = ['series-1', 'series-2', 'series-3']
           <li>
             <span class="swatch" [style.background]="'var(--sarc-' + colors[index] + ')'"></span>
             <span class="name">{{ item.label }}</span>
-            <span class="value">{{ quantities.knownEnergy(item.energyKwh) }}</span>
-            <strong class="share">{{ quantities.percent(item.energyKwh ?? 0, total()) }}</strong>
+            <span class="value">{{ energyOf(item) }}</span>
+            <strong class="share">{{ shareOf(item) }}</strong>
           </li>
         }
       </ul>
     } @else {
-      <p class="empty">Sin energía validada en este periodo.</p>
+      <p class="empty">{{ emptyMessage() }}</p>
     }
   `,
   styles: `
@@ -101,16 +101,34 @@ export class ShareChart {
   protected readonly labels = computed(() => this.items().map((item) => item.label));
   protected readonly series = computed<ChartSeries>(() => ({
     label: 'Energía (kWh)',
-    values: this.items().map((item) => item.energyKwh ?? 0),
+    values: this.items().map((item) => item.energyKwh ?? null),
     colors: this.items().map((_, index) => SLOT_COLORS[index % SLOT_COLORS.length]),
   }));
   protected readonly description = computed(
     () =>
       `${this.title()}: ` +
       this.items()
-        .map(
-          (item) => `${item.label} ${this.quantities.percent(item.energyKwh ?? 0, this.total())}`,
-        )
+        .map((item) => `${item.label} ${this.shareOf(item)}`)
         .join(', '),
   );
+  /** Sin total no hay porcentajes: ni sesiones, ni lecturas y un cero conocido se dicen distinto. */
+  protected readonly emptyMessage = computed(() => {
+    const items = this.items();
+    if (items.every((item) => item.sessions === 0)) {
+      return 'Sin sesiones oficiales en este periodo.';
+    }
+    return items.every((item) => item.sessions === 0 || item.energyKwh == null)
+      ? 'Sin lecturas de energía en este periodo.'
+      : `Energía conocida: ${this.quantities.knownEnergy(0)} en este periodo.`;
+  });
+
+  protected energyOf(item: ShareItem): string {
+    return item.sessions === 0 ? 'Sin sesiones' : this.quantities.knownEnergy(item.energyKwh);
+  }
+
+  protected shareOf(item: ShareItem): string {
+    return item.energyKwh == null
+      ? 'Sin datos'
+      : this.quantities.percent(item.energyKwh, this.total());
+  }
 }

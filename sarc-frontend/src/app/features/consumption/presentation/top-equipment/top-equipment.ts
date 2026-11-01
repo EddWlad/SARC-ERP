@@ -101,9 +101,7 @@ import { RankedEquipment } from '../../domain/consumption';
     }
 
     .name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      overflow-wrap: anywhere;
     }
 
     .muted {

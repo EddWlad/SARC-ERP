@@ -7,8 +7,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -19,8 +19,8 @@ import org.springframework.stereotype.Component;
 
 import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionSummary;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.RankedEquipment;
-import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReviewStatus;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.DailyEnergy;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergySessionRepository;
@@ -54,7 +54,7 @@ class ConsumptionCalculator {
 		this.clock = clock;
 	}
 
-	ConsumptionSummary summarize(SessionCriteria criteria) {
+	ConsumptionSummary summarize(SessionCriteria criteria, boolean includeOperations) {
 		requirePeriod(criteria);
 		SessionCriteria official = criteria.withState(SessionState.VALIDATED);
 		EnergyTotals totals = sessions.totals(official);
@@ -64,11 +64,11 @@ class ConsumptionCalculator {
 				complete(ChargingNetwork.class, sessions.byNetwork(official)),
 				complete(SessionSource.class, sessions.bySource(official)),
 				complete(InfrastructureType.class, sessions.byType(official)),
-				sessions.totals(criteria.withState(SessionState.PENDING_LINK)),
-				sessions.totals(criteria.withState(SessionState.AWAITING_APPROVAL)),
-				sessions.totals(criteria.withState(SessionState.TEST)),
-				sessions.totals(criteria.withState(SessionState.ENERGY_REVIEW)),
-				sessions.totals(criteria.withState(SessionState.ENERGY_REJECTED)),
+				includeOperations ? sessions.totals(criteria.withState(SessionState.PENDING_LINK)) : null,
+				includeOperations ? sessions.totals(criteria.withState(SessionState.AWAITING_APPROVAL)) : null,
+				includeOperations ? sessions.totals(criteria.withState(SessionState.TEST)) : null,
+				includeOperations ? sessions.totals(criteria.withState(SessionState.ENERGY_REVIEW)) : null,
+				includeOperations ? sessions.totals(criteria.withState(SessionState.ENERGY_REJECTED)) : null,
 				sessions.totals(official.withEnergyReview(EnergyReviewStatus.APPROVED)), Instant.now(clock));
 	}
 

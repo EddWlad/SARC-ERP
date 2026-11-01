@@ -2,8 +2,17 @@ import { httpResource } from '@angular/common/http';
 import { computed, inject, Service, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
+import { FileSaver } from '../../../core/files/file-saver';
+import { ReportFormat } from '../../../shared/reports/report-format';
 import { IssuedReportsApi } from '../data-access/issued-reports-api';
-import { IssuedReport, IssuedReportPage, ReportKind } from '../domain/issued-report';
+import {
+  GeneratedReportInfo,
+  IssuedReport,
+  IssuedReportPage,
+  ManagerialReportCriteria,
+  ReportEquipmentOption,
+  ReportKind,
+} from '../domain/issued-report';
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -11,6 +20,7 @@ const DEFAULT_PAGE_SIZE = 20;
 @Service({ autoProvided: false })
 export class IssuedReportsFacade {
   private readonly api = inject(IssuedReportsApi);
+  private readonly files = inject(FileSaver);
 
   readonly kind = signal<ReportKind | ''>('');
   readonly pageIndex = signal(0);
@@ -41,7 +51,30 @@ export class IssuedReportsFacade {
     this.result.reload();
   }
 
-  async downloadUrl(report: IssuedReport): Promise<string> {
-    return (await firstValueFrom(this.api.downloadUrl(report.id))).url;
+  /** Rechaza con el `Problem` del backend, que en descargas llega como Blob. */
+  download(report: IssuedReport): Promise<void> {
+    return this.files.download(this.api.download(report.id), report.fileName);
+  }
+
+  async generateConsumptionReport(
+    criteria: ManagerialReportCriteria,
+    format: ReportFormat,
+  ): Promise<GeneratedReportInfo> {
+    const result = await firstValueFrom(this.api.generateConsumptionReport(criteria, format));
+    this.files.save(result, format === 'PDF' ? 'consumo.pdf' : 'consumo.xlsx');
+    this.reload();
+    return {
+      id: result.headers.get('X-Report-Id'),
+      cutOff: result.headers.get('X-Report-Cut-Off'),
+    };
+  }
+
+  async searchEquipment(text: string): Promise<readonly ReportEquipmentOption[]> {
+    const query = text.trim();
+    return query.length < 2 ? [] : (await firstValueFrom(this.api.equipmentOptions(query))).content;
+  }
+
+  findEquipment(id: string): Promise<ReportEquipmentOption> {
+    return firstValueFrom(this.api.equipment(id));
   }
 }

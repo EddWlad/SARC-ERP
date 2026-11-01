@@ -1443,11 +1443,18 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "OK",
+            "description" : "Copia archivada exacta; nunca una URL del proveedor",
             "content" : {
-              "*/*" : {
+              "application/pdf" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/DownloadResponse"
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
                 }
               }
             }
@@ -2021,12 +2028,34 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
+            "description" : "Documento nuevo; X-Report-Id y X-Report-Cut-Off lo identifican",
+            "headers" : {
+              "X-Report-Cut-Off" : {
+                "style" : "simple",
                 "schema" : {
                   "type" : "string",
-                  "format" : "byte"
+                  "format" : "date-time"
+                }
+              },
+              "X-Report-Id" : {
+                "style" : "simple",
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uuid"
+                }
+              }
+            },
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
                 }
               }
             }
@@ -3527,9 +3556,28 @@
           "issuedBy" : {
             "type" : [ "string", "null" ],
             "format" : "uuid"
+          },
+          "canDownload" : {
+            "type" : "boolean"
+          },
+          "accessReason" : {
+            "type" : [ "string", "null" ]
+          },
+          "canIssueManagerial" : {
+            "type" : "boolean"
+          },
+          "cutOff" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "criteria" : {
+            "type" : [ "object", "null" ],
+            "additionalProperties" : {
+              "type" : "string"
+            }
           }
         },
-        "required" : [ "archived", "checksum", "fileName", "format", "id", "issuedAt", "kind", "scope", "sizeBytes" ]
+        "required" : [ "archived", "canDownload", "canIssueManagerial", "checksum", "fileName", "format", "id", "issuedAt", "kind", "scope", "sizeBytes" ]
       },
       "PageResultIssuedReportResponse" : {
         "type" : "object",
@@ -3558,15 +3606,6 @@
           }
         },
         "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
-      },
-      "DownloadResponse" : {
-        "type" : "object",
-        "properties" : {
-          "url" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "url" ]
       },
       "InventorySummaryResponse" : {
         "type" : "object",
@@ -3819,18 +3858,23 @@
             }
           },
           "pendingLink" : {
+            "type" : "null",
             "$ref" : "#/components/schemas/Totals"
           },
           "awaitingApproval" : {
+            "type" : "null",
             "$ref" : "#/components/schemas/Totals"
           },
           "test" : {
+            "type" : "null",
             "$ref" : "#/components/schemas/Totals"
           },
           "energyReview" : {
+            "type" : "null",
             "$ref" : "#/components/schemas/Totals"
           },
           "energyRejected" : {
+            "type" : "null",
             "$ref" : "#/components/schemas/Totals"
           },
           "approvedAboveThreshold" : {
@@ -3841,7 +3885,7 @@
             "format" : "date-time"
           }
         },
-        "required" : [ "approvedAboveThreshold", "awaitingApproval", "byNetwork", "bySource", "byType", "daily", "energyRejected", "energyReview", "equipmentWithoutEnergy", "from", "generatedAt", "official", "pendingLink", "test", "to", "top" ]
+        "required" : [ "approvedAboveThreshold", "byNetwork", "bySource", "byType", "daily", "equipmentWithoutEnergy", "from", "generatedAt", "official", "to", "top" ]
       },
       "Day" : {
         "type" : "object",

@@ -18,9 +18,19 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  :focus-visible {
+  // Material anula el outline de sus botones con una clase de igual peso: sin `button`/`a` el foco
+  // por teclado solo tintaria el fondo.
+  :focus-visible,
+  button:focus-visible,
+  a:focus-visible {
     outline: 2px solid var(--mat-sys-primary);
     outline-offset: 2px;
+  }
+
+  // Dentro de menus y pestanas el contenedor recorta lo que sobresale.
+  [role='menuitem']:focus-visible,
+  [role='tab']:focus-visible {
+    outline-offset: -2px;
   }
 
   .sarc-visually-hidden {

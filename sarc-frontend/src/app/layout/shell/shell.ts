@@ -1,5 +1,13 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { Component, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  DOCUMENT,
+  ElementRef,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
@@ -56,6 +64,8 @@ export class Shell {
   private readonly session = inject(SessionStore);
   private readonly theme = inject(ThemeStore);
   private readonly router = inject(Router);
+  private readonly document = inject(DOCUMENT);
+  private readonly menuButton = viewChild('menuButton', { read: ElementRef });
 
   protected readonly isHandset = toSignal(
     inject(BreakpointObserver)
@@ -81,6 +91,19 @@ export class Shell {
 
   protected setTheme(mode: ThemeMode): void {
     this.theme.setMode(mode);
+  }
+
+  /** Con `<base href="/">` el ancla navegaria a la raiz y recargaria la aplicacion. */
+  protected skipToContent(event: Event, content: HTMLElement): void {
+    event.preventDefault();
+    content.focus();
+  }
+
+  /** Al cerrar el menu movil, el foco vuelve al boton en vez de perderse en el body. */
+  protected restoreMenuFocus(): void {
+    if (this.document.activeElement === this.document.body) {
+      (this.menuButton()?.nativeElement as HTMLElement | undefined)?.focus();
+    }
   }
 
   protected closeMenuOnHandset(): void {

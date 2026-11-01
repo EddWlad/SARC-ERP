@@ -1,10 +1,17 @@
 package com.tidsec.sarc_bakend.shared.storage;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,10 +30,21 @@ class CloudinaryFileStorage implements FileStorage {
 	private static final String DELIVERY_TYPE = "authenticated";
 	private static final Duration DOCUMENT_URL_TTL = Duration.ofMinutes(5);
 
+	private static final HttpClient DOCUMENT_CLIENT = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10))
+			.followRedirects(HttpClient.Redirect.NEVER).build();
+	private static final int MAX_DOCUMENT_BYTES = 100 * 1024 * 1024;
+	private static final Duration DOCUMENT_READ_TIMEOUT = Duration.ofSeconds(60);
+
 	private final Cloudinary cloudinary;
 	private final String rootFolder;
+	private final HttpClient documentClient;
 
 	CloudinaryFileStorage(StorageProperties properties) {
+		this(properties, DOCUMENT_CLIENT);
+	}
+
+	CloudinaryFileStorage(StorageProperties properties, HttpClient documentClient) {
+		this.documentClient = documentClient;
 		this.cloudinary = new Cloudinary(ObjectUtils.asMap(
 				"cloud_name", properties.cloudName(),
 				"api_key", properties.apiKey(),
@@ -103,6 +121,53 @@ class CloudinaryFileStorage implements FileStorage {
 		catch (Exception ex) {
 			log.error("No se pudo firmar la descarga del documento {}", reference, ex);
 			throw unavailable();
+		}
+	}
+
+	@Override
+	public byte[] readDocument(String reference) {
+		try {
+			URI uri = URI.create(documentUrl(reference).orElseThrow(CloudinaryFileStorage::unavailable));
+			HttpRequest request = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(30)).GET().build();
+			HttpResponse<InputStream> response = documentClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+			try (InputStream body = response.body()) {
+				if (response.statusCode() != 200) {
+					throw unavailable();
+				}
+				byte[] data = readLimited(body);
+				if (data.length > MAX_DOCUMENT_BYTES) {
+					throw unavailable();
+				}
+				return data;
+			}
+		}
+		catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+			throw unavailable();
+		}
+		catch (IOException | IllegalArgumentException ex) {
+			throw unavailable();
+		}
+	}
+
+	/** El timeout de la peticion termina con las cabeceras: cerrar el flujo corta un cuerpo detenido. */
+	private static byte[] readLimited(InputStream body) throws IOException {
+		CompletableFuture<Void> watchdog = CompletableFuture.runAsync(() -> closeQuietly(body),
+				CompletableFuture.delayedExecutor(DOCUMENT_READ_TIMEOUT.toSeconds(), TimeUnit.SECONDS));
+		try {
+			return body.readNBytes(MAX_DOCUMENT_BYTES + 1);
+		}
+		finally {
+			watchdog.cancel(false);
+		}
+	}
+
+	private static void closeQuietly(InputStream body) {
+		try {
+			body.close();
+		}
+		catch (IOException ex) {
+			// El lector recibe el error de la lectura interrumpida.
 		}
 	}
 

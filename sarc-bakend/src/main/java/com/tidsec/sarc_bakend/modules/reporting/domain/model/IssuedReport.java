@@ -1,9 +1,16 @@
 package com.tidsec.sarc_bakend.modules.reporting.domain.model;
 
+import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import com.tidsec.sarc_bakend.shared.persistence.BaseAuditableEntity;
+import com.tidsec.sarc_bakend.shared.report.ReportContentProfile;
 import com.tidsec.sarc_bakend.shared.report.ReportFormat;
+import com.tidsec.sarc_bakend.shared.report.ReportPublication;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -44,6 +51,17 @@ public class IssuedReport extends BaseAuditableEntity {
 	@Column(updatable = false)
 	private String fileRef;
 
+	@Enumerated(EnumType.STRING)
+	@Column(updatable = false, length = 24)
+	private ReportContentProfile contentProfile;
+
+	@Column(updatable = false)
+	private Instant cutOff;
+
+	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(updatable = false, columnDefinition = "jsonb")
+	private Map<String, String> criteria;
+
 	protected IssuedReport() {
 	}
 
@@ -52,8 +70,13 @@ public class IssuedReport extends BaseAuditableEntity {
 	}
 
 	public static IssuedReport issued(UUID id, String kind, ReportFormat format, String fileName, String scope,
-			String checksum, long sizeBytes, String fileRef) {
+			String checksum, long sizeBytes, String fileRef, ReportPublication publication) {
 		IssuedReport report = new IssuedReport(id);
+		if (publication != null) {
+			report.contentProfile = publication.profile();
+			report.cutOff = publication.cutOff();
+			report.criteria = publication.criteria();
+		}
 		report.kind = kind;
 		report.format = format;
 		report.fileName = fileName;
@@ -62,6 +85,18 @@ public class IssuedReport extends BaseAuditableEntity {
 		report.sizeBytes = sizeBytes;
 		report.fileRef = fileRef;
 		return report;
+	}
+
+	public ReportContentProfile getContentProfile() {
+		return contentProfile;
+	}
+
+	public Instant getCutOff() {
+		return cutOff;
+	}
+
+	public Map<String, String> getCriteria() {
+		return criteria == null ? null : Map.copyOf(criteria);
 	}
 
 	/** Hay copia del archivo tal como se entrego. */

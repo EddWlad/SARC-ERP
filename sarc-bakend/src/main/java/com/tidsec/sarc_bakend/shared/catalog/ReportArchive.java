@@ -1,6 +1,7 @@
 package com.tidsec.sarc_bakend.shared.catalog;
 
 import java.util.Map;
+import com.tidsec.sarc_bakend.shared.report.ReportPublication;
 import java.util.UUID;
 
 import com.tidsec.sarc_bakend.shared.report.ReportFile;
@@ -13,7 +14,12 @@ import com.tidsec.sarc_bakend.shared.report.ReportFile;
 public interface ReportArchive {
 
 	/** Reporte emitido: que es ({@code kind}, p. ej. CONSUMPTION), su alcance legible y datos para la auditoria. */
-	record IssuedReportFile(String kind, String scope, ReportFile file, Map<String, String> details) {
+	record IssuedReportFile(String kind, String scope, ReportFile file, Map<String, String> details,
+			ReportPublication publication) {
+
+		public IssuedReportFile(String kind, String scope, ReportFile file, Map<String, String> details) {
+			this(kind, scope, file, details, null);
+		}
 	}
 
 	/**

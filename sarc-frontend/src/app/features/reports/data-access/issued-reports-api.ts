@@ -1,9 +1,10 @@
 import { HttpClient, HttpResourceRequest } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 
-import { DownloadResponse } from '../../../core/api/generated';
+import { PageResultEquipmentSummaryResponse, EquipmentResponse } from '../../../core/api/generated';
+import { ReportFormat } from '../../../shared/reports/report-format';
 import { API_BASE } from '../../../core/http/api';
-import { ReportKind } from '../domain/issued-report';
+import { ReportKind, ManagerialReportCriteria } from '../domain/issued-report';
 
 /** Acceso HTTP a `/api/v1/reports/issued`. */
 @Service()
@@ -18,8 +19,37 @@ export class IssuedReportsApi {
     };
   }
 
-  /** URL firmada y de corta duracion de la copia archivada. */
-  downloadUrl(id: string) {
-    return this.http.get<DownloadResponse>(`${this.baseUrl}/${id}/download`);
+  /** Entrega binaria autorizada en cada peticion; no usa enlaces del proveedor. */
+  download(id: string) {
+    return this.http.get(`${this.baseUrl}/${id}/download`, {
+      observe: 'response',
+      responseType: 'blob',
+    });
+  }
+
+  /** Mismo endpoint que Consumo: el servidor decide la audiencia por el usuario actual. */
+  generateConsumptionReport(criteria: ManagerialReportCriteria, format: ReportFormat) {
+    const params: Record<string, string> = { from: criteria.from, to: criteria.to, format };
+    for (const key of ['network', 'type', 'source', 'equipmentId'] as const) {
+      const value = criteria[key];
+      if (value) {
+        params[key] = value;
+      }
+    }
+    return this.http.get(`${API_BASE}/energy/report`, {
+      params,
+      observe: 'response',
+      responseType: 'blob',
+    });
+  }
+
+  equipmentOptions(text: string) {
+    return this.http.get<PageResultEquipmentSummaryResponse>(`${API_BASE}/equipment`, {
+      params: { text, size: 10 },
+    });
+  }
+
+  equipment(id: string) {
+    return this.http.get<EquipmentResponse>(`${API_BASE}/equipment/${id}`);
   }
 }

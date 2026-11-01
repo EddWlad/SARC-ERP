@@ -30,11 +30,11 @@ public record ConsumptionSummaryResponse(
 		List<NetworkShare> byNetwork,
 		List<SourceShare> bySource,
 		List<TypeShare> byType,
-		Totals pendingLink,
-		Totals awaitingApproval,
-		Totals test,
-		Totals energyReview,
-		Totals energyRejected,
+		@Schema(nullable = true) Totals pendingLink,
+		@Schema(nullable = true) Totals awaitingApproval,
+		@Schema(nullable = true) Totals test,
+		@Schema(nullable = true) Totals energyReview,
+		@Schema(nullable = true) Totals energyRejected,
 		Totals approvedAboveThreshold,
 		Instant generatedAt) {
 
@@ -42,6 +42,9 @@ public record ConsumptionSummaryResponse(
 			long sessionsWithoutEnergy) {
 
 		static Totals from(EnergyTotals totals) {
+			if (totals == null) {
+				return null;
+			}
 			return new Totals(totals.sessions(), totals.energyKwh(), totals.equipment(),
 					totals.sessionsWithoutEnergy());
 		}
