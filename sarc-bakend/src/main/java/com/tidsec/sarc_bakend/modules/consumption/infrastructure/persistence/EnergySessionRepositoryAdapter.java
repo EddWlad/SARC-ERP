@@ -11,8 +11,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReviewStatus;
@@ -101,9 +104,11 @@ class EnergySessionRepositoryAdapter implements EnergySessionRepository {
 
 	@Override
 	public PageResult<EnergySession> search(SessionCriteria criteria, PageQuery pageQuery) {
-		Page<EnergySession> page = jpa.findAll(
-				(root, query, cb) -> cb.and(SessionPredicates.of(criteria, root, cb)),
-				PageRequest.of(pageQuery.page(), pageQuery.size(), NEWEST_FIRST));
+		PageRequest request = PageRequest.of(pageQuery.page(), pageQuery.size(), NEWEST_FIRST);
+		Slice<EnergySession> slice = jpa.findBy(
+				(Specification<EnergySession>) (root, query, cb) -> cb.and(SessionPredicates.of(criteria, root, cb)),
+				query -> query.slice(request));
+		Page<EnergySession> page = new PageImpl<>(slice.getContent(), request, count(criteria));
 		return new PageResult<>(page.getContent(), page.getNumber(), page.getSize(), page.getTotalElements(),
 				page.getTotalPages());
 	}
@@ -116,7 +121,12 @@ class EnergySessionRepositoryAdapter implements EnergySessionRepository {
 
 	@Override
 	public long count(SessionCriteria criteria) {
-		return jpa.count((root, query, cb) -> cb.and(SessionPredicates.of(criteria, root, cb)));
+		CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+		CriteriaQuery<Long> query = cb.createQuery(Long.class);
+		Root<EnergySession> root = query.from(EnergySession.class);
+		// Contar una constante, no el ID, permite resolverlo solo con el indice del periodo.
+		query.select(cb.count(cb.literal(1))).where(SessionPredicates.of(criteria, root, cb));
+		return entityManager.createQuery(query).getSingleResult();
 	}
 
 	@Override
