@@ -152,13 +152,40 @@ Si hay menos de cinco equipos, DEBEN mostrarse los disponibles.
    NO DEBE usarse para editar automáticamente código, pruebas, plantillas ni documentación
    dependiente fuera del alcance de la operación solicitada.
 
+## Alcance y jerarquía documental
+
+Esta constitución gobierna todo SARC: RF-001, RF-002, RF-003, RF-004, RF-005, RF-006 y las
+funcionalidades futuras que se aprueben. Cada principio se aplica a todo ese alcance; cada
+decisión ratificada, conforme al alcance que ella misma declara.
+
+Cada fuente DEBE utilizarse según esta responsabilidad:
+
+- **PRD**: fuente principal de requisitos funcionales y reglas de negocio.
+- **Constitución**: principios obligatorios, restricciones no negociables y decisiones
+  expresamente ratificadas.
+- **Especificaciones de `specs/`**: comportamiento detallado, escenarios y criterios de aceptación
+  de cada funcionalidad.
+- **TRD**: referencia de arquitectura y decisiones técnicas. Admite adaptaciones con justificación
+  documentada que respeten el PRD y esta constitución. Una interpretación del TRD NO DEBE
+  sustituir una regla del PRD.
+- **Código**: implementación sujeta a los requisitos y decisiones aprobados.
+
+Una decisión funcional posterior que modifique el PRD original DEBE documentarse formalmente en
+el control de cambios del PRD. Una discrepancia entre una decisión constitucional ratificada y el
+PRD NO DEBE resolverse silenciosamente: DEBE identificarse y exigir conciliación y aprobación
+explícita antes de implementar el comportamiento afectado.
+
+Ninguna especificación, implementación o decisión técnica DEBE modificar unilateralmente requisitos
+funcionales aprobados ni decisiones constitucionales ratificadas.
+
 ## Governance
 
 Esta constitución es la referencia normativa de las reglas no negociables de SARC. Se ratifica
 con las decisiones de `documents/Reglas que no se negocian en SARC.txt` y el contexto de
 `documents/auditoria-decisiones.md`. Un supuesto del código o ADR previo que contradiga estas
 decisiones NO DEBE sustituirlas. Los demás requisitos de PRD, TRD y ADR conservan su aplicación
-cuando no exista contradicción.
+cuando no exista contradicción; una contradicción con el PRD DEBE tratarse conforme a
+«Alcance y jerarquía documental».
 
 Una enmienda DEBE identificar regla afectada, propuesta y motivo, obtener aprobación explícita
 del responsable del producto y registrar el impacto sobre especificaciones y datos existentes.
@@ -174,4 +201,4 @@ Toda revisión de especificaciones y cambios de comportamiento DEBE declarar con
 constitución o señalar puntos pendientes. Una excepción a una regla no negociable DEBE tratarse
 mediante enmienda aprobada; NO DEBE introducirse como atajo en la implementación.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-10-29
+**Version**: 1.1.0 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-11-01
