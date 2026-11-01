@@ -1,11 +1,11 @@
 # Despliegue 004
 
-Borrador: el ensayo de proveedor sigue pendiente (`evidence/private-storage-results.md`). No ejecutar en producción sin ese ensayo.
+Ensayo de proveedor hecho (`evidence/private-storage-results.md`), en cuenta compartida, no en producción.
 
 ## Antes
 
 1. Respaldar la base de datos.
-2. Ensayar en QA: descarga autenticada, URL antigua caducada, sin enlace del proveedor en el navegador.
+2. Confirmar que producción usa cuenta Cloudinary propia: la del ensayo es compartida con MedicApp.
 3. Confirmar que `report_issued` no se reescribe: V011 solo añade columnas nulas y restricciones.
 4. Elegir ventana sin importaciones: V012 crea un índice en `energy_session` y bloquea escrituras en esa tabla mientras se construye.
 
