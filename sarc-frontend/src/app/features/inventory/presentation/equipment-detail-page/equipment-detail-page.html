@@ -47,13 +47,18 @@
             Registrar reemplazo
           </button>
         }
-        <button matButton="outlined" type="button" [matMenuTriggerFor]="statusMenu">
+        <button
+          matButton="outlined"
+          type="button"
+          [matMenuTriggerFor]="statusMenu"
+          #statusTrigger="matMenuTrigger"
+        >
           Estado
           <svg lucideChevronDown [size]="18"></svg>
         </button>
         <mat-menu #statusMenu="matMenu" xPosition="before">
           @for (action of statusActions(); track action.label) {
-            <button mat-menu-item type="button" (click)="changeStatus(equipment, action)">
+            <button mat-menu-item type="button" (click)="changeStatus(equipment, action, statusTrigger)">
               {{ action.label }}
             </button>
           }

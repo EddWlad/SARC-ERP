@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
-import { MatMenuModule } from '@angular/material/menu';
+import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { Router, RouterLink } from '@angular/router';
 import {
@@ -172,7 +172,15 @@ export class EquipmentDetailPage {
     }
   }
 
-  protected async changeStatus(equipment: Equipment, action: StatusAction): Promise<void> {
+  protected async changeStatus(
+    equipment: Equipment,
+    action: StatusAction,
+    trigger?: MatMenuTrigger,
+  ): Promise<void> {
+    // Con el menu ya cerrado, el dialogo devuelve el foco al disparador y no a un item destruido.
+    if (trigger) {
+      await firstValueFrom(trigger.menuClosed);
+    }
     const confirmed = await this.confirm({
       title: `${action.label} ${equipment.name}`,
       message: action.confirm,
