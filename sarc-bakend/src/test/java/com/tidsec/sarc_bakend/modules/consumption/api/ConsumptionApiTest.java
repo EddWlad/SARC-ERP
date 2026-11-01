@@ -1190,6 +1190,77 @@ class ConsumptionApiTest {
 	}
 
 	@Test
+	void aBatchConfirmedDuringTheReportIsLeftOutOfItsSnapshotAndEntersTheNextOne()
+			throws Exception {
+		// QA13: un lote real confirmado entre el resumen y el detalle no descuadra el reporte.
+		confirm(upload("WALLBOX", "r.csv", wallbox("WB-1001", "S-1", "10,00")));
+		AtomicBoolean injected = new AtomicBoolean();
+		doAnswer(
+						invocation -> {
+							if (injected.compareAndSet(false, true)) {
+								importAside(wallbox("WB-1001", "S-2", "5,00"));
+							}
+							return invocation.callRealMethod();
+						})
+				.when(sessionRepository)
+				.findAll(any(SessionCriteria.class));
+
+		byte[] during = reportBytes("XLSX");
+
+		assertThat(injected).isTrue();
+		assertThat(jdbc.queryForObject("select count(*) from energy_session", Integer.class))
+				.isEqualTo(2);
+		try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(during))) {
+			assertThat(valueOf(workbook.getSheet("Resumen"), "Sesiones")).isEqualTo(1.0);
+			assertThat(valueOf(workbook.getSheet("Resumen"), "Energía (kWh)")).isEqualTo(10.0);
+			assertThat(sheetText(workbook.getSheet("Transacciones")))
+					.contains("S-1")
+					.doesNotContain("S-2");
+		}
+		try (XSSFWorkbook workbook =
+				new XSSFWorkbook(new ByteArrayInputStream(reportBytes("XLSX")))) {
+			assertThat(valueOf(workbook.getSheet("Resumen"), "Sesiones")).isEqualTo(2.0);
+			assertThat(valueOf(workbook.getSheet("Resumen"), "Energía (kWh)")).isEqualTo(15.0);
+			assertThat(sheetText(workbook.getSheet("Transacciones"))).contains("S-1", "S-2");
+		}
+	}
+
+	@Test
+	void aBatchConfirmedDuringTheDashboardReadDoesNotMixIntoItsOperationalTotals()
+			throws Exception {
+		// QA13: oficiales y operativas se leen en dos consultas de la misma instantanea.
+		confirm(upload("WALLBOX", "r.csv", wallbox("WB-1001", "S-1", "10,00")));
+		AtomicBoolean injected = new AtomicBoolean();
+		doAnswer(
+						invocation -> {
+							Object rows = invocation.callRealMethod();
+							if (injected.compareAndSet(false, true)) {
+								importAside(wallbox("WB-SIN-EQUIPO", "S-2", "5,00"));
+							}
+							return rows;
+						})
+				.when(sessionRepository)
+				.aggregate(any(SessionCriteria.class));
+
+		mvc.perform(summary("2026-10-21", "2026-10-22").cookie(analyst))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.official.sessions").value(1))
+				.andExpect(jsonPath("$.pendingLink.sessions").value(0));
+
+		assertThat(injected).isTrue();
+		mvc.perform(summary("2026-10-21", "2026-10-22").cookie(analyst))
+				.andExpect(jsonPath("$.official.sessions").value(1))
+				.andExpect(jsonPath("$.pendingLink.sessions").value(1));
+	}
+
+	/** Carga y confirma un lote completo desde otra conexion, sin la transaccion de la lectura. */
+	private void importAside(String content) throws Exception {
+		try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+			executor.submit(() -> confirm(upload("WALLBOX", "aparte.csv", content))).get();
+		}
+	}
+
+	@Test
 	void everyIssuedReportIsArchivedWithItsChecksumAndCanBeDownloadedAgain() throws Exception {
 		// Lectura-01 (RF-RPT-08): se conserva la copia exacta que se entrego.
 		when(fileStorage.storeDocument(anyString(), anyString(), any()))
