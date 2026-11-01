@@ -25,7 +25,7 @@ Revisión del diff completo antes de T062. Corregido: cuerpo de descarga sin tim
 |---|---|---|
 | FR-001, 002, 004, 006, SC-001, SC-002 | `visibility-results.md`, QA01–QA03 | Cumplido |
 | FR-003, 016, 017, SC-007, SC-008 | `pdf-results.md`, `excel-results.md`, QA04, QA10 | Cumplido en mock; ver proveedor |
-| FR-005, SC-009 | Regresiones, QA14, hashes | Cumplido; QA13 parcial |
+| FR-005, SC-009 | Regresiones, QA14, hashes | Cumplido; QA13 PASS |
 | FR-007, 008, 009, SC-003 | QA05–QA08, `IssuedReportAccessApiTest` | Cumplido en SARC; caducidad de URL del proveedor **pendiente** (T066) |
 | FR-010–015, SC-004, 005, 006 | `visual-audit.md`, `visual-matrix.md`, `accessibility-results.md` | Sin defecto abierto; **con límites**: capturas previas solo de V-08, lector de pantalla y dispositivo físico sin probar |
 | FR-016, 018, 019 | `pdf-results.md`, QA09, QA10 | Cumplido |
@@ -35,11 +35,10 @@ Revisión del diff completo antes de T062. Corregido: cuerpo de descarga sin tim
 
 ## Tareas sin cerrar
 
-- T063: QA13 sin ejercicio real de snapshot concurrente.
 - T064: el límite de capturas aceptado en T043 no se extiende: la tarea no admite limitación como aprobación.
 - T066: ensayo pendiente de entorno QA del proveedor.
 - T067: depende de las tres anteriores. Este documento deja trazabilidad y límites; no declara cierre.
 
 ## Optimización de rendimiento, 2026-11-01
 
-`./mvnw verify`: exit 0, 268 pruebas, 0 fallos. Incluye V012. Frontend sin cambios. Cambio local sin commit.
+`./mvnw verify`: exit 0, 270 pruebas, 0 fallos, con QA13. Incluye V012. Frontend sin cambios. Cambio local sin commit.
