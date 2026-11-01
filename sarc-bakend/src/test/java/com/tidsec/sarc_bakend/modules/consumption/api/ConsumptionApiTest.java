@@ -298,15 +298,24 @@ class ConsumptionApiTest {
 								.ENERGY_REJECTED)) {
 			doAnswer(
 							invocation -> {
-								SessionCriteria criteria = invocation.getArgument(0);
-								return criteria.state() == state
-										? new com.tidsec.sarc_bakend.modules.consumption.domain
+								@SuppressWarnings("unchecked")
+								var totals =
+										new java.util.HashMap<>(
+												(java.util.Map<
+																com.tidsec.sarc_bakend.modules.consumption.domain
+																		.model.session.SessionState,
+																com.tidsec.sarc_bakend.modules.consumption.domain
+																		.repository.EnergyTotals>)
+														invocation.callRealMethod());
+								totals.put(
+										state,
+										new com.tidsec.sarc_bakend.modules.consumption.domain
 												.repository.EnergyTotals(
-												100_001, java.math.BigDecimal.ZERO, 1, 0)
-										: invocation.callRealMethod();
+												100_001, java.math.BigDecimal.ZERO, 1, 0));
+								return totals;
 							})
 					.when(sessionRepository)
-					.totals(any());
+					.totalsByState(any(), any());
 			for (String format : List.of("PDF", "XLSX")) {
 				mvc.perform(
 								get("/api/v1/energy/report")

@@ -15,13 +15,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReviewStatus;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergySession;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionRevision;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
-import com.tidsec.sarc_bakend.modules.consumption.domain.repository.DailyEnergy;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergySessionRepository;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyTotals;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EquipmentEnergy;
+import com.tidsec.sarc_bakend.modules.consumption.domain.repository.SessionAggregate;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.SessionCriteria;
 import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
 import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
@@ -118,63 +120,38 @@ class EnergySessionRepositoryAdapter implements EnergySessionRepository {
 	}
 
 	@Override
-	public EnergyTotals totals(SessionCriteria criteria) {
+	public List<SessionAggregate> aggregate(SessionCriteria criteria) {
 		CriteriaBuilder cb = entityManager.getCriteriaBuilder();
 		CriteriaQuery<Tuple> query = cb.createTupleQuery();
 		Root<EnergySession> root = query.from(EnergySession.class);
-		query.multiselect(cb.count(root), energySum(root, cb), readings(root, cb),
-				cb.countDistinct(root.get("equipmentId"))).where(SessionPredicates.of(criteria, root, cb));
-		Tuple row = entityManager.createQuery(query).getSingleResult();
-		return EnergyTotals.of(row.get(0, Long.class), row.get(1, BigDecimal.class), row.get(2, Long.class),
-				row.get(3, Long.class));
-	}
-
-	@Override
-	public List<DailyEnergy> daily(SessionCriteria criteria) {
-		CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-		CriteriaQuery<Tuple> query = cb.createTupleQuery();
-		Root<EnergySession> root = query.from(EnergySession.class);
-		Expression<LocalDate> date = root.get("startDate");
-		query.multiselect(date, cb.count(root), energySum(root, cb), readings(root, cb))
+		List<Expression<?>> groups = List.of(root.get("startDate"), root.get("network"), root.get("source"),
+				root.get("infrastructureType"), root.get("equipmentId"), root.get("energyReview"));
+		query.multiselect(groups.get(0), groups.get(1), groups.get(2), groups.get(3), groups.get(4), groups.get(5),
+				cb.count(root), energySum(root, cb), readings(root, cb))
 				.where(SessionPredicates.of(criteria, root, cb))
-				.groupBy(date)
-				.orderBy(cb.asc(date));
+				.groupBy(groups);
 		return entityManager.createQuery(query).getResultList().stream()
-				.map(row -> DailyEnergy.of(row.get(0, LocalDate.class), row.get(1, Long.class),
-						row.get(2, BigDecimal.class), row.get(3, Long.class)))
+				.map(row -> new SessionAggregate(row.get(0, LocalDate.class), row.get(1, ChargingNetwork.class),
+						row.get(2, SessionSource.class), row.get(3, InfrastructureType.class), row.get(4, UUID.class),
+						row.get(5, EnergyReviewStatus.class), row.get(6, Long.class), row.get(7, BigDecimal.class),
+						row.get(8, Long.class)))
 				.toList();
 	}
 
 	@Override
-	public Map<ChargingNetwork, EnergyTotals> byNetwork(SessionCriteria criteria) {
-		return groupBy(criteria, "network", ChargingNetwork.class);
-	}
-
-	@Override
-	public Map<SessionSource, EnergyTotals> bySource(SessionCriteria criteria) {
-		return groupBy(criteria, "source", SessionSource.class);
-	}
-
-	@Override
-	public Map<InfrastructureType, EnergyTotals> byType(SessionCriteria criteria) {
-		return groupBy(criteria, "infrastructureType", InfrastructureType.class);
-	}
-
-	/** Sesiones, energia y equipos distintos agrupados por un atributo enumerado de la sesion. */
-	private <K extends Enum<K>> Map<K, EnergyTotals> groupBy(SessionCriteria criteria, String attribute,
-			Class<K> keyType) {
+	public Map<SessionState, EnergyTotals> totalsByState(SessionCriteria criteria, Collection<SessionState> states) {
 		CriteriaBuilder cb = entityManager.getCriteriaBuilder();
 		CriteriaQuery<Tuple> query = cb.createTupleQuery();
 		Root<EnergySession> root = query.from(EnergySession.class);
-		Expression<K> key = root.get(attribute);
-		query.multiselect(key, cb.count(root), energySum(root, cb), readings(root, cb),
+		Expression<SessionState> state = root.get("state");
+		query.multiselect(state, cb.count(root), energySum(root, cb), readings(root, cb),
 				cb.countDistinct(root.get("equipmentId")))
-				.where(cb.and(SessionPredicates.of(criteria, root, cb)), cb.isNotNull(key))
-				.groupBy(key);
-		Map<K, EnergyTotals> totals = new EnumMap<>(keyType);
+				.where(cb.and(SessionPredicates.of(criteria, root, cb)), state.in(states))
+				.groupBy(state);
+		Map<SessionState, EnergyTotals> totals = new EnumMap<>(SessionState.class);
 		for (Tuple row : entityManager.createQuery(query).getResultList()) {
-			totals.put(row.get(0, keyType), EnergyTotals.of(row.get(1, Long.class), row.get(2, BigDecimal.class),
-					row.get(3, Long.class), row.get(4, Long.class)));
+			totals.put(row.get(0, SessionState.class), EnergyTotals.of(row.get(1, Long.class),
+					row.get(2, BigDecimal.class), row.get(3, Long.class), row.get(4, Long.class)));
 		}
 		return totals;
 	}
@@ -196,16 +173,6 @@ class EnergySessionRepositoryAdapter implements EnergySessionRepository {
 				.map(row -> new EquipmentEnergy(row.get(0, UUID.class), row.get(1, Long.class),
 						row.get(2, BigDecimal.class)))
 				.toList();
-	}
-
-	@Override
-	public long countEquipmentWithEnergy(SessionCriteria criteria) {
-		CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-		CriteriaQuery<Long> query = cb.createQuery(Long.class);
-		Root<EnergySession> root = query.from(EnergySession.class);
-		query.select(cb.countDistinct(root.get("equipmentId")))
-				.where(cb.and(SessionPredicates.of(criteria, root, cb)), cb.isNotNull(root.get("energyKwh")));
-		return entityManager.createQuery(query).getSingleResult();
 	}
 
 	@Override

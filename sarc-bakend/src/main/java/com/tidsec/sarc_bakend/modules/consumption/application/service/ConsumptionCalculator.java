@@ -11,6 +11,8 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -26,6 +28,7 @@ import com.tidsec.sarc_bakend.modules.consumption.domain.repository.DailyEnergy;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergySessionRepository;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyTotals;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EquipmentEnergy;
+import com.tidsec.sarc_bakend.modules.consumption.domain.repository.SessionAggregate;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.SessionCriteria;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentDirectory;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentReference;
@@ -41,6 +44,8 @@ import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 class ConsumptionCalculator {
 
 	static final int TOP_SIZE = 5;
+	private static final Set<SessionState> OPERATIONAL_STATES = Set.of(SessionState.PENDING_LINK,
+			SessionState.AWAITING_APPROVAL, SessionState.TEST, SessionState.ENERGY_REVIEW, SessionState.ENERGY_REJECTED);
 	/** Un periodo mas largo no aporta a un tablero diario y encarece los agregados. */
 	static final long MAX_PERIOD_DAYS = 366;
 
@@ -56,20 +61,50 @@ class ConsumptionCalculator {
 
 	ConsumptionSummary summarize(SessionCriteria criteria, boolean includeOperations) {
 		requirePeriod(criteria);
-		SessionCriteria official = criteria.withState(SessionState.VALIDATED);
-		EnergyTotals totals = sessions.totals(official);
+		List<SessionAggregate> rows = sessions.aggregate(criteria.withState(SessionState.VALIDATED));
+		Map<SessionState, EnergyTotals> operations = includeOperations
+				? sessions.totalsByState(criteria.withState(null), OPERATIONAL_STATES) : null;
+		EnergyTotals totals = fold(rows);
+		List<EquipmentEnergy> withEnergy = withEnergy(rows);
 		return new ConsumptionSummary(criteria.from(), criteria.to(), totals, average(totals),
-				ranking(official, TOP_SIZE), totals.equipment() - sessions.countEquipmentWithEnergy(official),
-				fillDays(criteria.from(), criteria.to(), sessions.daily(official)),
-				complete(ChargingNetwork.class, sessions.byNetwork(official)),
-				complete(SessionSource.class, sessions.bySource(official)),
-				complete(InfrastructureType.class, sessions.byType(official)),
-				includeOperations ? sessions.totals(criteria.withState(SessionState.PENDING_LINK)) : null,
-				includeOperations ? sessions.totals(criteria.withState(SessionState.AWAITING_APPROVAL)) : null,
-				includeOperations ? sessions.totals(criteria.withState(SessionState.TEST)) : null,
-				includeOperations ? sessions.totals(criteria.withState(SessionState.ENERGY_REVIEW)) : null,
-				includeOperations ? sessions.totals(criteria.withState(SessionState.ENERGY_REJECTED)) : null,
-				sessions.totals(official.withEnergyReview(EnergyReviewStatus.APPROVED)), Instant.now(clock));
+				rank(withEnergy, TOP_SIZE), totals.equipment() - withEnergy.size(),
+				fillDays(criteria.from(), criteria.to(), rows),
+				distribution(ChargingNetwork.class, rows, SessionAggregate::network),
+				distribution(SessionSource.class, rows, SessionAggregate::source),
+				distribution(InfrastructureType.class, rows, SessionAggregate::type),
+				operational(operations, SessionState.PENDING_LINK),
+				operational(operations, SessionState.AWAITING_APPROVAL),
+				operational(operations, SessionState.TEST),
+				operational(operations, SessionState.ENERGY_REVIEW),
+				operational(operations, SessionState.ENERGY_REJECTED),
+				fold(rows.stream().filter(row -> row.energyReview() == EnergyReviewStatus.APPROVED).toList()),
+				Instant.now(clock));
+	}
+
+	private static EnergyTotals operational(Map<SessionState, EnergyTotals> operations, SessionState state) {
+		return operations == null ? null : operations.getOrDefault(state, EnergyTotals.EMPTY);
+	}
+
+	/** Totales de un conjunto de grupos; un equipo presente en varios grupos cuenta una vez. */
+	private static EnergyTotals fold(List<SessionAggregate> rows) {
+		return EnergyTotals.of(rows.stream().mapToLong(SessionAggregate::sessions).sum(),
+				rows.stream().map(SessionAggregate::energyKwh).filter(Objects::nonNull).reduce(BigDecimal::add).orElse(null),
+				rows.stream().mapToLong(SessionAggregate::readings).sum(),
+				rows.stream().map(SessionAggregate::equipmentId).filter(Objects::nonNull).distinct().count());
+	}
+
+	/** Equipos con al menos una lectura de energia. */
+	private static List<EquipmentEnergy> withEnergy(List<SessionAggregate> rows) {
+		List<EquipmentEnergy> found = new ArrayList<>();
+		rows.stream().filter(row -> row.equipmentId() != null)
+				.collect(Collectors.groupingBy(SessionAggregate::equipmentId))
+				.forEach((equipment, group) -> {
+					EnergyTotals totals = fold(group);
+					if (totals.readings() > 0) {
+						found.add(new EquipmentEnergy(equipment, totals.sessions(), totals.energyKwh()));
+					}
+				});
+		return found;
 	}
 
 	/** Promedio entre sesiones con lectura: una ausencia no opera como cero (FR-014). */
@@ -86,7 +121,11 @@ class ConsumptionCalculator {
 	 * empatados con el corte; {@code limit} <= 0 devuelve el ranking completo, sin limite SQL previo.
 	 */
 	List<RankedEquipment> ranking(SessionCriteria official, int limit) {
-		List<EquipmentEnergy> ranked = new ArrayList<>(sessions.byEquipment(official));
+		return rank(sessions.byEquipment(official), limit);
+	}
+
+	private List<RankedEquipment> rank(List<EquipmentEnergy> withEnergy, int limit) {
+		List<EquipmentEnergy> ranked = withinLimit(withEnergy, limit);
 		Map<UUID, EquipmentReference> equipment = directory.findByIds(
 				ranked.stream().map(EquipmentEnergy::equipmentId).toList());
 		ranked.sort(Comparator.comparing(EquipmentEnergy::energyKwh).reversed()
@@ -102,11 +141,19 @@ class ConsumptionCalculator {
 				position = index + 1;
 			}
 			previous = item.energyKwh();
-			if (limit <= 0 || position <= limit) {
-				result.add(new RankedEquipment(equipment.get(item.equipmentId()), item.sessions(), item.energyKwh(), position));
-			}
+			result.add(new RankedEquipment(equipment.get(item.equipmentId()), item.sessions(), item.energyKwh(), position));
 		}
 		return List.copyOf(result);
+	}
+
+	/** Solo la energia decide quien entra; el directorio se consulta unicamente para esos equipos. */
+	private static List<EquipmentEnergy> withinLimit(List<EquipmentEnergy> items, int limit) {
+		if (limit <= 0 || items.size() <= limit) {
+			return new ArrayList<>(items);
+		}
+		BigDecimal cut = items.stream().map(EquipmentEnergy::energyKwh).sorted(Comparator.reverseOrder())
+				.skip(limit - 1L).findFirst().orElseThrow();
+		return new ArrayList<>(items.stream().filter(item -> item.energyKwh().compareTo(cut) >= 0).toList());
 	}
 
 	static void requirePeriod(SessionCriteria criteria) {
@@ -122,20 +169,23 @@ class ConsumptionCalculator {
 	}
 
 	/** Todas las categorias, en orden de declaracion, con cero las que no tuvieron sesiones. */
-	private static <K extends Enum<K>> Map<K, EnergyTotals> complete(Class<K> type, Map<K, EnergyTotals> found) {
+	private static <K extends Enum<K>> Map<K, EnergyTotals> distribution(Class<K> type, List<SessionAggregate> rows,
+			Function<SessionAggregate, K> key) {
+		Map<K, List<SessionAggregate>> grouped = rows.stream().filter(row -> key.apply(row) != null)
+				.collect(Collectors.groupingBy(key));
 		Map<K, EnergyTotals> all = new EnumMap<>(type);
-		for (K key : type.getEnumConstants()) {
-			all.put(key, found.getOrDefault(key, EnergyTotals.EMPTY));
+		for (K category : type.getEnumConstants()) {
+			all.put(category, fold(grouped.getOrDefault(category, List.of())));
 		}
 		return all;
 	}
 
-	private static List<DailyEnergy> fillDays(LocalDate from, LocalDate to, List<DailyEnergy> withActivity) {
-		Map<LocalDate, DailyEnergy> byDate = withActivity.stream()
-				.collect(Collectors.toMap(DailyEnergy::date, Function.identity()));
+	private static List<DailyEnergy> fillDays(LocalDate from, LocalDate to, List<SessionAggregate> rows) {
+		Map<LocalDate, List<SessionAggregate>> byDate = rows.stream().collect(Collectors.groupingBy(SessionAggregate::date));
 		List<DailyEnergy> days = new ArrayList<>();
 		for (LocalDate day = from; day.isBefore(to); day = day.plusDays(1)) {
-			days.add(byDate.getOrDefault(day, new DailyEnergy(day, 0, BigDecimal.ZERO, 0)));
+			EnergyTotals totals = fold(byDate.getOrDefault(day, List.of()));
+			days.add(DailyEnergy.of(day, totals.sessions(), totals.energyKwh(), totals.readings()));
 		}
 		return days;
 	}

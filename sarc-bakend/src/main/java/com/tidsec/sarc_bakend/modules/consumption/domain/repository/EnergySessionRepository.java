@@ -9,8 +9,7 @@ import java.util.UUID;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergySession;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionRevision;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
-import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
-import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState;
 import com.tidsec.sarc_bakend.shared.pagination.PageQuery;
 import com.tidsec.sarc_bakend.shared.pagination.PageResult;
 
@@ -40,25 +39,14 @@ public interface EnergySessionRepository {
 
 	long count(SessionCriteria criteria);
 
-	EnergyTotals totals(SessionCriteria criteria);
+	/** Grupos por dia, red, plataforma, tipo, equipo y revision; el calculador deriva de ellos cada indicador. */
+	List<SessionAggregate> aggregate(SessionCriteria criteria);
 
-	/** Solo los dias con sesiones, en orden. */
-	List<DailyEnergy> daily(SessionCriteria criteria);
-
-	/** Distribucion por red del equipo; solo las redes con sesiones. */
-	Map<ChargingNetwork, EnergyTotals> byNetwork(SessionCriteria criteria);
-
-	/** Distribucion por plataforma de origen; solo las que tienen sesiones. */
-	Map<SessionSource, EnergyTotals> bySource(SessionCriteria criteria);
-
-	/** Distribucion por tipo de infraestructura; solo los tipos con sesiones. */
-	Map<InfrastructureType, EnergyTotals> byType(SessionCriteria criteria);
+	/** Totales de los estados pedidos; solo los estados con sesiones. */
+	Map<SessionState, EnergyTotals> totalsByState(SessionCriteria criteria, Collection<SessionState> states);
 
 	/** Todos los equipos con energia conocida; el calculador aplica posiciones y empates. */
 	List<EquipmentEnergy> byEquipment(SessionCriteria criteria);
-
-	/** Equipos distintos con al menos una lectura de energia. */
-	long countEquipmentWithEnergy(SessionCriteria criteria);
 
 	/** Pendientes de vincular en orden de ID, a partir de {@code afterId} (exclusivo, null = desde el inicio). */
 	List<EnergySession> findPendingLink(UUID afterId, int limit);

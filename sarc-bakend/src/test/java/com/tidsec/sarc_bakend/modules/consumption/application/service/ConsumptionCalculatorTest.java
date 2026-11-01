@@ -7,15 +7,23 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReviewStatus;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState;
+import com.tidsec.sarc_bakend.modules.consumption.domain.repository.DailyEnergy;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergySessionRepository;
+import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyTotals;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EquipmentEnergy;
+import com.tidsec.sarc_bakend.modules.consumption.domain.repository.SessionAggregate;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.SessionCriteria;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentDirectory;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentReference;
@@ -83,5 +91,40 @@ class ConsumptionCalculatorTest {
 				.ranking(new SessionCriteria(null, null, null, null, null, null, null, null), 5);
 		assertThat(top).hasSize(7).allSatisfy(item -> assertThat(item.position()).isEqualTo(1));
 		assertThat(top).extracting(item -> item.equipment().id()).isSorted();
+	}
+
+	@Test
+	void foldsGroupsIntoEveryIndicatorWithoutTreatingMissingEnergyAsZero() {
+		var sessions = mock(EnergySessionRepository.class);
+		var directory = mock(EquipmentDirectory.class);
+		UUID charger = new UUID(0, 1);
+		UUID withoutEnergy = new UUID(0, 2);
+		LocalDate day = LocalDate.of(2026, 10, 1);
+		SessionSource source = SessionSource.values()[0];
+		when(sessions.aggregate(any())).thenReturn(List.of(
+				new SessionAggregate(day, ChargingNetwork.JAC, source, InfrastructureType.CHARGING_STATION, charger, null,
+						2, new BigDecimal("1.500"), 1),
+				new SessionAggregate(day.plusDays(2), ChargingNetwork.JAC, source, InfrastructureType.CHARGING_STATION,
+						charger, EnergyReviewStatus.APPROVED, 1, new BigDecimal("2000.000"), 1),
+				new SessionAggregate(day.plusDays(2), null, source, null, withoutEnergy, null, 1, null, 0),
+				new SessionAggregate(day.plusDays(2), null, source, null, null, null, 1, null, 0)));
+		when(sessions.totalsByState(any(), any()))
+				.thenReturn(Map.of(SessionState.TEST, new EnergyTotals(3, BigDecimal.ONE, 1, 0)));
+		when(directory.findByIds(any())).thenReturn(Map.of(charger, new EquipmentReference(charger, ChargingNetwork.JAC,
+				InfrastructureType.CHARGING_STATION, "Equipo", null)));
+		var criteria = new SessionCriteria(day, day.plusDays(3), null, null, null, null, null, null);
+		var calculator = new ConsumptionCalculator(sessions, directory, Clock.systemUTC());
+
+		var summary = calculator.summarize(criteria, true);
+
+		assertThat(summary.official()).isEqualTo(new EnergyTotals(5, new BigDecimal("2001.500"), 2, 3));
+		assertThat(summary.daily()).extracting(DailyEnergy::sessions).containsExactly(2L, 0L, 3L);
+		assertThat(summary.daily().get(2).energyKwh()).isEqualByComparingTo("2000.000");
+		assertThat(summary.byNetwork().get(ChargingNetwork.JAC))
+				.isEqualTo(new EnergyTotals(3, new BigDecimal("2001.500"), 1, 1));
+		assertThat(summary.byType().get(InfrastructureType.CHARGING_POINT)).isEqualTo(EnergyTotals.EMPTY);
+		assertThat(summary.test()).isEqualTo(new EnergyTotals(3, BigDecimal.ONE, 1, 0));
+		assertThat(summary.pendingLink()).isEqualTo(EnergyTotals.EMPTY);
+		assertThat(calculator.summarize(criteria, false).test()).isNull();
 	}
 }
