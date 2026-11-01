@@ -35,8 +35,16 @@ Contraste sobre superficie: serie 1, 4,2:1 claro y 5,1:1 oscuro; serie 2, 3,1:1 
 
 ## Límites
 
-- Lector de pantalla y dispositivo físico: no probados.
-- Diálogos de equipo, importación y emisión gerencial: nombres por axe; recorrido completo de teclado no repetido en ellos. Comparten `MatDialog` con los probados.
+- Lector de pantalla y dispositivo físico: no probados; excepción aceptada por el responsable el 2026-11-01. Sin ellos no se afirma conformidad AA completa.
 - Con `rem` al doble, sin zoom de navegador (fuente muy grande del navegador): sin solapes medidos, pero chips de altura fija recortan texto, «Plataforma» se corta, título largo se trunca y aparece scroll horizontal interno a 1024. No es incumplimiento AA por G142; arreglarlo exigiría overrides de Material fuera de alcance.
-- `reduced-motion` no comprobado.
 - T043: A-04 repetido en toda la matriz, sin etiquetas recortadas. A-03 medido con Tab real en tablero, sesiones y usuarios, no en cada ruta.
+
+## Repetición T064, 2026-11-01
+
+Edge sin interfaz, teclas reales por CDP.
+
+| Comprobación | Alcance | Resultado |
+|---|---|---|
+| Foco atrapado, Esc cierra, foco vuelve | 10 diálogos: editar equipo, horario, identidad, inactivar, importar equipos y consumo, nuevo tipo, editar y restablecer usuario, emisión gerencial | PASS tras V-10 |
+| Foco visible con Tab | 10 rutas, hasta 25 paradas | Sin paradas sin indicador. Heurística de estilos, no inspección visual de cada una |
+| `prefers-reduced-motion` | Tablero, reportes y detalle | Sin animación infinita ni transición larga. No se midieron animaciones cortas |

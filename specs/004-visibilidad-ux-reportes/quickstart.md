@@ -1,6 +1,6 @@
 # Guía de validación — Feature 004
 
-Guía para implementación/QA posterior, no registro de pruebas realizadas. Consultar [contratos](contracts/api-ui-reporting.md), [modelo](data-model.md) y [auditoría visual](visual-audit-plan.md). No incluye código completo de implementación ni suites.
+Guía para implementación/QA posterior, no registro de pruebas realizadas; resultados en [validation-results.md](evidence/validation-results.md). Consultar [contratos](contracts/api-ui-reporting.md), [modelo](data-model.md) y [auditoría visual](visual-audit-plan.md). No incluye código completo de implementación ni suites.
 
 ## Prerrequisitos y aislamiento
 

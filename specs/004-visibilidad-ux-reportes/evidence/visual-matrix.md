@@ -49,3 +49,20 @@ Repetición T043, 2026-10-31. Cobertura automática en 10 combinaciones (360/390
 ## Reauditoría final T064, 2026-11-01
 
 Detector Impeccable sobre `src/app`: 24 notas consultivas, sin bloqueos, sin cambios frente a la auditoría anterior. Cambio posterior a T043, alerta de equipo no elegido en emisión gerencial: 10 combinaciones como gerente, sin defecto medido y un solo diálogo. No se repitió toda la matriz: desde T043 el frontend solo cambió ese diálogo. Sin captura antes/después de este estado.
+
+## Repetición completa T064, 2026-11-01
+
+Edge sin interfaz, sandbox con PostgreSQL desechable, arnés de `visual-audit.md` por rol. Sustituye el alcance parcial de la reauditoría anterior.
+
+| Vuelta | Combinaciones | Scroll horizontal | Violaciones axe | Resultado |
+|---|---:|---:|---:|---|
+| Rutas y diálogos: público, temporal, 5 roles, restringidos | 570 | 0 | 0 | PASS tras V-09 |
+| Carga, 5xx y vacío, 9 rutas | 250 | 0 | 0 | PASS: alertas y Reintentar leídos |
+| Tablero y sesiones con datos, 5 roles, revisión y justificación | 130 | 0 | 0 | PASS |
+| Repeticiones de primeras cargas y de V-09 | 180 | 0 | 0 | PASS |
+
+La primera vuelta abrió tablero y sesiones en noviembre, sin datos del fixture de octubre: por eso existe la vuelta «con datos», que cubre gráficas y tablas. Ninguna combinación quedó sin medir: la primera de cada proceso daba «no asentada» por arranque en frío, y `/inicio` en segunda posición a 360 salió limpio. Detalle 404 sin `h1`: alerta visible, esperado. `simCARGA` con poco texto: esperado.
+
+Capturas actuales en `captures/t064/`. Detector Impeccable: 24 notas consultivas, sin bloqueos.
+
+Excepciones aceptadas por el responsable, 2026-11-01: lector de pantalla y dispositivo físico no obligatorios; capturas «antes» solo de V-08. V-09 y V-10 tampoco tienen captura previa: su verificación es medición.

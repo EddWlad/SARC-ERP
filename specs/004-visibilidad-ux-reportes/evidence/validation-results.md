@@ -24,20 +24,32 @@ Revisión del diff completo antes de T062. Corregido: cuerpo de descarga sin tim
 | Requisito | Evidencia | Estado |
 |---|---|---|
 | FR-001, 002, 004, 006, SC-001, SC-002 | `visibility-results.md`, QA01–QA03 | Cumplido |
-| FR-003, 016, 017, SC-007, SC-008 | `pdf-results.md`, `excel-results.md`, QA04, QA10 | Cumplido en mock; ver proveedor |
+| FR-003, 016, 017, SC-007, SC-008 | `pdf-results.md`, `excel-results.md`, `private-storage-results.md`, QA04, QA10 | Cumplido; entrega real con proveedor en PDF (T066) |
 | FR-005, SC-009 | Regresiones, QA14, hashes | Cumplido; QA13 PASS |
 | FR-007, 008, 009, SC-003 | QA05–QA08, `IssuedReportAccessApiTest` | Cumplido en SARC; caducidad de URL del proveedor verificada (T066) |
-| FR-010–015, SC-004, 005, 006 | `visual-audit.md`, `visual-matrix.md`, `accessibility-results.md` | Sin defecto abierto; **con límites**: capturas previas solo de V-08, lector de pantalla y dispositivo físico sin probar |
+| FR-010–015, SC-004, 005, 006 | `visual-audit.md`, `visual-matrix.md`, `accessibility-results.md` | Cumplido con excepción aceptada: lector de pantalla y dispositivo físico sin probar, capturas previas solo de V-08. Sin incumplimientos confirmados; no se afirma AA completa |
 | FR-016, 018, 019 | `pdf-results.md`, QA09, QA10 | Cumplido |
 | FR-020 | `excel-evaluation.md`, `excel-windows-results.md`, QA11 | Cumplido: NATIVO, abierto en Excel Windows sin reparación |
 | FR-021 | QA15, límites 366 días y 100.000 filas | Cumplido |
 | FR-022, SC-010 | `performance-results.md` | Cumplido en portátil tras calentar, tablero con margen corto; primera carga de sesiones excede la meta. VPS sin medir. 500 kB sí |
 
-## Tareas sin cerrar
+## Puertas finales, 2026-11-01
 
-- T064: el límite de capturas aceptado en T043 no se extiende: la tarea no admite limitación como aprobación.
-- T067: depende de las tres anteriores. Este documento deja trazabilidad y límites; no declara cierre.
+| Comando | Resultado |
+|---|---|
+| `./mvnw verify` | exit 0, 270 pruebas, 0 fallos. Incluye V012 |
+| `npm test -- --watch=false` | exit 0, 164 pruebas |
+| `npm run lint` | exit 0 |
+| `npm run build` | exit 0, inicial 341,67 kB |
+| Migraciones contra base `7354d6e` | V001–V010 sin cambios; solo se añaden V011 y V012 |
 
-## Optimización de rendimiento, 2026-11-01
+## Constitución
 
-`./mvnw verify`: exit 0, 270 pruebas, 0 fallos, con QA13. Incluye V012. Frontend sin cambios. Cambio local sin commit.
+I, especificación: cambios de producto dentro de spec, plan y tasks. II, reglas de negocio: visibilidad y revisión cubiertas por pruebas; D01–D14 sin cambio de código, por regresiones 001–003. III, migraciones: inmutables, ver tabla anterior.
+
+## Límites al cierre
+
+- SC-006: no se afirma WCAG 2.2 AA completa; ver excepción.
+- SC-010: solo portátil, sin VPS. Primera carga de sesiones 4,9 s tras arrancar y tablero a 4,95 s de 5 s.
+- Proveedor: cuenta compartida con MedicApp, no QA dedicada; sin ensayo de cuerpo detenido.
+- Sin commit de archivos de herramientas locales.

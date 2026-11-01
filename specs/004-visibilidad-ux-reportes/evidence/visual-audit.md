@@ -37,6 +37,13 @@ Una primera pasada se descartó: el arnés auditaba páginas aún en blanco. Se 
 
 Mismo arnés, ampliado: sin tope de solapes, excluye solo contenido contra pie de diálogo, y simula carga, 5xx y vacío interceptando `fetch`. Resultado por estado en [visual-matrix.md](visual-matrix.md). Capturas V-08 con Edge headless por CDP.
 
+## Hallazgos T064
+
+| ID | Ruta / rol | Viewport | Estado | Causa | Resolución |
+|---|---|---|---|---|---|
+| V-09 | Importaciones de consumo e inventario / admin, analista | 360, 390, 1440 | detectado → corregido → verificado | Enlace del lote con 16px de alto sin nombre de archivo, bajo el mínimo de 24px | `inline-block` y `min-height: 24px` en `_import-history.scss` |
+| V-10 | Inactivar equipo, editar y restablecer usuario / admin | Todos | detectado → reproducido → corregido → verificado | Diálogo abierto desde menú: al cerrar, el foco caía en `body` porque el ítem ya no existía | La acción espera a `menuClosed`; foco vuelve al disparador. Spec en `user-actions-menu.spec.ts`, repetido con teclas reales |
+
 ## Límites
 
 - Capturas antes/después solo de V-08. V-01 a V-07 y A-01 a A-04 se corrigieron antes de esta repetición y no tienen captura anterior: su verificación es medición y spec. T043 se cerró con este límite por aceptación expresa del responsable, 2026-10-31.
