@@ -58,7 +58,11 @@
         </button>
         <mat-menu #statusMenu="matMenu" xPosition="before">
           @for (action of statusActions(); track action.label) {
-            <button mat-menu-item type="button" (click)="changeStatus(equipment, action, statusTrigger)">
+            <button
+              mat-menu-item
+              type="button"
+              (click)="changeStatus(equipment, action, statusTrigger)"
+            >
               {{ action.label }}
             </button>
           }
