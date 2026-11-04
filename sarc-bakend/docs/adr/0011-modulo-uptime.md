@@ -31,3 +31,9 @@ Captura, validación, tablero, reportes, bloque, pegado, carga de archivo y vinc
 - Llevar a control de cambios del PRD: tolerancia de 1 minuto y 0,02 % en períodos largos, conversión de horas a minutos, preferencia por 7 días en apertura, conteo de pares conector-semana en cobertura y excluidas dentro del denominador.
 
 Las lecturas de indicadores cargan el período y filtran en memoria, con mapeo JDBC por volumen. Medido en `specs/005-uptime-disponibilidad/evidence/performance.md`.
+
+## Cierre técnico 2026-11-04
+
+Se corrigen los tres hallazgos QA de sin atribuir por período, inclusión de ese total en PDF/Excel y desbordamiento del número inicial de una etiqueta. Se conservan los servicios/capas y migraciones V013–V015. Evidencia: specs/005-uptime-disponibilidad/evidence/closure-qa.md. T124 humana permanece pendiente.
+
+Los ajustes posteriores de referencia semanal, horario real desconocido, media del informe y pasteles se separan como Feature-006; no se implementan ni se declaran entregados en 005. Los intervalos declarados del Excel actual no acreditan los límites observados en Enerlink.
