@@ -41,12 +41,12 @@ class ConsumptionExcelRendererTest {
 
 	private static final int DAYS = 366;
 
-	private static CorporateBranding branding() throws Exception {
+	static CorporateBranding branding() throws Exception {
 		return BeanUtils.instantiateClass(CorporateBranding.class.getDeclaredConstructor(OperatingZone.class),
 				new OperatingZone(ZoneId.of("America/Guayaquil")));
 	}
 
-	private static ConsumptionReport report(boolean operational) {
+	static ConsumptionReport report(boolean operational) {
 		var ranked = new ArrayList<RankedEquipment>();
 		int[] energy = { 90, 80, 70, 60, 60, 60 };
 		int[] positions = { 1, 2, 3, 4, 4, 4 };
@@ -120,6 +120,14 @@ class ConsumptionExcelRendererTest {
 			assertThat(book.getSheet("Gráficos").getDrawingPatriarch().getCharts()).hasSize(6);
 		}
 		assertThat(packageText(bytes)).contains("Pendientes de vincular (sesiones)");
+	}
+
+	@Test
+	void approvedAboveThresholdStaysOnlyInOperationalSummary() throws Exception {
+		assertThat(packageText(new ConsumptionExcelRenderer(branding()).render(report(false))))
+				.doesNotContain("Aprobadas sobre umbral");
+		assertThat(packageText(new ConsumptionExcelRenderer(branding()).render(report(true))))
+				.contains("Aprobadas sobre umbral (sesiones, incluidas en oficiales)");
 	}
 
 	@Test

@@ -103,10 +103,10 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 					List.of("Energía por revisar (sesiones)", summary.energyReview().sessions()),
 					List.of("Energía por revisar (kWh)", energy(summary.energyReview().energyKwh())),
 					List.of("Energía rechazada (sesiones)", summary.energyRejected().sessions()),
-					List.of("Energía rechazada (kWh)", energy(summary.energyRejected().energyKwh()))));
+					List.of("Energía rechazada (kWh)", energy(summary.energyRejected().energyKwh())),
+					List.of("Aprobadas sobre umbral (sesiones, incluidas en oficiales)", summary.approvedAboveThreshold().sessions()),
+					List.of("Aprobadas sobre umbral (kWh, incluidos en oficiales)", energy(summary.approvedAboveThreshold().energyKwh()))));
 		}
-		rows.add(List.of("Aprobadas sobre umbral (sesiones, incluidas en oficiales)", summary.approvedAboveThreshold().sessions()));
-		rows.add(List.of("Aprobadas sobre umbral (kWh, incluidos en oficiales)", energy(summary.approvedAboveThreshold().energyKwh())));
 		return rows;
 	}
 

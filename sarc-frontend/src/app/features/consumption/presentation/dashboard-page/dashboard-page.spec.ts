@@ -83,6 +83,31 @@ describe('DashboardPage', () => {
     expect(rows[1].textContent).toContain('0');
   });
 
+  it('groups the five categories in two titled blocks with the same quantity markup', () => {
+    const host = render(true);
+    const blocks = Array.from(host.querySelectorAll<HTMLElement>('.excluded .groups section'));
+
+    expect(host.querySelector('#excluded-title')?.textContent).toContain(
+      'Fuera de los indicadores oficiales',
+    );
+    expect(host.querySelector('.excluded')?.getAttribute('aria-labelledby')).toBe('excluded-title');
+    expect(blocks.map((block) => block.querySelector('h3')?.textContent?.trim())).toEqual([
+      'Vinculación y aprobación',
+      'Revisión energética',
+    ]);
+    blocks.forEach((block) =>
+      expect(host.querySelector(`#${block.getAttribute('aria-labelledby')}`)).not.toBeNull(),
+    );
+    expect(blocks.map((block) => block.querySelectorAll('.metric-row').length)).toEqual([3, 2]);
+    host.querySelectorAll('.excluded .metric-row').forEach((row) => {
+      expect(row.querySelector('.quantity strong')).not.toBeNull();
+      expect(row.querySelector('.quantity .muted')?.textContent).toContain('kWh');
+    });
+    expect(host.querySelector('.excluded .dashboard-note')?.textContent).toContain(
+      'no suman en los totales',
+    );
+  });
+
   it('hides the card from managerial readers and never paints omitted data as zero', () => {
     const host = render(false, OPERATIONAL);
     expect(host.querySelector('.excluded')).toBeNull();

@@ -86,49 +86,65 @@
   </p>
 
   @if (operational(); as operational) {
-    <section class="excluded panel" aria-labelledby="excluded-title">
+    <section class="excluded" aria-labelledby="excluded-title">
       <h2 id="excluded-title">Fuera de los indicadores oficiales</h2>
-      <ul>
-        <li class="metric-row">
-          <span>Pendientes de vincular</span>
-          <span>
-            <strong>{{ quantities.count(operational.pendingLink.sessions) }}</strong>
-            <span class="muted">
-              · {{ quantities.knownEnergy(operational.pendingLink.energyKwh) }}</span
-            >
-          </span>
-        </li>
-        <li class="metric-row">
-          <span>Por aprobar (fuente no preferente)</span>
-          <span>
-            <strong>{{ quantities.count(operational.awaitingApproval.sessions) }}</strong>
-            <span class="muted">
-              · {{ quantities.knownEnergy(operational.awaitingApproval.energyKwh) }}</span
-            >
-          </span>
-        </li>
-        <li class="metric-row">
-          <span>Energía por revisar</span>
-          <span
-            ><strong>{{ quantities.count(operational.energyReview.sessions) }}</strong> ·
-            {{ quantities.knownEnergy(operational.energyReview.energyKwh) }}</span
-          >
-        </li>
-        <li class="metric-row">
-          <span>Energía rechazada</span>
-          <span
-            ><strong>{{ quantities.count(operational.energyRejected.sessions) }}</strong> ·
-            {{ quantities.knownEnergy(operational.energyRejected.energyKwh) }}</span
-          >
-        </li>
-        <li class="metric-row">
-          <span>Pruebas</span>
-          <span>
-            <strong>{{ quantities.count(operational.test.sessions) }}</strong>
-            <span class="muted"> · {{ quantities.knownEnergy(operational.test.energyKwh) }}</span>
-          </span>
-        </li>
-      </ul>
+      <div class="groups">
+        <section class="panel" aria-labelledby="excluded-link">
+          <h3 id="excluded-link">Vinculación y aprobación</h3>
+          <ul>
+            <li class="metric-row">
+              <span>Pendientes de vincular</span>
+              <span class="quantity">
+                <strong>{{ quantities.count(operational.pendingLink.sessions) }}</strong>
+                <span class="muted">
+                  · {{ quantities.knownEnergy(operational.pendingLink.energyKwh) }}</span
+                >
+              </span>
+            </li>
+            <li class="metric-row">
+              <span>Por aprobar (fuente no preferente)</span>
+              <span class="quantity">
+                <strong>{{ quantities.count(operational.awaitingApproval.sessions) }}</strong>
+                <span class="muted">
+                  · {{ quantities.knownEnergy(operational.awaitingApproval.energyKwh) }}</span
+                >
+              </span>
+            </li>
+            <li class="metric-row">
+              <span>Pruebas</span>
+              <span class="quantity">
+                <strong>{{ quantities.count(operational.test.sessions) }}</strong>
+                <span class="muted">
+                  · {{ quantities.knownEnergy(operational.test.energyKwh) }}</span
+                >
+              </span>
+            </li>
+          </ul>
+        </section>
+        <section class="panel" aria-labelledby="excluded-energy">
+          <h3 id="excluded-energy">Revisión energética</h3>
+          <ul>
+            <li class="metric-row">
+              <span>Energía por revisar</span>
+              <span class="quantity">
+                <strong>{{ quantities.count(operational.energyReview.sessions) }}</strong>
+                <span class="muted">
+                  · {{ quantities.knownEnergy(operational.energyReview.energyKwh) }}</span
+                >
+              </span>
+            </li>
+            <li class="metric-row">
+              <span>Energía rechazada</span>
+              <span class="quantity">
+                <strong>{{ quantities.count(operational.energyRejected.sessions) }}</strong>
+                <span class="muted">
+                  · {{ quantities.knownEnergy(operational.energyRejected.energyKwh) }}</span
+                >
+              </span>
+            </li>
+          </ul>
+        </section>
+      </div>
       <p class="dashboard-note">
         Se conservan y se informan aparte; no suman en los totales (PRD 3.3).
       </p>

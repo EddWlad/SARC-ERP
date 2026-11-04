@@ -53,10 +53,10 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 							new Kpi("Pruebas", totals(summary.test()))))
 					.section("Revisión energética")
 					.kpis(List.of(new Kpi("Energía por revisar", totals(summary.energyReview())),
-							new Kpi("Energía rechazada", totals(summary.energyRejected()))));
+							new Kpi("Energía rechazada", totals(summary.energyRejected()))))
+					.kpis(List.of(new Kpi("Aprobadas sobre umbral (incluidas en oficiales)",
+							totals(summary.approvedAboveThreshold()))));
 		}
-		pdf.kpis(List.of(new Kpi("Aprobadas sobre umbral (incluidas en oficiales)",
-				totals(summary.approvedAboveThreshold()))));
 		pdf.ensureSpace(ConsumptionPdfCharts.INTRO_SPACE)
 				.section("Gráficos oficiales")
 				.note(report.scope() + ". Hora de Ecuador; misma fecha de corte y filtros que "

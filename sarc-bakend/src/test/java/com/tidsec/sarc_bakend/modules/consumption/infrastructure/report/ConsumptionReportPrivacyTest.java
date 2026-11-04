@@ -73,7 +73,7 @@ class ConsumptionReportPrivacyTest {
 							"Energía rechazada",
 							"Energía por revisar",
 							"QA004 HISTORIA OPERATIVA RESTRINGIDA")
-					.contains("Aprobadas sobre umbral");
+					.doesNotContain("Aprobadas sobre umbral");
 		}
 		var original =
 				jdbc.queryForMap(
@@ -113,6 +113,7 @@ class ConsumptionReportPrivacyTest {
 									"Pendientes de vincular (sesiones)",
 									"Energía rechazada",
 									"REJECTED",
+									"Aprobadas sobre umbral",
 									"QA004 HISTORIA OPERATIVA RESTRINGIDA");
 				assertThat(cells.toString())
 						.contains("QA004 aprobación oficial vigente", "APPROVED");

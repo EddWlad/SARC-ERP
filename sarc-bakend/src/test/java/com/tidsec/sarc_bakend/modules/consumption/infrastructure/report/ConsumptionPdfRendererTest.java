@@ -31,6 +31,22 @@ import com.tidsec.sarc_bakend.shared.report.CorporateBranding;
 import com.tidsec.sarc_bakend.shared.time.OperatingZone;
 
 class ConsumptionPdfRendererTest {
+	private static String text(byte[] bytes) throws Exception {
+		try (var reader = new PdfReader(bytes)) {
+			StringBuilder all = new StringBuilder();
+			for (int page = 1; page <= reader.getNumberOfPages(); page++) all.append(new PdfTextExtractor(reader).getTextFromPage(page));
+			return all.toString();
+		}
+	}
+
+	@Test
+	void approvedAboveThresholdIsOperationalOnly() throws Exception {
+		var renderer = new ConsumptionPdfRenderer(ConsumptionExcelRendererTest.branding());
+
+		assertThat(text(renderer.render(ConsumptionExcelRendererTest.report(false)))).doesNotContain("Aprobadas sobre umbral");
+		assertThat(text(renderer.render(ConsumptionExcelRendererTest.report(true)))).contains("Aprobadas sobre umbral");
+	}
+
 	@Test
 	void aLongPeriodStillShowsEnergyExceptionsInTheOpeningSummary() throws Exception {
 		ZoneId zone = ZoneId.of("America/Guayaquil");
