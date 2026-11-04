@@ -16,7 +16,10 @@ public record ReportPublication(ReportContentProfile profile, Instant cutOff, Ma
 	/** Zona operativa en la que se interpretan los días del periodo. */
 	public static final String TIME_ZONE = "America/Guayaquil";
 
-	private static final Set<String> KEYS = Set.of("from", "to", "network", "type", "source", "equipmentId", "timeZone");
+	private static final Set<String> KEYS = Set.of("from", "to", "network", "type", "source", "equipmentId", "timeZone",
+			"periodKind", "periodType", "brand", "connectorId");
+	private static final Set<String> PERIOD_KINDS = Set.of("OFFICIAL", "PROVISIONAL", "NONE");
+	private static final Set<String> PERIOD_TYPES = Set.of("ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK");
 
 	public ReportPublication {
 		Objects.requireNonNull(profile);
@@ -44,6 +47,18 @@ public record ReportPublication(ReportContentProfile profile, Instant cutOff, Ma
 		}
 		if (criteria.containsKey("equipmentId")) {
 			UUID.fromString(criteria.get("equipmentId"));
+		}
+		if (criteria.containsKey("periodKind") && !PERIOD_KINDS.contains(criteria.get("periodKind"))) {
+			throw new IllegalArgumentException("Clase de periodo inválida");
+		}
+		if (criteria.containsKey("periodType") && !PERIOD_TYPES.contains(criteria.get("periodType"))) {
+			throw new IllegalArgumentException("Tipo de periodo inválido");
+		}
+		if (criteria.containsKey("brand") && criteria.get("brand").isBlank()) {
+			throw new IllegalArgumentException("Marca inválida");
+		}
+		if (criteria.containsKey("connectorId")) {
+			UUID.fromString(criteria.get("connectorId"));
 		}
 	}
 }

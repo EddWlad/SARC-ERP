@@ -66,6 +66,43 @@ public class TabularReader {
 		return readText(decode(content));
 	}
 
+	/**
+	 * Todas las hojas, en orden, con el mismo limite de filas en total. Solo para el informe semanal de
+	 * uptime (D09, excepcion de la Constitucion 1.2.0); toda otra importacion usa {@link #read}.
+	 */
+	public List<TabularSheet> readSheets(byte[] content) {
+		if (content.length == 0) {
+			throw new BusinessRuleException("IMPORT_FILE_EMPTY", "El archivo esta vacio");
+		}
+		if (content.length > MAX_BYTES) {
+			throw new BusinessRuleException("IMPORT_FILE_TOO_LARGE", "El archivo supera 20 MiB");
+		}
+		if (!startsWith(content, ZIP_SIGNATURE) && !startsWith(content, OLE_SIGNATURE)) {
+			return List.of(new TabularSheet("", readText(decode(content))));
+		}
+		try (Workbook workbook = WorkbookFactory.create(new ByteArrayInputStream(content))) {
+			List<TabularSheet> sheets = new ArrayList<>();
+			int total = 0;
+			for (Sheet sheet : workbook) {
+				List<TabularRow> rows = rows(sheet);
+				total += rows.size();
+				if (total > MAX_ROWS) {
+					throw new BusinessRuleException("IMPORT_TOO_MANY_ROWS",
+							"El archivo supera " + MAX_ROWS + " filas; divida la importacion");
+				}
+				sheets.add(new TabularSheet(sheet.getSheetName(), rows));
+			}
+			return sheets;
+		}
+		catch (BusinessRuleException ex) {
+			throw ex;
+		}
+		catch (IOException | RuntimeException ex) {
+			throw new BusinessRuleException("IMPORT_FILE_UNREADABLE",
+					"No se pudo leer la hoja de calculo; verifique que sea un XLSX o XLS valido");
+		}
+	}
+
 	/** Texto pegado desde una hoja (tabulaciones) o un CSV con coma o punto y coma. */
 	public List<TabularRow> readText(String text) {
 		if (text.isBlank()) {
@@ -104,20 +141,7 @@ public class TabularReader {
 
 	private List<TabularRow> readWorkbook(byte[] content) {
 		try (Workbook workbook = WorkbookFactory.create(new ByteArrayInputStream(content))) {
-			Sheet sheet = workbook.getSheetAt(0);
-			List<TabularRow> rows = new ArrayList<>();
-			for (Row row : sheet) {
-				List<String> cells = new ArrayList<>();
-				int columns = Math.min(row.getLastCellNum(), MAX_COLUMNS);
-				for (int column = 0; column < columns; column++) {
-					cells.add(text(row.getCell(column)));
-				}
-				TabularRow tabular = new TabularRow(row.getRowNum() + 1, cells);
-				if (!tabular.isBlank()) {
-					addRow(rows, tabular);
-				}
-			}
-			return rows;
+			return rows(workbook.getSheetAt(0));
 		}
 		catch (BusinessRuleException ex) {
 			throw ex;
@@ -126,6 +150,22 @@ public class TabularReader {
 			throw new BusinessRuleException("IMPORT_FILE_UNREADABLE",
 					"No se pudo leer la hoja de calculo; verifique que sea un XLSX o XLS valido");
 		}
+	}
+
+	private static List<TabularRow> rows(Sheet sheet) {
+		List<TabularRow> rows = new ArrayList<>();
+		for (Row row : sheet) {
+			List<String> cells = new ArrayList<>();
+			int columns = Math.min(row.getLastCellNum(), MAX_COLUMNS);
+			for (int column = 0; column < columns; column++) {
+				cells.add(text(row.getCell(column)));
+			}
+			TabularRow tabular = new TabularRow(row.getRowNum() + 1, cells);
+			if (!tabular.isBlank()) {
+				addRow(rows, tabular);
+			}
+		}
+		return rows;
 	}
 
 	private static String text(Cell cell) {

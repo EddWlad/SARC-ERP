@@ -101,6 +101,11 @@ Se DEBE conservar el comportamiento vigente: solo la primera hoja del libro DEBE
 entrada. Las hojas posteriores NO DEBEN importarse automáticamente. El orden de las hojas DEBE
 formar parte del contrato explicado en la especificación de importación.
 
+Única excepción: el informe semanal de uptime (RF-004), cuyo modelo trae una hoja por grupo de
+infraestructura con las mismas columnas, DEBE leer todas sus hojas en orden. Cada fila DEBE
+conservar el nombre de su hoja y su número de fila. Toda otra importación sigue leyendo solo la
+primera hoja; extender la excepción exige una nueva enmienda.
+
 ### D10. Revisión humana de energía superior al umbral
 
 Una energía normalizada superior al umbral de 1.000 kWh por sesión DEBE tratarse como observación
@@ -201,4 +206,4 @@ Toda revisión de especificaciones y cambios de comportamiento DEBE declarar con
 constitución o señalar puntos pendientes. Una excepción a una regla no negociable DEBE tratarse
 mediante enmienda aprobada; NO DEBE introducirse como atajo en la implementación.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-11-01
+**Version**: 1.2.0 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-11-02

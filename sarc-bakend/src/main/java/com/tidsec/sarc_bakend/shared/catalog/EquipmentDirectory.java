@@ -26,5 +26,11 @@ public interface EquipmentDirectory {
 	 */
 	Map<ExternalKey, IdentityMatch> matchIdentities(ExternalPlatform platform, Collection<ExternalKey> keys);
 
+	/**
+	 * Igual, cuando la fuente solo trae el identificador (informe semanal de uptime sin Activo): coincide
+	 * por su forma normalizada en cualquier ambito; varios equipos con ese nombre son ambiguos.
+	 */
+	Map<String, IdentityMatch> matchExternalIds(ExternalPlatform platform, Collection<String> externalIds);
+
 	Map<UUID, EquipmentReference> findByIds(Collection<UUID> ids);
 }

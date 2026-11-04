@@ -38,6 +38,11 @@ public final class HeaderLayout {
 	}
 
 	public static HeaderLayout locate(List<TabularRow> rows, List<Column> columns) {
+		return locate(rows, columns, List.of());
+	}
+
+	/** Las columnas de {@code optional} se toman si estan en la fila de encabezado, sin exigirlas. */
+	public static HeaderLayout locate(List<TabularRow> rows, List<Column> columns, List<Column> optional) {
 		List<String> bestMissing = columns.stream().map(column -> column.names().getFirst()).toList();
 		for (int position = 0; position < Math.min(SCAN_ROWS, rows.size()); position++) {
 			TabularRow candidate = rows.get(position);
@@ -49,6 +54,12 @@ public final class HeaderLayout {
 				}
 			}
 			if (indexes.size() == columns.size()) {
+				for (Column column : optional) {
+					int index = indexOf(candidate, column);
+					if (index >= 0) {
+						indexes.put(column.key(), index);
+					}
+				}
 				return new HeaderLayout(candidate, Map.copyOf(indexes), List.copyOf(rows.subList(position + 1, rows.size())));
 			}
 			List<String> missing = columns.stream().filter(column -> !indexes.containsKey(column.key()))
@@ -65,8 +76,19 @@ public final class HeaderLayout {
 		return dataRows;
 	}
 
+	/** Fila de encabezados; lo que esta antes son titulos del reporte. */
+	public TabularRow headerRow() {
+		return headerRow;
+	}
+
+	public boolean has(String key) {
+		return indexes.containsKey(key);
+	}
+
+	/** Vacio si la columna es opcional y no vino. */
 	public String value(TabularRow row, String key) {
-		return row.cell(indexes.get(key));
+		Integer index = indexes.get(key);
+		return index == null ? "" : row.cell(index);
 	}
 
 	/** Encabezado tal como esta en el archivo (sirve para leer aclaraciones como la zona horaria). */

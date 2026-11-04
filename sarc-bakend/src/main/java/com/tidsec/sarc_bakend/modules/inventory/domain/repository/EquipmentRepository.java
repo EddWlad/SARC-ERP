@@ -40,4 +40,10 @@ public interface EquipmentRepository {
 
 	/** Conectores activos de los equipos filtrados, agrupados por codigo de tipo. */
 	Map<String, Long> countActiveConnectorsByType(EquipmentSearchCriteria criteria);
+
+	/** Conectores, tambien inactivos, de los equipos filtrados, por nombre de equipo y posicion. */
+	List<ConnectorRow> findConnectors(EquipmentSearchCriteria criteria, UUID equipmentId);
+
+	/** Incluye conectores de equipos eliminados: el historico les pertenece. */
+	List<ConnectorRow> findConnectorsById(Collection<UUID> connectorIds);
 }

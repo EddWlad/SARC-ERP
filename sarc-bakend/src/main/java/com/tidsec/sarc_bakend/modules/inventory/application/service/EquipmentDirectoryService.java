@@ -80,21 +80,33 @@ class EquipmentDirectoryService implements EquipmentDirectory {
 
 	@Override
 	public Map<ExternalKey, IdentityMatch> matchIdentities(ExternalPlatform platform, Collection<ExternalKey> keys) {
+		return match(platform, keys, ExternalKey::comparable,
+				identity -> new ExternalKey(identity.getScope(), identity.getExternalId()).comparable());
+	}
+
+	@Override
+	public Map<String, IdentityMatch> matchExternalIds(ExternalPlatform platform, Collection<String> externalIds) {
+		return match(platform, externalIds, id -> new ExternalKey("", id).comparable(),
+				identity -> new ExternalKey("", identity.getExternalId()).comparable());
+	}
+
+	/** Una clave es confiable si sus identidades verificadas apuntan a un solo equipo. */
+	private <K> Map<K, IdentityMatch> match(ExternalPlatform platform, Collection<K> keys,
+			Function<K, String> comparable, Function<ExternalIdentity, String> identityKey) {
 		if (keys.isEmpty()) {
 			return Map.of();
 		}
 		Map<String, List<ExternalIdentity>> byKey = identities.findByPlatform(platform).stream()
-				.collect(Collectors.groupingBy(
-						identity -> new ExternalKey(identity.getScope(), identity.getExternalId()).comparable()));
-		Map<ExternalKey, Set<UUID>> verified = new HashMap<>();
-		for (ExternalKey key : keys) {
-			verified.put(key, byKey.getOrDefault(key.comparable(), List.of()).stream()
+				.collect(Collectors.groupingBy(identityKey));
+		Map<K, Set<UUID>> verified = new HashMap<>();
+		for (K key : keys) {
+			verified.put(key, byKey.getOrDefault(comparable.apply(key), List.of()).stream()
 					.filter(ExternalIdentity::isVerified).map(ExternalIdentity::getEquipmentId)
 					.collect(Collectors.toSet()));
 		}
 		Map<UUID, EquipmentReference> references = findByIds(verified.values().stream()
 				.filter(owners -> owners.size() == 1).flatMap(Set::stream).distinct().toList());
-		Map<ExternalKey, IdentityMatch> matches = new HashMap<>();
+		Map<K, IdentityMatch> matches = new HashMap<>();
 		verified.forEach((key, owners) -> {
 			if (owners.size() == 1) {
 				matches.put(key, new IdentityMatch(IdentityMatch.Status.UNIQUE, references.get(owners.iterator().next())));
@@ -103,8 +115,8 @@ class EquipmentDirectoryService implements EquipmentDirectory {
 				matches.put(key, new IdentityMatch(IdentityMatch.Status.AMBIGUOUS, null));
 			}
 			else {
-				matches.put(key, new IdentityMatch(byKey.containsKey(key.comparable()) ? IdentityMatch.Status.NOT_VERIFIED
-						: IdentityMatch.Status.NOT_REGISTERED, null));
+				matches.put(key, new IdentityMatch(byKey.containsKey(comparable.apply(key))
+						? IdentityMatch.Status.NOT_VERIFIED : IdentityMatch.Status.NOT_REGISTERED, null));
 			}
 		});
 		return matches;

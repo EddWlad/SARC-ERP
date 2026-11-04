@@ -30,6 +30,7 @@ import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.Connector
 import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.Equipment;
 import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.EquipmentBrand;
 import com.tidsec.sarc_bakend.modules.inventory.domain.model.equipment.UsageStatus;
+import com.tidsec.sarc_bakend.modules.inventory.domain.repository.ConnectorRow;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentCount;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentRepository;
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentSearchCriteria;
@@ -146,6 +147,40 @@ class EquipmentRepositoryAdapter implements EquipmentRepository {
 		entityManager.createQuery(query).getResultList()
 				.forEach(row -> counts.put(row.get(0, String.class), row.get(1, Long.class)));
 		return counts;
+	}
+
+	@Override
+	public List<ConnectorRow> findConnectors(EquipmentSearchCriteria criteria, UUID equipmentId) {
+		CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+		CriteriaQuery<ConnectorRow> query = cb.createQuery(ConnectorRow.class);
+		Root<Connector> connector = query.from(Connector.class);
+		Join<Connector, Equipment> equipment = connector.join("equipment");
+		Join<Connector, ConnectorType> type = connector.join("connectorType");
+		select(query, cb, connector, equipment, type);
+		Predicate matching = EquipmentPredicates.matching(criteria, cb, equipment);
+		query.where(equipmentId == null ? matching : cb.and(matching, cb.equal(equipment.get("id"), equipmentId)));
+		query.orderBy(cb.asc(equipment.get("name")), cb.asc(equipment.get("id")), cb.asc(connector.get("ordinal")));
+		return entityManager.createQuery(query).getResultList();
+	}
+
+	@Override
+	public List<ConnectorRow> findConnectorsById(Collection<UUID> connectorIds) {
+		CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+		CriteriaQuery<ConnectorRow> query = cb.createQuery(ConnectorRow.class);
+		Root<Connector> connector = query.from(Connector.class);
+		Join<Connector, Equipment> equipment = connector.join("equipment");
+		Join<Connector, ConnectorType> type = connector.join("connectorType");
+		select(query, cb, connector, equipment, type);
+		query.where(connector.get("id").in(connectorIds));
+		return entityManager.createQuery(query).getResultList();
+	}
+
+	private static void select(CriteriaQuery<ConnectorRow> query, CriteriaBuilder cb, Root<Connector> connector,
+			Join<Connector, Equipment> equipment, Join<Connector, ConnectorType> type) {
+		query.select(cb.construct(ConnectorRow.class, connector.get("id"), connector.get("ordinal").as(Integer.class),
+				type.get("code"), type.get("name"), connector.get("active"), equipment.get("id"),
+				equipment.get("name"), equipment.get("assignedCode"), equipment.get("network"),
+				equipment.get("type"), equipment.get("brand"), equipment.get("adminStatus")));
 	}
 
 	private static Specification<Equipment> matching(EquipmentSearchCriteria criteria) {

@@ -6,6 +6,83 @@
     "version" : "v1"
   },
   "paths" : {
+    "/api/v1/uptime/imports/{id}/rows/decision" : {
+      "put" : {
+        "tags" : [ "uptime-import-controller" ],
+        "operationId" : "decide",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UptimeRowDecisionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UptimeImportRowResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/connector-aliases/{id}" : {
+      "put" : {
+        "tags" : [ "uptime-pending-link-controller" ],
+        "operationId" : "update",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateConnectorAliasRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConnectorAliasResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/equipment/{id}" : {
       "get" : {
         "tags" : [ "equipment-controller" ],
@@ -34,7 +111,7 @@
       },
       "put" : {
         "tags" : [ "equipment-controller" ],
-        "operationId" : "update",
+        "operationId" : "update_1",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -232,7 +309,7 @@
     "/api/v1/energy/imports/{id}/rows/decision" : {
       "put" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "decide",
+        "operationId" : "decide_1",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -380,6 +457,588 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/TemporaryPasswordResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/pending-links/{rowId}/link" : {
+      "post" : {
+        "tags" : [ "uptime-pending-link-controller" ],
+        "operationId" : "link",
+        "parameters" : [ {
+          "name" : "rowId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LinkRowRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UptimeImportRowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/measurements" : {
+      "get" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "search",
+        "parameters" : [ {
+          "name" : "connectorId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "equipmentId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "queue",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "OBSERVED", "VALIDATED", "EXCLUDED" ]
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultMeasurementDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "register",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RegisterMeasurementRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeasurementResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/measurements/{id}/validate" : {
+      "post" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "validate",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ValidateMeasurementRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeasurementResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/measurements/{id}/restore" : {
+      "post" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "restore",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/JustifiedVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeasurementResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/measurements/{id}/exclude" : {
+      "post" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "exclude",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/JustifiedVersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeasurementResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/measurements/{id}/corrections" : {
+      "post" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "correct",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CorrectMeasurementRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeasurementResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/measurements/validation" : {
+      "post" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "validateBatch",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BatchValidationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BatchValidationResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/measurements/parse" : {
+      "post" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "parse",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ParseBlockRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ParsedBlockResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/measurements/classifications" : {
+      "post" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "classify",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ClassifyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ClassificationResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/imports" : {
+      "get" : {
+        "tags" : [ "uptime-import-controller" ],
+        "operationId" : "history",
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultUptimeImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "uptime-import-controller" ],
+        "operationId" : "upload",
+        "parameters" : [ {
+          "name" : "weekStart",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "file" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UptimeImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/imports/{id}/retry" : {
+      "post" : {
+        "tags" : [ "uptime-import-controller" ],
+        "operationId" : "retry",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UptimeImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/imports/{id}/discard" : {
+      "post" : {
+        "tags" : [ "uptime-import-controller" ],
+        "operationId" : "discard",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UptimeImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/imports/{id}/confirm" : {
+      "post" : {
+        "tags" : [ "uptime-import-controller" ],
+        "operationId" : "confirm",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ConfirmUptimeImportRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UptimeImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/imports/paste" : {
+      "post" : {
+        "tags" : [ "uptime-import-controller" ],
+        "operationId" : "paste",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PasteUptimeImportRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UptimeImportBatchResponse"
                 }
               }
             }
@@ -910,7 +1569,7 @@
     "/api/v1/energy/imports" : {
       "get" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "history",
+        "operationId" : "history_1",
         "parameters" : [ {
           "name" : "page",
           "in" : "query",
@@ -948,7 +1607,7 @@
       },
       "post" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "upload",
+        "operationId" : "upload_1",
         "parameters" : [ {
           "name" : "source",
           "in" : "query",
@@ -1000,7 +1659,7 @@
     "/api/v1/energy/imports/{id}/retry" : {
       "post" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "retry",
+        "operationId" : "retry_1",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -1037,7 +1696,7 @@
     "/api/v1/energy/imports/{id}/discard" : {
       "post" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "discard",
+        "operationId" : "discard_1",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -1074,7 +1733,7 @@
     "/api/v1/energy/imports/{id}/confirm" : {
       "post" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "confirm",
+        "operationId" : "confirm_1",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -1111,7 +1770,7 @@
     "/api/v1/energy/imports/paste" : {
       "post" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "paste",
+        "operationId" : "paste_1",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1235,7 +1894,7 @@
     "/api/v1/users/{id}" : {
       "patch" : {
         "tags" : [ "user-controller" ],
-        "operationId" : "update_1",
+        "operationId" : "update_2",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -1346,7 +2005,7 @@
     "/api/v1/connector-types/{id}" : {
       "patch" : {
         "tags" : [ "connector-type-controller" ],
-        "operationId" : "update_2",
+        "operationId" : "update_3",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -1373,6 +2032,874 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ConnectorTypeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/summary" : {
+      "get" : {
+        "tags" : [ "uptime-controller" ],
+        "operationId" : "summary",
+        "parameters" : [ {
+          "name" : "periodKind",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "OFFICIAL", "PROVISIONAL", "NONE" ]
+          }
+        }, {
+          "name" : "periodType",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          }
+        }, {
+          "name" : "type",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          }
+        }, {
+          "name" : "brand",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "equipmentId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "connectorId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UptimeSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/scope/connectors" : {
+      "get" : {
+        "tags" : [ "uptime-controller" ],
+        "operationId" : "scope",
+        "parameters" : [ {
+          "name" : "q",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ScopeConnectorResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/results/exclusions" : {
+      "get" : {
+        "tags" : [ "uptime-controller" ],
+        "operationId" : "exclusions",
+        "parameters" : [ {
+          "name" : "periodKind",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "OFFICIAL", "PROVISIONAL", "NONE" ]
+          }
+        }, {
+          "name" : "periodType",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          }
+        }, {
+          "name" : "type",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          }
+        }, {
+          "name" : "brand",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "equipmentId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "connectorId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultExclusionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/results/equipment" : {
+      "get" : {
+        "tags" : [ "uptime-controller" ],
+        "operationId" : "equipment",
+        "parameters" : [ {
+          "name" : "periodKind",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "OFFICIAL", "PROVISIONAL", "NONE" ]
+          }
+        }, {
+          "name" : "periodType",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          }
+        }, {
+          "name" : "type",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          }
+        }, {
+          "name" : "brand",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "equipmentId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "connectorId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultEquipmentResultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/results/connectors" : {
+      "get" : {
+        "tags" : [ "uptime-controller" ],
+        "operationId" : "connectors",
+        "parameters" : [ {
+          "name" : "periodKind",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "OFFICIAL", "PROVISIONAL", "NONE" ]
+          }
+        }, {
+          "name" : "periodType",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          }
+        }, {
+          "name" : "type",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          }
+        }, {
+          "name" : "brand",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "equipmentId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "connectorId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultConnectorResultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/report" : {
+      "get" : {
+        "tags" : [ "uptime-controller" ],
+        "operationId" : "report",
+        "parameters" : [ {
+          "name" : "format",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "PDF", "XLSX" ]
+          }
+        }, {
+          "name" : "periodKind",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "OFFICIAL", "PROVISIONAL", "NONE" ]
+          }
+        }, {
+          "name" : "periodType",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          }
+        }, {
+          "name" : "type",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          }
+        }, {
+          "name" : "brand",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "equipmentId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "connectorId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Documento nuevo; X-Report-Id y X-Report-Cut-Off lo identifican",
+            "headers" : {
+              "X-Report-Cut-Off" : {
+                "style" : "simple",
+                "schema" : {
+                  "type" : "string",
+                  "format" : "date-time"
+                }
+              },
+              "X-Report-Id" : {
+                "style" : "simple",
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uuid"
+                }
+              }
+            },
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/pending-links" : {
+      "get" : {
+        "tags" : [ "uptime-pending-link-controller" ],
+        "operationId" : "pending",
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 50,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultUptimeImportRowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/measurements/{id}" : {
+      "get" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "detail",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeasurementDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/measurements/{id}/revisions" : {
+      "get" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "revisions",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeasurementHistoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/imports/{id}" : {
+      "get" : {
+        "tags" : [ "uptime-import-controller" ],
+        "operationId" : "get_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UptimeImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/imports/{id}/rows" : {
+      "get" : {
+        "tags" : [ "uptime-import-controller" ],
+        "operationId" : "rows",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "classification",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "NEW", "IDENTICAL", "CONFLICT", "INVALID", "PENDING_LINK" ]
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 50,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultUptimeImportRowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/grid" : {
+      "get" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "grid",
+        "parameters" : [ {
+          "name" : "periodStart",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }, {
+          "name" : "periodEnd",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          }
+        }, {
+          "name" : "type",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          }
+        }, {
+          "name" : "equipmentId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "showInactive",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/GridRowResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/connector-aliases" : {
+      "get" : {
+        "tags" : [ "uptime-pending-link-controller" ],
+        "operationId" : "aliases",
+        "parameters" : [ {
+          "name" : "equipmentId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 50,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultConnectorAliasResponse"
                 }
               }
             }
@@ -1465,7 +2992,7 @@
     "/api/v1/inventory/summary" : {
       "get" : {
         "tags" : [ "inventory-controller" ],
-        "operationId" : "summary",
+        "operationId" : "summary_1",
         "parameters" : [ {
           "name" : "text",
           "in" : "query",
@@ -1533,7 +3060,7 @@
     "/api/v1/inventory/report" : {
       "get" : {
         "tags" : [ "inventory-controller" ],
-        "operationId" : "report",
+        "operationId" : "report_1",
         "parameters" : [ {
           "name" : "format",
           "in" : "query",
@@ -1758,7 +3285,7 @@
     "/api/v1/energy/summary" : {
       "get" : {
         "tags" : [ "consumption-controller" ],
-        "operationId" : "summary_1",
+        "operationId" : "summary_2",
         "parameters" : [ {
           "name" : "from",
           "in" : "query",
@@ -1825,7 +3352,7 @@
     "/api/v1/energy/sessions" : {
       "get" : {
         "tags" : [ "energy-session-controller" ],
-        "operationId" : "search",
+        "operationId" : "search_1",
         "parameters" : [ {
           "name" : "from",
           "in" : "query",
@@ -1968,7 +3495,7 @@
     "/api/v1/energy/report" : {
       "get" : {
         "tags" : [ "consumption-controller" ],
-        "operationId" : "report_1",
+        "operationId" : "report_2",
         "parameters" : [ {
           "name" : "format",
           "in" : "query",
@@ -2066,7 +3593,7 @@
     "/api/v1/energy/imports/{id}" : {
       "get" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "get_1",
+        "operationId" : "get_2",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -2093,7 +3620,7 @@
     "/api/v1/energy/imports/{id}/rows" : {
       "get" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "rows",
+        "operationId" : "rows_1",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -2194,6 +3721,206 @@
   },
   "components" : {
     "schemas" : {
+      "UptimeRowDecisionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "rowIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 1000,
+            "minItems" : 0
+          },
+          "approved" : {
+            "type" : "boolean"
+          },
+          "justification" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "rowIds" ]
+      },
+      "RowIssue" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "message" ]
+      },
+      "UptimeImportRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "batchId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "rowNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sourceSheet" : {
+            "type" : [ "string", "null" ]
+          },
+          "sourceRow" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "uptimeBasis" : {
+            "type" : "string",
+            "enum" : [ "STATES", "REPORTED_PERCENT" ]
+          },
+          "sourceSite" : {
+            "type" : [ "string", "null" ]
+          },
+          "sourceCharger" : {
+            "type" : [ "string", "null" ]
+          },
+          "sourceConnector" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipmentId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "connectorId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "suggestedConnectorId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "periodStart" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "periodEnd" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "periodType" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          },
+          "availableMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "occupiedMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "faultMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "offlineMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "reportedPercent" : {
+            "type" : [ "string", "null" ]
+          },
+          "classification" : {
+            "type" : "string",
+            "enum" : [ "NEW", "IDENTICAL", "CONFLICT", "INVALID", "PENDING_LINK" ]
+          },
+          "issues" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RowIssue"
+            }
+          },
+          "observations" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "SUM_BELOW_DURATION", "PERCENT_MISMATCH", "SUM_ABOVE_DURATION", "SUM_ZERO", "PERCENT_OUT_OF_RANGE", "DURATION_INVALID", "WINDOW_DURATION_MISMATCH" ]
+            }
+          },
+          "approved" : {
+            "type" : "boolean"
+          },
+          "justification" : {
+            "type" : [ "string", "null" ]
+          },
+          "existingMeasurementId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "outcome" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "APPLIED", "SKIPPED", "FAILED", "PENDING_LINK", "LINKED" ]
+          },
+          "appliedMeasurementId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "approved", "batchId", "classification", "id", "issues", "observations", "rowNumber", "uptimeBasis", "version" ]
+      },
+      "UpdateConnectorAliasRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "connectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "active" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "connectorId", "version" ]
+      },
+      "ConnectorAliasResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "connectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "active" : {
+            "type" : "boolean"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "active", "connectorId", "equipmentId", "id", "label", "version" ]
+      },
       "UpdateEquipmentRequest" : {
         "type" : "object",
         "properties" : {
@@ -2613,18 +4340,6 @@
         },
         "required" : [ "approved", "classification", "connectors", "id", "issues", "requiresApproval", "rowNumber" ]
       },
-      "RowIssue" : {
-        "type" : "object",
-        "properties" : {
-          "code" : {
-            "type" : "string"
-          },
-          "message" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "code", "message" ]
-      },
       "RowDecisionRequest" : {
         "type" : "object",
         "properties" : {
@@ -2834,6 +4549,489 @@
         },
         "required" : [ "temporaryPassword" ]
       },
+      "LinkRowRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "connectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "rememberLabel" : {
+            "type" : [ "boolean", "null" ]
+          }
+        },
+        "required" : [ "connectorId", "version" ]
+      },
+      "RegisterMeasurementRequest" : {
+        "type" : "object",
+        "properties" : {
+          "connectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "ENERLINK" ]
+          },
+          "periodStart" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "periodEnd" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "periodType" : {
+            "type" : "string",
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          },
+          "exactConfirmed" : {
+            "type" : "boolean"
+          },
+          "availableMinutes" : {
+            "type" : "number"
+          },
+          "occupiedMinutes" : {
+            "type" : "number"
+          },
+          "faultMinutes" : {
+            "type" : "number"
+          },
+          "offlineMinutes" : {
+            "type" : "number"
+          },
+          "reportedPercent" : {
+            "type" : "number"
+          },
+          "origin" : {
+            "type" : "string",
+            "enum" : [ "MANUAL", "BLOCK", "FILE", "PASTE" ]
+          },
+          "sourceText" : {
+            "type" : "string",
+            "maxLength" : 4000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "availableMinutes", "connectorId", "faultMinutes", "occupiedMinutes", "offlineMinutes", "origin", "periodEnd", "periodStart", "periodType", "source" ]
+      },
+      "MeasurementResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "result" : {
+            "type" : "string"
+          },
+          "connectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "ENERLINK" ]
+          },
+          "periodStart" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "periodEnd" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "periodZone" : {
+            "type" : "string"
+          },
+          "revision" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "readingClass" : {
+            "type" : "string",
+            "enum" : [ "MEASURED", "NO_DATA", "OUT_OF_SCOPE", "RETIRED" ]
+          },
+          "periodType" : {
+            "type" : "string",
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          },
+          "reviewState" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "VALIDATED", "SUPERSEDED" ]
+          },
+          "availableMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "occupiedMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "faultMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "offlineMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "evaluatedMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "uptimePercent" : {
+            "type" : [ "string", "null" ]
+          },
+          "reportedPercent" : {
+            "type" : [ "string", "null" ]
+          },
+          "observations" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "SUM_BELOW_DURATION", "PERCENT_MISMATCH", "SUM_ABOVE_DURATION", "SUM_ZERO", "PERCENT_OUT_OF_RANGE", "DURATION_INVALID", "WINDOW_DURATION_MISMATCH" ]
+            }
+          },
+          "validatable" : {
+            "type" : "boolean"
+          },
+          "excluded" : {
+            "type" : "boolean"
+          },
+          "uptimeBasis" : {
+            "type" : "string",
+            "enum" : [ "STATES", "REPORTED_PERCENT" ]
+          }
+        },
+        "required" : [ "connectorId", "equipmentId", "excluded", "id", "observations", "periodEnd", "periodStart", "periodType", "periodZone", "readingClass", "result", "reviewState", "revision", "source", "uptimeBasis", "validatable", "version" ]
+      },
+      "ValidateMeasurementRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "justification" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "version" ]
+      },
+      "JustifiedVersionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "justification" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "justification", "version" ]
+      },
+      "CorrectMeasurementRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "readingClass" : {
+            "type" : "string",
+            "enum" : [ "MEASURED", "NO_DATA", "OUT_OF_SCOPE", "RETIRED" ]
+          },
+          "periodType" : {
+            "type" : "string",
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          },
+          "exactConfirmed" : {
+            "type" : "boolean"
+          },
+          "availableMinutes" : {
+            "type" : "number"
+          },
+          "occupiedMinutes" : {
+            "type" : "number"
+          },
+          "faultMinutes" : {
+            "type" : "number"
+          },
+          "offlineMinutes" : {
+            "type" : "number"
+          },
+          "reportedPercent" : {
+            "type" : "number"
+          },
+          "justification" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "justification", "periodType", "version" ]
+      },
+      "BatchValidationRequest" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "maxItems" : 500,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "items" ]
+      },
+      "Item" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "id", "version" ]
+      },
+      "BatchValidationResult" : {
+        "type" : "object",
+        "properties" : {
+          "validated" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "skipped" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Skipped"
+            }
+          }
+        },
+        "required" : [ "skipped", "validated" ]
+      },
+      "Skipped" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "reason" : {
+            "type" : "string",
+            "enum" : [ "OBSERVED", "STALE_VERSION", "NOT_PENDING", "NOT_FOUND" ]
+          }
+        },
+        "required" : [ "id", "reason" ]
+      },
+      "ParseBlockRequest" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string",
+            "maxLength" : 4000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "text" ]
+      },
+      "ParsedBlockResponse" : {
+        "type" : "object",
+        "properties" : {
+          "available" : {
+            "type" : "number"
+          },
+          "occupied" : {
+            "type" : "number"
+          },
+          "fault" : {
+            "type" : "number"
+          },
+          "offline" : {
+            "type" : "number"
+          },
+          "reportedPercent" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "available", "fault", "occupied", "offline" ]
+      },
+      "ClassifyRequest" : {
+        "type" : "object",
+        "properties" : {
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "connectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "readingClass" : {
+            "type" : "string",
+            "enum" : [ "MEASURED", "NO_DATA", "OUT_OF_SCOPE", "RETIRED" ]
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "ENERLINK" ]
+          },
+          "periodStart" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "periodEnd" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "periodType" : {
+            "type" : "string",
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          },
+          "exactConfirmed" : {
+            "type" : "boolean"
+          },
+          "justification" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "equipmentId", "justification", "periodEnd", "periodStart", "periodType", "readingClass", "source" ]
+      },
+      "ClassificationResponse" : {
+        "type" : "object",
+        "properties" : {
+          "connectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "result" : {
+            "type" : "string",
+            "enum" : [ "CREATED", "IDENTICAL", "DIFFERS" ]
+          },
+          "measurementId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "connectorId", "measurementId", "result" ]
+      },
+      "UptimeImportBatchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "ENERLINK" ]
+          },
+          "declaredPeriodType" : {
+            "type" : "string",
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          },
+          "declaredPeriodStart" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "declaredPeriodEnd" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "origin" : {
+            "type" : "string",
+            "enum" : [ "FILE", "PASTE" ]
+          },
+          "fileName" : {
+            "type" : "string"
+          },
+          "checksum" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "PARSING", "READY", "CONFIRMING", "COMPLETED", "FAILED", "DISCARDED" ]
+          },
+          "failureCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "failureMessage" : {
+            "type" : [ "string", "null" ]
+          },
+          "totalRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "newRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "identicalRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "conflictRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "invalidRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pendingLinkRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "observedRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "appliedRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "exactConfirmed" : {
+            "type" : "boolean"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "confirmedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "appliedRows", "checksum", "conflictRows", "createdAt", "declaredPeriodType", "exactConfirmed", "fileName", "id", "identicalRows", "invalidRows", "newRows", "observedRows", "origin", "pendingLinkRows", "source", "status", "totalRows", "version" ]
+      },
       "VersionRequest" : {
         "type" : "object",
         "properties" : {
@@ -2843,6 +5041,34 @@
           }
         },
         "required" : [ "version" ]
+      },
+      "ConfirmUptimeImportRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "exactConfirmed" : {
+            "type" : [ "boolean", "null" ]
+          }
+        },
+        "required" : [ "version" ]
+      },
+      "PasteUptimeImportRequest" : {
+        "type" : "object",
+        "properties" : {
+          "declaredPeriodType" : {
+            "type" : "string",
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          },
+          "text" : {
+            "type" : "string",
+            "maxLength" : 20971520,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "declaredPeriodType", "text" ]
       },
       "ExternalIdentityResponse" : {
         "type" : "object",
@@ -3498,6 +5724,864 @@
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/UserResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "ByState" : {
+        "type" : "object",
+        "properties" : {
+          "validated" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pendingReview" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "noData" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "withoutMeasurement" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "outOfScope" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "retired" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "excluded" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "excluded", "noData", "outOfScope", "pendingReview", "retired", "validated", "withoutMeasurement" ]
+      },
+      "Coverage" : {
+        "type" : "object",
+        "properties" : {
+          "percent" : {
+            "type" : [ "string", "null" ]
+          },
+          "included" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "denominator" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "byState" : {
+            "$ref" : "#/components/schemas/ByState"
+          },
+          "pendingLink" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "byState", "denominator", "included", "pendingLink" ]
+      },
+      "Kpis" : {
+        "type" : "object",
+        "properties" : {
+          "uptimePercent" : {
+            "type" : "string"
+          },
+          "evaluatedMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "offlineHours" : {
+            "type" : "string"
+          },
+          "faultHours" : {
+            "type" : "string"
+          },
+          "equipmentEvaluated" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "equipmentWithoutData" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "connectorsIncluded" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "connectorsInScope" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "connectorsInScope", "connectorsIncluded", "equipmentEvaluated", "equipmentWithoutData", "evaluatedMinutes", "faultHours", "offlineHours", "uptimePercent" ]
+      },
+      "Operations" : {
+        "type" : "object",
+        "properties" : {
+          "observed" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "readyToValidate" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "correctionsPending" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "correctionsPending", "observed", "readyToValidate" ]
+      },
+      "ResolvedPeriod" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "OFFICIAL", "PROVISIONAL", "NONE" ]
+          },
+          "periodType" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          },
+          "from" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "to" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "timeZone" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "kind", "timeZone" ]
+      },
+      "Trend" : {
+        "type" : "object",
+        "properties" : {
+          "weekStart" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "uptimePercent" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "uptimePercent", "weekStart" ]
+      },
+      "UptimeSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "resolvedPeriod" : {
+            "$ref" : "#/components/schemas/ResolvedPeriod"
+          },
+          "official" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/Kpis"
+          },
+          "provisional" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/Kpis"
+          },
+          "coverage" : {
+            "$ref" : "#/components/schemas/Coverage"
+          },
+          "trend" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Trend"
+            }
+          },
+          "notices" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "NO_OFFICIAL_WEEK", "LATEST_WEEK_MISSING", "NO_EVALUABLE_CONNECTORS" ]
+            }
+          },
+          "lastValidatedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "cutOff" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "operations" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/Operations"
+          }
+        },
+        "required" : [ "coverage", "cutOff", "notices", "resolvedPeriod", "trend" ]
+      },
+      "ScopeConnectorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "connectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "ordinal" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "connectorType" : {
+            "type" : "string"
+          },
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "equipmentName" : {
+            "type" : "string"
+          },
+          "assignedCode" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "connectorId", "connectorType", "equipmentId", "equipmentName", "ordinal" ]
+      },
+      "ExclusionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "connectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "ordinal" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "equipmentName" : {
+            "type" : "string"
+          },
+          "assignedCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "state" : {
+            "type" : "string",
+            "enum" : [ "VALIDATED", "PENDING_REVIEW", "NO_DATA", "WITHOUT_MEASUREMENT", "OUT_OF_SCOPE", "RETIRED", "EXCLUDED" ]
+          }
+        },
+        "required" : [ "connectorId", "equipmentId", "equipmentName", "ordinal", "state" ]
+      },
+      "PageResultExclusionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExclusionResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "EquipmentResultResponse" : {
+        "type" : "object",
+        "properties" : {
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "equipmentName" : {
+            "type" : "string"
+          },
+          "assignedCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "network" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          },
+          "uptimePercent" : {
+            "type" : [ "string", "null" ]
+          },
+          "evaluatedMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "offlineMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "faultMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "connectorsIncluded" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "connectorsInScope" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "connectorsInScope", "connectorsIncluded", "equipmentId", "equipmentName", "evaluatedMinutes", "faultMinutes", "network", "offlineMinutes", "type" ]
+      },
+      "PageResultEquipmentResultResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EquipmentResultResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "ConnectorResultResponse" : {
+        "type" : "object",
+        "properties" : {
+          "position" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "connectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "ordinal" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "connectorType" : {
+            "type" : "string"
+          },
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "equipmentName" : {
+            "type" : "string"
+          },
+          "assignedCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "network" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          },
+          "brand" : {
+            "type" : [ "string", "null" ]
+          },
+          "uptimePercent" : {
+            "type" : "string"
+          },
+          "evaluatedMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "offlineMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "faultMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "from" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "to" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "connectorId", "connectorType", "equipmentId", "equipmentName", "evaluatedMinutes", "faultMinutes", "from", "network", "offlineMinutes", "ordinal", "position", "to", "type", "uptimePercent" ]
+      },
+      "PageResultConnectorResultResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ConnectorResultResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "PageResultUptimeImportRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UptimeImportRowResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "FactLabel" : {
+        "type" : "object",
+        "properties" : {
+          "equipmentName" : {
+            "type" : "string"
+          },
+          "assignedCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "connectorType" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "connectorType", "equipmentName" ]
+      },
+      "MeasurementDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "connectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "ordinal" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "equipmentName" : {
+            "type" : "string"
+          },
+          "assignedCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "periodStart" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "periodEnd" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "revision" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "readingClass" : {
+            "type" : "string",
+            "enum" : [ "MEASURED", "NO_DATA", "OUT_OF_SCOPE", "RETIRED" ]
+          },
+          "periodType" : {
+            "type" : "string",
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          },
+          "reviewState" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "VALIDATED", "SUPERSEDED" ]
+          },
+          "availableMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "occupiedMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "faultMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "offlineMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "evaluatedMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "uptimePercent" : {
+            "type" : [ "string", "null" ]
+          },
+          "factLabel" : {
+            "$ref" : "#/components/schemas/FactLabel"
+          },
+          "observations" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "type" : "string",
+              "enum" : [ "SUM_BELOW_DURATION", "PERCENT_MISMATCH", "SUM_ABOVE_DURATION", "SUM_ZERO", "PERCENT_OUT_OF_RANGE", "DURATION_INVALID", "WINDOW_DURATION_MISMATCH" ]
+            }
+          },
+          "validatable" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "reportedPercent" : {
+            "type" : [ "string", "null" ]
+          },
+          "justification" : {
+            "type" : [ "string", "null" ]
+          },
+          "excluded" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "effectiveRevision" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "uptimeBasis" : {
+            "type" : "string",
+            "enum" : [ "STATES", "REPORTED_PERCENT" ]
+          }
+        },
+        "required" : [ "connectorId", "equipmentId", "equipmentName", "factLabel", "id", "ordinal", "periodEnd", "periodStart", "periodType", "readingClass", "reviewState", "revision", "uptimeBasis", "version" ]
+      },
+      "PageResultMeasurementDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MeasurementDetailResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "Exclusion" : {
+        "type" : "object",
+        "properties" : {
+          "action" : {
+            "type" : "string",
+            "enum" : [ "EXCLUDED", "RESTORED" ]
+          },
+          "justification" : {
+            "type" : "string"
+          },
+          "decidedBy" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "decidedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "action", "decidedAt", "justification" ]
+      },
+      "MeasurementHistoryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "revisions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Revision"
+            }
+          },
+          "exclusions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Exclusion"
+            }
+          }
+        },
+        "required" : [ "exclusions", "revisions" ]
+      },
+      "Revision" : {
+        "type" : "object",
+        "properties" : {
+          "revision" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "readingClass" : {
+            "type" : "string",
+            "enum" : [ "MEASURED", "NO_DATA", "OUT_OF_SCOPE", "RETIRED" ]
+          },
+          "periodType" : {
+            "type" : "string",
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          },
+          "reviewState" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "VALIDATED", "SUPERSEDED" ]
+          },
+          "availableMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "occupiedMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "faultMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "offlineMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "uptimePercent" : {
+            "type" : [ "string", "null" ]
+          },
+          "observations" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "SUM_BELOW_DURATION", "PERCENT_MISMATCH", "SUM_ABOVE_DURATION", "SUM_ZERO", "PERCENT_OUT_OF_RANGE", "DURATION_INVALID", "WINDOW_DURATION_MISMATCH" ]
+            }
+          },
+          "justification" : {
+            "type" : [ "string", "null" ]
+          },
+          "origin" : {
+            "type" : "string",
+            "enum" : [ "MANUAL", "BLOCK", "FILE", "PASTE" ]
+          },
+          "enteredBy" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "enteredAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "validatedBy" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "validatedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "validationJustification" : {
+            "type" : [ "string", "null" ]
+          },
+          "supersededAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "enteredAt", "observations", "origin", "periodType", "readingClass", "reviewState", "revision" ]
+      },
+      "PageResultUptimeImportBatchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UptimeImportBatchResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "GridRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "connectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "ordinal" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "connectorTypeCode" : {
+            "type" : "string"
+          },
+          "connectorTypeName" : {
+            "type" : "string"
+          },
+          "connectorActive" : {
+            "type" : "boolean"
+          },
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "equipmentName" : {
+            "type" : "string"
+          },
+          "assignedCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "network" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          },
+          "brand" : {
+            "type" : "string"
+          },
+          "equipmentStatus" : {
+            "type" : "string",
+            "enum" : [ "DELETED", "ACTIVE", "INACTIVE" ]
+          },
+          "situation" : {
+            "type" : "string",
+            "enum" : [ "NONE", "PENDING", "OBSERVED", "VALIDATED", "EXCLUDED" ]
+          },
+          "measurementId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          }
+        },
+        "required" : [ "brand", "connectorActive", "connectorId", "connectorTypeCode", "connectorTypeName", "equipmentId", "equipmentName", "equipmentStatus", "network", "ordinal", "situation", "type" ]
+      },
+      "PageResultConnectorAliasResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ConnectorAliasResponse"
             }
           },
           "page" : {

@@ -6,6 +6,10 @@ import java.util.Map;
 public final class BusinessRuleException extends SarcException {
 
 	public BusinessRuleException(String code, String message) {
-		super(code, message, Map.of());
+		this(code, message, Map.of());
+	}
+
+	public BusinessRuleException(String code, String message, Map<String, Object> properties) {
+		super(code, message, properties);
 	}
 }
