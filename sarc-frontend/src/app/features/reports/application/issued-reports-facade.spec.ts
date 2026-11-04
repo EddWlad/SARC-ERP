@@ -11,7 +11,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { FileSaver } from '../../../core/files/file-saver';
 import { IssuedReportsApi } from '../data-access/issued-reports-api';
-import { IssuedReport } from '../domain/issued-report';
+import { IssuedReport, kindLabel, REPORT_KINDS } from '../domain/issued-report';
 import { IssuedReportsFacade } from './issued-reports-facade';
 
 describe('IssuedReportsFacade', () => {
@@ -31,6 +31,15 @@ describe('IssuedReportsFacade', () => {
     });
     return { facade: TestBed.inject(IssuedReportsFacade), files };
   }
+
+  it('lists uptime reports with their own label and filter', () => {
+    const { facade } = setup({});
+
+    expect(kindLabel('UPTIME')).toBe('Uptime');
+    expect(REPORT_KINDS).toContain('UPTIME');
+    facade.filterKind('UPTIME');
+    expect(facade.kind()).toBe('UPTIME');
+  });
 
   it('downloads the archived bytes through the authenticated binary endpoint', async () => {
     const download = vi.fn().mockReturnValue(of(new HttpResponse({ body: new Blob(['QA']) })));

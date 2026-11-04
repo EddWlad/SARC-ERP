@@ -29,12 +29,16 @@ export interface ImportDialogData {
   /** Ayuda bajo el area de pegado. */
   readonly pasteHint: string;
   readonly choice?: ImportChoice;
-  readonly upload: (file: File, choice: string) => Promise<ImportBatchLike>;
+  /** Si el archivo pide otra opcion (p. ej. la semana del informe), reemplaza a {@code choice} al cargarlo. */
+  readonly fileChoice?: ImportChoice;
+  /** Sin carga de archivo, el dialogo ofrece solo el pegado. */
+  readonly upload?: (file: File, choice: string) => Promise<ImportBatchLike>;
   readonly paste: (text: string, choice: string) => Promise<ImportBatchLike>;
 }
 
 interface ImportFormValue {
   choice: string;
+  fileChoice: string;
   text: string;
 }
 
@@ -67,17 +71,21 @@ export class ImportDialog {
   protected readonly unsaved = guardUnsavedChanges(() => this.importForm().dirty());
 
   protected readonly accepted = ACCEPTED;
-  protected readonly mode = signal<'file' | 'paste'>('file');
+  protected readonly mode = signal<'file' | 'paste'>(this.data.upload ? 'file' : 'paste');
   protected readonly file = signal<File | undefined>(undefined);
   protected readonly fileError = signal<string | undefined>(undefined);
   protected readonly errorMessage = signal<string | undefined>(undefined);
   protected readonly busy = signal(false);
 
-  protected readonly model = signal<ImportFormValue>({ choice: '', text: '' });
+  protected readonly model = signal<ImportFormValue>({ choice: '', fileChoice: '', text: '' });
   protected readonly importForm = form(this.model, (path) => {
     required(path.choice, {
       message: this.data.choice?.requiredMessage ?? '',
-      when: () => this.data.choice !== undefined,
+      when: () => this.data.choice !== undefined && !this.usesFileChoice(),
+    });
+    required(path.fileChoice, {
+      message: this.data.fileChoice?.requiredMessage ?? '',
+      when: () => this.usesFileChoice(),
     });
     required(path.text, {
       message: 'Pegue las filas con su encabezado',
@@ -86,9 +94,14 @@ export class ImportDialog {
     maxLength(path.text, MAX_IMPORT_BYTES, { message: 'El texto supera 20 MiB' });
   });
 
+  /** El archivo usa su propia opcion cuando la tiene. */
+  protected usesFileChoice(): boolean {
+    return this.mode() === 'file' && this.data.fileChoice !== undefined;
+  }
+
   /** Ayuda de la opcion elegida (p. ej. las columnas que se esperan de esa plataforma). */
-  protected choiceHint(value: string): string | undefined {
-    return this.data.choice?.options.find((option) => option.value === value)?.hint;
+  protected choiceHint(choice: ImportChoice, value: string): string | undefined {
+    return choice.options.find((option) => option.value === value)?.hint;
   }
 
   protected onFile(input: HTMLInputElement): void {
@@ -109,7 +122,7 @@ export class ImportDialog {
       this.fileError.set('Elija el archivo que va a importar.');
     }
     void submit(this.importForm, async () => {
-      const { choice, text } = this.model();
+      const { choice, fileChoice, text } = this.model();
       const file = this.file();
       if (this.mode() === 'file' && file === undefined) {
         return;
@@ -118,8 +131,8 @@ export class ImportDialog {
       this.errorMessage.set(undefined);
       try {
         this.dialogRef.close(
-          this.mode() === 'file' && file !== undefined
-            ? await this.data.upload(file, choice)
+          this.mode() === 'file' && file !== undefined && this.data.upload !== undefined
+            ? await this.data.upload(file, this.usesFileChoice() ? fileChoice : choice)
             : await this.data.paste(text, choice),
         );
       } catch (error) {

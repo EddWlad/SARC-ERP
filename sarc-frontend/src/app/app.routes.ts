@@ -47,6 +47,10 @@ export const routes: Routes = [
           import('./features/consumption/consumption.routes').then((m) => m.CONSUMPTION_ROUTES),
       },
       {
+        path: 'uptime',
+        loadChildren: () => import('./features/uptime/uptime.routes').then((m) => m.UPTIME_ROUTES),
+      },
+      {
         path: 'reportes',
         loadChildren: () =>
           import('./features/reports/reports.routes').then((m) => m.REPORTS_ROUTES),

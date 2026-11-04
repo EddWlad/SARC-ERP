@@ -1,30 +1,7 @@
 // Estructura comun de las pantallas de listado: cabecera, filtros, resultados (tabla o tarjetas)
 // y estados vacio/error. Cada pantalla la incluye con `@use` y define solo lo propio.
 
-.page-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sarc-space-3);
-  margin-bottom: var(--sarc-space-5);
-
-  h1 {
-    margin: 0;
-    font: var(--mat-sys-headline-small);
-  }
-
-  p {
-    margin: var(--sarc-space-1) 0 0;
-    color: var(--mat-sys-on-surface-variant);
-  }
-}
-
-.header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sarc-space-2);
-}
+@use 'page-chrome';
 
 // Cada pantalla define sus columnas con --sarc-filter-columns; en movil se apilan.
 .filters {
@@ -65,16 +42,6 @@
 
 .block {
   display: block;
-}
-
-.state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--sarc-space-3);
-  padding: var(--sarc-space-6) var(--sarc-space-4);
-  color: var(--mat-sys-on-surface-variant);
-  text-align: center;
 }
 
 .cards {

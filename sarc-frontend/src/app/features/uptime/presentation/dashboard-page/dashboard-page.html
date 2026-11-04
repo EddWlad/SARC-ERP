@@ -1,0 +1,221 @@
+<header class="page-header">
+  <div>
+    <h1>Disponibilidad</h1>
+    <p>Uptime validado por conector de las redes KIA, JAC y CONECTZ.</p>
+  </div>
+  <div class="header-actions">
+    <button
+      matButton="outlined"
+      type="button"
+      [disabled]="facade.downloading() !== undefined"
+      (click)="download('PDF')"
+    >
+      <svg lucideFileText [size]="18"></svg>
+      {{ facade.downloading() === 'PDF' ? 'Generando...' : 'Reporte PDF' }}
+    </button>
+    <button
+      matButton="outlined"
+      type="button"
+      [disabled]="facade.downloading() !== undefined"
+      (click)="download('XLSX')"
+    >
+      <svg lucideFileSpreadsheet [size]="18"></svg>
+      {{ facade.downloading() === 'XLSX' ? 'Generando...' : 'Excel' }}
+    </button>
+  </div>
+</header>
+
+<sarc-uptime-filter-bar
+  [filters]="facade.filters()"
+  [scope]="facade.scope()"
+  [hasFilters]="facade.hasFilters()"
+  (filtersChange)="facade.updateFilters($event)"
+  (cleared)="facade.clearFilters()"
+  (searched)="facade.searchScope($event)"
+/>
+
+<div class="progress" aria-hidden="true">
+  @if (facade.loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+</div>
+
+@if (facade.error(); as message) {
+  <div class="state" role="alert">
+    <p>{{ message }}</p>
+    <button matButton="tonal" type="button" (click)="facade.load()">Reintentar</button>
+  </div>
+} @else if (facade.summary(); as summary) {
+  @if (facade.refreshFailed()) {
+    <p class="dashboard-note notice" role="status">
+      No se pudo actualizar. Se muestran los últimos datos recibidos.
+    </p>
+  }
+  @for (notice of facade.notices(); track notice) {
+    <p class="dashboard-note notice" role="status">{{ notice }}</p>
+  }
+
+  <p class="period-line">
+    @if (facade.headline(); as headline) {
+      <span class="badge" [class.badge-accent]="headline.label === 'PROVISIONAL'">
+        {{ headline.label }}
+      </span>
+    }
+    {{ facade.rangeLabel() }}
+  </p>
+
+  @if (facade.headline(); as headline) {
+    <section aria-label="Indicadores" [attr.aria-busy]="facade.loading()">
+      <ul class="kpi-grid">
+        <li class="kpi-tile">
+          <span class="kpi-value">
+            {{ quantities.decimal(headline.uptimePercent) }}<span class="kpi-unit">%</span>
+          </span>
+          <span class="kpi-label">Uptime {{ headline.label.toLowerCase() }}</span>
+        </li>
+        <li class="kpi-tile">
+          <span class="kpi-value">
+            {{ quantities.decimal(headline.offlineHours) }}<span class="kpi-unit">h</span>
+          </span>
+          <span class="kpi-label">Fuera de línea</span>
+        </li>
+        <li class="kpi-tile">
+          <span class="kpi-value">
+            {{ quantities.decimal(headline.faultHours) }}<span class="kpi-unit">h</span>
+          </span>
+          <span class="kpi-label">Con falla</span>
+        </li>
+        <li class="kpi-tile">
+          <span class="kpi-value">{{ quantities.count(headline.equipmentEvaluated) }}</span>
+          <span class="kpi-label">Equipos evaluados</span>
+        </li>
+        <li class="kpi-tile">
+          <span class="kpi-value">{{ quantities.count(headline.equipmentWithoutData) }}</span>
+          <span class="kpi-label">Equipos sin datos</span>
+        </li>
+      </ul>
+    </section>
+  } @else {
+    <div class="state"><p>No hay uptime validado en este período con los filtros elegidos.</p></div>
+  }
+
+  @if (facade.secondary(); as provisional) {
+    <p class="dashboard-note secondary">
+      Provisional, fuera de la cifra oficial:
+      {{ quantities.percentage(provisional.uptimePercent) }} ·
+      {{ provisional.connectorsIncluded }} de {{ provisional.connectorsInScope }} conectores.
+    </p>
+  }
+
+  <section class="coverage" aria-labelledby="coverage-title">
+    <h2 id="coverage-title">
+      Cobertura: {{ quantities.percentage(summary.coverage.percent) }} ·
+      {{ summary.coverage.included }} de {{ summary.coverage.denominator }} conectores
+    </h2>
+    <div class="groups">
+      <section class="panel" aria-labelledby="coverage-state">
+        <h3 id="coverage-state">Estado de las mediciones</h3>
+        <ul>
+          <li class="metric-row">
+            <span>Validadas</span>
+            <strong>{{ quantities.count(summary.coverage.byState.validated) }}</strong>
+          </li>
+          <li class="metric-row">
+            <span>Pendientes de revisión</span>
+            <strong>{{ quantities.count(summary.coverage.byState.pendingReview) }}</strong>
+          </li>
+          <li class="metric-row">
+            <span>Sin datos</span>
+            <strong>{{ quantities.count(summary.coverage.byState.noData) }}</strong>
+          </li>
+          <li class="metric-row">
+            <span>Sin medición</span>
+            <strong>{{ quantities.count(summary.coverage.byState.withoutMeasurement) }}</strong>
+          </li>
+        </ul>
+      </section>
+      <section class="panel" aria-labelledby="coverage-out">
+        <h3 id="coverage-out">Fuera del cálculo</h3>
+        <ul>
+          <li class="metric-row">
+            <span>Fuera de alcance</span>
+            <strong>{{ quantities.count(summary.coverage.byState.outOfScope) }}</strong>
+          </li>
+          <li class="metric-row">
+            <span>Retirados</span>
+            <strong>{{ quantities.count(summary.coverage.byState.retired) }}</strong>
+          </li>
+          <li class="metric-row">
+            <span>Excluidas</span>
+            <strong>{{ quantities.count(summary.coverage.byState.excluded) }}</strong>
+          </li>
+          <li class="metric-row">
+            <span>Pendientes de vincular (sin atribuir)</span>
+            <strong>{{ quantities.count(summary.coverage.pendingLink) }}</strong>
+          </li>
+        </ul>
+      </section>
+      @if (summary.operations; as operations) {
+        <section class="panel" aria-labelledby="coverage-work">
+          <h3 id="coverage-work">Trabajo operativo</h3>
+          <ul>
+            <li class="metric-row">
+              <span>Observadas</span>
+              <strong>{{ quantities.count(operations.observed) }}</strong>
+            </li>
+            <li class="metric-row">
+              <span>Listas para validar</span>
+              <strong>{{ quantities.count(operations.readyToValidate) }}</strong>
+            </li>
+            <li class="metric-row">
+              <span>Correcciones pendientes</span>
+              <strong>{{ quantities.count(operations.correctionsPending) }}</strong>
+            </li>
+          </ul>
+        </section>
+      }
+    </div>
+  </section>
+
+  <div class="charts">
+    <section class="panel" aria-labelledby="trend-title">
+      <h2 id="trend-title">Tendencia semanal oficial</h2>
+      @if (facade.trendAvailable()) {
+        <sarc-chart-view
+          kind="line"
+          [labels]="trendLabels()"
+          [series]="trendSeries()"
+          [format]="formatPercent"
+          description="Uptime oficial por semana"
+        />
+      } @else {
+        <div class="state"><p>Sin semanas oficiales no se dibuja tendencia.</p></div>
+      }
+    </section>
+    <section class="panel" aria-labelledby="lowest-title">
+      <h2 id="lowest-title">Conectores con menor uptime</h2>
+      @if (facade.connectors().length > 0) {
+        <sarc-chart-view
+          kind="bar"
+          [horizontal]="true"
+          [labels]="lowestLabels()"
+          [series]="lowestSeries()"
+          [format]="formatPercent"
+          description="Diez conectores con menor uptime del período"
+        />
+      } @else {
+        <div class="state"><p>No hay conectores con uptime en esta vista.</p></div>
+      }
+    </section>
+  </div>
+
+  <sarc-dashboard-results
+    [connectors]="facade.connectors()"
+    [equipment]="facade.equipment()"
+    [exclusions]="facade.exclusions()"
+  />
+
+  <p class="dashboard-note generated">
+    Corte {{ cutOff() }} · Solo mediciones validadas; la red y el tipo salen del inventario.
+  </p>
+}

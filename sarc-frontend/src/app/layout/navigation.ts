@@ -1,4 +1,5 @@
 import {
+  LucideActivity,
   LucideBatteryCharging,
   LucideFileArchive,
   LucideHouse,
@@ -22,6 +23,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Inicio', path: '/inicio', icon: LucideHouse.icon },
   { label: 'Inventario', path: '/inventario', icon: LucidePlugZap.icon },
   { label: 'Consumo', path: '/consumo', icon: LucideBatteryCharging.icon },
+  { label: 'Uptime', path: '/uptime', icon: LucideActivity.icon },
   { label: 'Reportes', path: '/reportes', icon: LucideFileArchive.icon },
   { label: 'Usuarios', path: '/usuarios', icon: LucideUsers.icon, roles: ['ADMINISTRADOR'] },
 ];

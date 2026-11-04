@@ -12,6 +12,7 @@ export class QuantityFormat {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+  private readonly measured = new Intl.NumberFormat(this.locale, { maximumFractionDigits: 2 });
   private readonly share = new Intl.NumberFormat(this.locale, {
     style: 'percent',
     minimumFractionDigits: 1,
@@ -50,6 +51,21 @@ export class QuantityFormat {
   /** Lectura de una sesion con su unidad: ausente es "No informado", distinto de 0 kWh. */
   reportedEnergy(value: number | null | undefined): string {
     return value === null || value === undefined ? 'No informado' : `${this.kwh(value)} kWh`;
+  }
+
+  /** Cifra de uptime con dos decimales, sin unidad; el backend la envia ya redondeada. */
+  decimal(value: string | number): string {
+    return this.energy.format(Number(value));
+  }
+
+  /** Porcentaje de uptime con unidad: ausente es una raya, nunca 0 %. */
+  percentage(value: string | number | null | undefined): string {
+    return value === null || value === undefined ? '—' : `${this.decimal(value)} %`;
+  }
+
+  /** Medida tal como se registro, hasta dos decimales: ausente es una raya, nunca 0. */
+  measure(value: string | number | null | undefined): string {
+    return value === null || value === undefined ? '—' : this.measured.format(Number(value));
   }
 
   /** Participacion de {@code part} en {@code total}; 0 % si no hay total. */

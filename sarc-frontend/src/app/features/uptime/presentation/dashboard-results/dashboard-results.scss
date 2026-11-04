@@ -1,0 +1,33 @@
+@use '../../../../shared/ui/list-page';
+@use '../../../../shared/ui/badges';
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sarc-space-4);
+}
+
+.results-title {
+  margin: 0;
+  padding: var(--sarc-space-4) var(--sarc-space-4) var(--sarc-space-2);
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-title-small);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.number {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.card strong {
+  overflow-wrap: anywhere;
+}
+
+.uptime {
+  color: var(--mat-sys-primary);
+  white-space: nowrap;
+}

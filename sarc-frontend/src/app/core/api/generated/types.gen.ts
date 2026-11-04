@@ -4,6 +4,64 @@ export type ClientOptions = {
     baseUrl: `${string}://${string}` | (string & {});
 };
 
+export type UptimeRowDecisionRequest = {
+    rowIds: Array<string>;
+    approved?: boolean;
+    justification?: string | null;
+};
+
+export type RowIssue = {
+    code: string;
+    message: string;
+};
+
+export type UptimeImportRowResponse = {
+    id: string;
+    batchId: string;
+    rowNumber: number;
+    sourceSheet?: string | null;
+    sourceRow?: number | null;
+    uptimeBasis: 'STATES' | 'REPORTED_PERCENT';
+    sourceSite?: string | null;
+    sourceCharger?: string | null;
+    sourceConnector?: string | null;
+    equipmentId?: string | null;
+    connectorId?: string | null;
+    suggestedConnectorId?: string | null;
+    periodStart?: string | null;
+    periodEnd?: string | null;
+    periodType?: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+    availableMinutes?: number | null;
+    occupiedMinutes?: number | null;
+    faultMinutes?: number | null;
+    offlineMinutes?: number | null;
+    reportedPercent?: string | null;
+    classification: 'NEW' | 'IDENTICAL' | 'CONFLICT' | 'INVALID' | 'PENDING_LINK';
+    issues: Array<RowIssue>;
+    observations: Array<'SUM_BELOW_DURATION' | 'PERCENT_MISMATCH' | 'SUM_ABOVE_DURATION' | 'SUM_ZERO' | 'PERCENT_OUT_OF_RANGE' | 'DURATION_INVALID' | 'WINDOW_DURATION_MISMATCH'>;
+    approved: boolean;
+    justification?: string | null;
+    existingMeasurementId?: string | null;
+    outcome?: 'APPLIED' | 'SKIPPED' | 'FAILED' | 'PENDING_LINK' | 'LINKED';
+    appliedMeasurementId?: string | null;
+    version: number;
+};
+
+export type UpdateConnectorAliasRequest = {
+    version: number;
+    connectorId: string;
+    active?: boolean;
+};
+
+export type ConnectorAliasResponse = {
+    id: string;
+    equipmentId: string;
+    connectorId: string;
+    label: string;
+    active: boolean;
+    version: number;
+};
+
 export type UpdateEquipmentRequest = {
     version: number;
     brand: 'BENNY' | 'WALLBOX';
@@ -125,11 +183,6 @@ export type EquipmentImportRowResponse = {
     outcomeDetail?: string | null;
 };
 
-export type RowIssue = {
-    code: string;
-    message: string;
-};
-
 export type RowDecisionRequest = {
     rowIds: Array<string>;
     test?: boolean | null;
@@ -194,8 +247,165 @@ export type TemporaryPasswordResponse = {
     temporaryPassword: string;
 };
 
+export type LinkRowRequest = {
+    version: number;
+    connectorId: string;
+    rememberLabel?: boolean | null;
+};
+
+export type RegisterMeasurementRequest = {
+    connectorId: string;
+    source: 'ENERLINK';
+    periodStart: string;
+    periodEnd: string;
+    periodType: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+    exactConfirmed?: boolean;
+    availableMinutes: number;
+    occupiedMinutes: number;
+    faultMinutes: number;
+    offlineMinutes: number;
+    reportedPercent?: number;
+    origin: 'MANUAL' | 'BLOCK' | 'FILE' | 'PASTE';
+    sourceText?: string;
+};
+
+export type MeasurementResponse = {
+    id: string;
+    version: number;
+    result: string;
+    connectorId: string;
+    equipmentId: string;
+    source: 'ENERLINK';
+    periodStart: string;
+    periodEnd: string;
+    periodZone: string;
+    revision: number;
+    readingClass: 'MEASURED' | 'NO_DATA' | 'OUT_OF_SCOPE' | 'RETIRED';
+    periodType: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+    reviewState: 'PENDING' | 'VALIDATED' | 'SUPERSEDED';
+    availableMinutes?: number | null;
+    occupiedMinutes?: number | null;
+    faultMinutes?: number | null;
+    offlineMinutes?: number | null;
+    evaluatedMinutes?: number | null;
+    uptimePercent?: string | null;
+    reportedPercent?: string | null;
+    observations: Array<'SUM_BELOW_DURATION' | 'PERCENT_MISMATCH' | 'SUM_ABOVE_DURATION' | 'SUM_ZERO' | 'PERCENT_OUT_OF_RANGE' | 'DURATION_INVALID' | 'WINDOW_DURATION_MISMATCH'>;
+    validatable: boolean;
+    excluded: boolean;
+    uptimeBasis: 'STATES' | 'REPORTED_PERCENT';
+};
+
+export type ValidateMeasurementRequest = {
+    version: number;
+    justification?: string;
+};
+
+export type JustifiedVersionRequest = {
+    version: number;
+    justification: string;
+};
+
+export type CorrectMeasurementRequest = {
+    version: number;
+    readingClass?: 'MEASURED' | 'NO_DATA' | 'OUT_OF_SCOPE' | 'RETIRED';
+    periodType: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+    exactConfirmed?: boolean;
+    availableMinutes?: number;
+    occupiedMinutes?: number;
+    faultMinutes?: number;
+    offlineMinutes?: number;
+    reportedPercent?: number;
+    justification: string;
+};
+
+export type BatchValidationRequest = {
+    items: Array<Item>;
+};
+
+export type Item = {
+    id: string;
+    version: number;
+};
+
+export type BatchValidationResult = {
+    validated: number;
+    skipped: Array<Skipped>;
+};
+
+export type Skipped = {
+    id: string;
+    reason: 'OBSERVED' | 'STALE_VERSION' | 'NOT_PENDING' | 'NOT_FOUND';
+};
+
+export type ParseBlockRequest = {
+    text: string;
+};
+
+export type ParsedBlockResponse = {
+    available: number;
+    occupied: number;
+    fault: number;
+    offline: number;
+    reportedPercent?: string | null;
+};
+
+export type ClassifyRequest = {
+    equipmentId: string;
+    connectorId?: string;
+    readingClass: 'MEASURED' | 'NO_DATA' | 'OUT_OF_SCOPE' | 'RETIRED';
+    source: 'ENERLINK';
+    periodStart: string;
+    periodEnd: string;
+    periodType: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+    exactConfirmed?: boolean;
+    justification: string;
+};
+
+export type ClassificationResponse = {
+    connectorId: string;
+    result: 'CREATED' | 'IDENTICAL' | 'DIFFERS';
+    measurementId: string;
+};
+
+export type UptimeImportBatchResponse = {
+    id: string;
+    source: 'ENERLINK';
+    declaredPeriodType: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+    declaredPeriodStart?: string | null;
+    declaredPeriodEnd?: string | null;
+    origin: 'FILE' | 'PASTE';
+    fileName: string;
+    checksum: string;
+    status: 'PARSING' | 'READY' | 'CONFIRMING' | 'COMPLETED' | 'FAILED' | 'DISCARDED';
+    failureCode?: string | null;
+    failureMessage?: string | null;
+    totalRows: number;
+    newRows: number;
+    identicalRows: number;
+    conflictRows: number;
+    invalidRows: number;
+    pendingLinkRows: number;
+    observedRows: number;
+    appliedRows: number;
+    exactConfirmed: boolean;
+    createdAt: string;
+    confirmedAt?: string | null;
+    version: number;
+};
+
 export type VersionRequest = {
     version: number;
+};
+
+export type ConfirmUptimeImportRequest = {
+    version: number;
+    exactConfirmed?: boolean | null;
+};
+
+export type PasteUptimeImportRequest = {
+    declaredPeriodType: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+    text: string;
 };
 
 export type ExternalIdentityResponse = {
@@ -397,6 +607,260 @@ export type PageResultUserResponse = {
     totalPages: number;
 };
 
+export type ByState = {
+    validated: number;
+    pendingReview: number;
+    noData: number;
+    withoutMeasurement: number;
+    outOfScope: number;
+    retired: number;
+    excluded: number;
+};
+
+export type Coverage = {
+    percent?: string | null;
+    included: number;
+    denominator: number;
+    byState: ByState;
+    pendingLink: number;
+};
+
+export type Kpis = {
+    uptimePercent: string;
+    evaluatedMinutes: number;
+    offlineHours: string;
+    faultHours: string;
+    equipmentEvaluated: number;
+    equipmentWithoutData: number;
+    connectorsIncluded: number;
+    connectorsInScope: number;
+};
+
+export type Operations = {
+    observed: number;
+    readyToValidate: number;
+    correctionsPending: number;
+};
+
+export type ResolvedPeriod = {
+    kind: 'OFFICIAL' | 'PROVISIONAL' | 'NONE';
+    periodType?: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+    from?: string | null;
+    to?: string | null;
+    timeZone: string;
+};
+
+export type Trend = {
+    weekStart: string;
+    uptimePercent: string;
+};
+
+export type UptimeSummaryResponse = {
+    resolvedPeriod: ResolvedPeriod;
+    official?: Kpis;
+    provisional?: Kpis;
+    coverage: Coverage;
+    trend: Array<Trend>;
+    notices: Array<'NO_OFFICIAL_WEEK' | 'LATEST_WEEK_MISSING' | 'NO_EVALUABLE_CONNECTORS'>;
+    lastValidatedAt?: string | null;
+    cutOff: string;
+    operations?: Operations;
+};
+
+export type ScopeConnectorResponse = {
+    connectorId: string;
+    ordinal: number;
+    connectorType: string;
+    equipmentId: string;
+    equipmentName: string;
+    assignedCode?: string | null;
+};
+
+export type ExclusionResponse = {
+    connectorId: string;
+    ordinal: number;
+    equipmentId: string;
+    equipmentName: string;
+    assignedCode?: string | null;
+    state: 'VALIDATED' | 'PENDING_REVIEW' | 'NO_DATA' | 'WITHOUT_MEASUREMENT' | 'OUT_OF_SCOPE' | 'RETIRED' | 'EXCLUDED';
+};
+
+export type PageResultExclusionResponse = {
+    content: Array<ExclusionResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type EquipmentResultResponse = {
+    equipmentId: string;
+    equipmentName: string;
+    assignedCode?: string | null;
+    network: 'KIA' | 'JAC' | 'CONECTZ';
+    type: 'CHARGING_POINT' | 'CHARGING_STATION';
+    uptimePercent?: string | null;
+    evaluatedMinutes: number;
+    offlineMinutes: number;
+    faultMinutes: number;
+    connectorsIncluded: number;
+    connectorsInScope: number;
+};
+
+export type PageResultEquipmentResultResponse = {
+    content: Array<EquipmentResultResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type ConnectorResultResponse = {
+    position: number;
+    connectorId: string;
+    ordinal: number;
+    connectorType: string;
+    equipmentId: string;
+    equipmentName: string;
+    assignedCode?: string | null;
+    network: 'KIA' | 'JAC' | 'CONECTZ';
+    type: 'CHARGING_POINT' | 'CHARGING_STATION';
+    brand?: string | null;
+    uptimePercent: string;
+    evaluatedMinutes: number;
+    offlineMinutes: number;
+    faultMinutes: number;
+    from: string;
+    to: string;
+};
+
+export type PageResultConnectorResultResponse = {
+    content: Array<ConnectorResultResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type PageResultUptimeImportRowResponse = {
+    content: Array<UptimeImportRowResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type FactLabel = {
+    equipmentName: string;
+    assignedCode?: string | null;
+    connectorType: string;
+};
+
+export type MeasurementDetailResponse = {
+    id: string;
+    version: number;
+    connectorId: string;
+    equipmentId: string;
+    ordinal: number;
+    equipmentName: string;
+    assignedCode?: string | null;
+    periodStart: string;
+    periodEnd: string;
+    revision: number;
+    readingClass: 'MEASURED' | 'NO_DATA' | 'OUT_OF_SCOPE' | 'RETIRED';
+    periodType: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+    reviewState: 'PENDING' | 'VALIDATED' | 'SUPERSEDED';
+    availableMinutes?: number | null;
+    occupiedMinutes?: number | null;
+    faultMinutes?: number | null;
+    offlineMinutes?: number | null;
+    evaluatedMinutes?: number | null;
+    uptimePercent?: string | null;
+    factLabel: FactLabel;
+    observations?: Array<'SUM_BELOW_DURATION' | 'PERCENT_MISMATCH' | 'SUM_ABOVE_DURATION' | 'SUM_ZERO' | 'PERCENT_OUT_OF_RANGE' | 'DURATION_INVALID' | 'WINDOW_DURATION_MISMATCH'> | null;
+    validatable?: boolean | null;
+    reportedPercent?: string | null;
+    justification?: string | null;
+    excluded?: boolean | null;
+    effectiveRevision?: number | null;
+    uptimeBasis: 'STATES' | 'REPORTED_PERCENT';
+};
+
+export type PageResultMeasurementDetailResponse = {
+    content: Array<MeasurementDetailResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type Exclusion = {
+    action: 'EXCLUDED' | 'RESTORED';
+    justification: string;
+    decidedBy?: string | null;
+    decidedAt: string;
+};
+
+export type MeasurementHistoryResponse = {
+    revisions: Array<Revision>;
+    exclusions: Array<Exclusion>;
+};
+
+export type Revision = {
+    revision: number;
+    readingClass: 'MEASURED' | 'NO_DATA' | 'OUT_OF_SCOPE' | 'RETIRED';
+    periodType: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+    reviewState: 'PENDING' | 'VALIDATED' | 'SUPERSEDED';
+    availableMinutes?: number | null;
+    occupiedMinutes?: number | null;
+    faultMinutes?: number | null;
+    offlineMinutes?: number | null;
+    uptimePercent?: string | null;
+    observations: Array<'SUM_BELOW_DURATION' | 'PERCENT_MISMATCH' | 'SUM_ABOVE_DURATION' | 'SUM_ZERO' | 'PERCENT_OUT_OF_RANGE' | 'DURATION_INVALID' | 'WINDOW_DURATION_MISMATCH'>;
+    justification?: string | null;
+    origin: 'MANUAL' | 'BLOCK' | 'FILE' | 'PASTE';
+    enteredBy?: string | null;
+    enteredAt: string;
+    validatedBy?: string | null;
+    validatedAt?: string | null;
+    validationJustification?: string | null;
+    supersededAt?: string | null;
+};
+
+export type PageResultUptimeImportBatchResponse = {
+    content: Array<UptimeImportBatchResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type GridRowResponse = {
+    connectorId: string;
+    ordinal: number;
+    connectorTypeCode: string;
+    connectorTypeName: string;
+    connectorActive: boolean;
+    equipmentId: string;
+    equipmentName: string;
+    assignedCode?: string | null;
+    network: 'KIA' | 'JAC' | 'CONECTZ';
+    type: 'CHARGING_POINT' | 'CHARGING_STATION';
+    brand: string;
+    equipmentStatus: 'DELETED' | 'ACTIVE' | 'INACTIVE';
+    situation: 'NONE' | 'PENDING' | 'OBSERVED' | 'VALIDATED' | 'EXCLUDED';
+    measurementId?: string | null;
+    version?: number | null;
+};
+
+export type PageResultConnectorAliasResponse = {
+    content: Array<ConnectorAliasResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
 export type IssuedReportResponse = {
     id: string;
     kind: string;
@@ -582,6 +1046,42 @@ export type PageResultImportRowResponse = {
     totalPages: number;
 };
 
+export type DecideData = {
+    body: UptimeRowDecisionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/uptime/imports/{id}/rows/decision';
+};
+
+export type DecideResponses = {
+    /**
+     * OK
+     */
+    200: Array<UptimeImportRowResponse>;
+};
+
+export type DecideResponse = DecideResponses[keyof DecideResponses];
+
+export type UpdateData = {
+    body: UpdateConnectorAliasRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/uptime/connector-aliases/{id}';
+};
+
+export type UpdateResponses = {
+    /**
+     * OK
+     */
+    200: ConnectorAliasResponse;
+};
+
+export type UpdateResponse = UpdateResponses[keyof UpdateResponses];
+
 export type GetData = {
     body?: never;
     path: {
@@ -600,7 +1100,7 @@ export type GetResponses = {
 
 export type GetResponse = GetResponses[keyof GetResponses];
 
-export type UpdateData = {
+export type Update1Data = {
     body: UpdateEquipmentRequest;
     path: {
         id: string;
@@ -609,14 +1109,14 @@ export type UpdateData = {
     url: '/api/v1/equipment/{id}';
 };
 
-export type UpdateResponses = {
+export type Update1Responses = {
     /**
      * OK
      */
     200: EquipmentResponse;
 };
 
-export type UpdateResponse = UpdateResponses[keyof UpdateResponses];
+export type Update1Response = Update1Responses[keyof Update1Responses];
 
 export type DefineScheduleData = {
     body: ScheduleRequest;
@@ -696,7 +1196,7 @@ export type DecideEquipmentImportRowsResponses = {
 
 export type DecideEquipmentImportRowsResponse = DecideEquipmentImportRowsResponses[keyof DecideEquipmentImportRowsResponses];
 
-export type DecideData = {
+export type Decide1Data = {
     body: RowDecisionRequest;
     path: {
         id: string;
@@ -705,14 +1205,14 @@ export type DecideData = {
     url: '/api/v1/energy/imports/{id}/rows/decision';
 };
 
-export type DecideResponses = {
+export type Decide1Responses = {
     /**
      * OK
      */
     200: Array<ImportRowResponse>;
 };
 
-export type DecideResponse = DecideResponses[keyof DecideResponses];
+export type Decide1Response = Decide1Responses[keyof Decide1Responses];
 
 export type ListData = {
     body?: never;
@@ -769,6 +1269,291 @@ export type ResetPasswordResponses = {
 };
 
 export type ResetPasswordResponse = ResetPasswordResponses[keyof ResetPasswordResponses];
+
+export type LinkData = {
+    body: LinkRowRequest;
+    path: {
+        rowId: string;
+    };
+    query?: never;
+    url: '/api/v1/uptime/pending-links/{rowId}/link';
+};
+
+export type LinkResponses = {
+    /**
+     * OK
+     */
+    200: UptimeImportRowResponse;
+};
+
+export type LinkResponse = LinkResponses[keyof LinkResponses];
+
+export type SearchData = {
+    body?: never;
+    path?: never;
+    query?: {
+        connectorId?: string;
+        equipmentId?: string;
+        queue?: 'PENDING' | 'OBSERVED' | 'VALIDATED' | 'EXCLUDED';
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/uptime/measurements';
+};
+
+export type SearchResponses = {
+    /**
+     * OK
+     */
+    200: PageResultMeasurementDetailResponse;
+};
+
+export type SearchResponse = SearchResponses[keyof SearchResponses];
+
+export type RegisterData = {
+    body: RegisterMeasurementRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/uptime/measurements';
+};
+
+export type RegisterResponses = {
+    /**
+     * OK
+     */
+    200: MeasurementResponse;
+};
+
+export type RegisterResponse = RegisterResponses[keyof RegisterResponses];
+
+export type ValidateData = {
+    body: ValidateMeasurementRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/uptime/measurements/{id}/validate';
+};
+
+export type ValidateResponses = {
+    /**
+     * OK
+     */
+    200: MeasurementResponse;
+};
+
+export type ValidateResponse = ValidateResponses[keyof ValidateResponses];
+
+export type RestoreData = {
+    body: JustifiedVersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/uptime/measurements/{id}/restore';
+};
+
+export type RestoreResponses = {
+    /**
+     * OK
+     */
+    200: MeasurementResponse;
+};
+
+export type RestoreResponse = RestoreResponses[keyof RestoreResponses];
+
+export type ExcludeData = {
+    body: JustifiedVersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/uptime/measurements/{id}/exclude';
+};
+
+export type ExcludeResponses = {
+    /**
+     * OK
+     */
+    200: MeasurementResponse;
+};
+
+export type ExcludeResponse = ExcludeResponses[keyof ExcludeResponses];
+
+export type CorrectData = {
+    body: CorrectMeasurementRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/uptime/measurements/{id}/corrections';
+};
+
+export type CorrectResponses = {
+    /**
+     * OK
+     */
+    200: MeasurementResponse;
+};
+
+export type CorrectResponse = CorrectResponses[keyof CorrectResponses];
+
+export type ValidateBatchData = {
+    body: BatchValidationRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/uptime/measurements/validation';
+};
+
+export type ValidateBatchResponses = {
+    /**
+     * OK
+     */
+    200: BatchValidationResult;
+};
+
+export type ValidateBatchResponse = ValidateBatchResponses[keyof ValidateBatchResponses];
+
+export type ParseData = {
+    body: ParseBlockRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/uptime/measurements/parse';
+};
+
+export type ParseResponses = {
+    /**
+     * OK
+     */
+    200: ParsedBlockResponse;
+};
+
+export type ParseResponse = ParseResponses[keyof ParseResponses];
+
+export type ClassifyData = {
+    body: ClassifyRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/uptime/measurements/classifications';
+};
+
+export type ClassifyResponses = {
+    /**
+     * OK
+     */
+    200: Array<ClassificationResponse>;
+};
+
+export type ClassifyResponse = ClassifyResponses[keyof ClassifyResponses];
+
+export type HistoryData = {
+    body?: never;
+    path?: never;
+    query?: {
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/uptime/imports';
+};
+
+export type HistoryResponses = {
+    /**
+     * OK
+     */
+    200: PageResultUptimeImportBatchResponse;
+};
+
+export type HistoryResponse = HistoryResponses[keyof HistoryResponses];
+
+export type UploadData = {
+    body?: {
+        file: Blob | File;
+    };
+    path?: never;
+    query: {
+        weekStart: string;
+    };
+    url: '/api/v1/uptime/imports';
+};
+
+export type UploadResponses = {
+    /**
+     * Accepted
+     */
+    202: UptimeImportBatchResponse;
+};
+
+export type UploadResponse = UploadResponses[keyof UploadResponses];
+
+export type RetryData = {
+    body: VersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/uptime/imports/{id}/retry';
+};
+
+export type RetryResponses = {
+    /**
+     * Accepted
+     */
+    202: UptimeImportBatchResponse;
+};
+
+export type RetryResponse = RetryResponses[keyof RetryResponses];
+
+export type DiscardData = {
+    body: VersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/uptime/imports/{id}/discard';
+};
+
+export type DiscardResponses = {
+    /**
+     * OK
+     */
+    200: UptimeImportBatchResponse;
+};
+
+export type DiscardResponse = DiscardResponses[keyof DiscardResponses];
+
+export type ConfirmData = {
+    body: ConfirmUptimeImportRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/uptime/imports/{id}/confirm';
+};
+
+export type ConfirmResponses = {
+    /**
+     * Accepted
+     */
+    202: UptimeImportBatchResponse;
+};
+
+export type ConfirmResponse = ConfirmResponses[keyof ConfirmResponses];
+
+export type PasteData = {
+    body: PasteUptimeImportRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/uptime/imports/paste';
+};
+
+export type PasteResponses = {
+    /**
+     * Accepted
+     */
+    202: UptimeImportBatchResponse;
+};
+
+export type PasteResponse = PasteResponses[keyof PasteResponses];
 
 export type VerifyData = {
     body: VersionRequest;
@@ -1024,7 +1809,7 @@ export type LinkPendingResponses = {
 
 export type LinkPendingResponse = LinkPendingResponses[keyof LinkPendingResponses];
 
-export type HistoryData = {
+export type History1Data = {
     body?: never;
     path?: never;
     query?: {
@@ -1034,16 +1819,16 @@ export type HistoryData = {
     url: '/api/v1/energy/imports';
 };
 
-export type HistoryResponses = {
+export type History1Responses = {
     /**
      * OK
      */
     200: PageResultImportBatchResponse;
 };
 
-export type HistoryResponse = HistoryResponses[keyof HistoryResponses];
+export type History1Response = History1Responses[keyof History1Responses];
 
-export type UploadData = {
+export type Upload1Data = {
     body?: {
         file: Blob | File;
     };
@@ -1055,16 +1840,16 @@ export type UploadData = {
     url: '/api/v1/energy/imports';
 };
 
-export type UploadResponses = {
+export type Upload1Responses = {
     /**
      * Accepted
      */
     202: ImportBatchResponse;
 };
 
-export type UploadResponse = UploadResponses[keyof UploadResponses];
+export type Upload1Response = Upload1Responses[keyof Upload1Responses];
 
-export type RetryData = {
+export type Retry1Data = {
     body: VersionRequest;
     path: {
         id: string;
@@ -1073,16 +1858,16 @@ export type RetryData = {
     url: '/api/v1/energy/imports/{id}/retry';
 };
 
-export type RetryResponses = {
+export type Retry1Responses = {
     /**
      * Accepted
      */
     202: ImportBatchResponse;
 };
 
-export type RetryResponse = RetryResponses[keyof RetryResponses];
+export type Retry1Response = Retry1Responses[keyof Retry1Responses];
 
-export type DiscardData = {
+export type Discard1Data = {
     body: VersionRequest;
     path: {
         id: string;
@@ -1091,16 +1876,16 @@ export type DiscardData = {
     url: '/api/v1/energy/imports/{id}/discard';
 };
 
-export type DiscardResponses = {
+export type Discard1Responses = {
     /**
      * OK
      */
     200: ImportBatchResponse;
 };
 
-export type DiscardResponse = DiscardResponses[keyof DiscardResponses];
+export type Discard1Response = Discard1Responses[keyof Discard1Responses];
 
-export type ConfirmData = {
+export type Confirm1Data = {
     body: VersionRequest;
     path: {
         id: string;
@@ -1109,30 +1894,30 @@ export type ConfirmData = {
     url: '/api/v1/energy/imports/{id}/confirm';
 };
 
-export type ConfirmResponses = {
+export type Confirm1Responses = {
     /**
      * Accepted
      */
     202: ImportBatchResponse;
 };
 
-export type ConfirmResponse = ConfirmResponses[keyof ConfirmResponses];
+export type Confirm1Response = Confirm1Responses[keyof Confirm1Responses];
 
-export type PasteData = {
+export type Paste1Data = {
     body: PasteImportRequest;
     path?: never;
     query?: never;
     url: '/api/v1/energy/imports/paste';
 };
 
-export type PasteResponses = {
+export type Paste1Responses = {
     /**
      * Accepted
      */
     202: ImportBatchResponse;
 };
 
-export type PasteResponse = PasteResponses[keyof PasteResponses];
+export type Paste1Response = Paste1Responses[keyof Paste1Responses];
 
 export type List2Data = {
     body?: never;
@@ -1198,7 +1983,7 @@ export type LoginResponses = {
 
 export type LoginResponse = LoginResponses[keyof LoginResponses];
 
-export type Update1Data = {
+export type Update2Data = {
     body: UpdateUserRequest;
     path: {
         id: string;
@@ -1207,14 +1992,14 @@ export type Update1Data = {
     url: '/api/v1/users/{id}';
 };
 
-export type Update1Responses = {
+export type Update2Responses = {
     /**
      * OK
      */
     200: UserResponse;
 };
 
-export type Update1Response = Update1Responses[keyof Update1Responses];
+export type Update2Response = Update2Responses[keyof Update2Responses];
 
 export type ChangeStatusData = {
     body: ChangeStatusRequest;
@@ -1252,7 +2037,7 @@ export type MarkTestResponses = {
 
 export type MarkTestResponse = MarkTestResponses[keyof MarkTestResponses];
 
-export type Update2Data = {
+export type Update3Data = {
     body: UpdateConnectorTypeRequest;
     path: {
         id: string;
@@ -1261,14 +2046,307 @@ export type Update2Data = {
     url: '/api/v1/connector-types/{id}';
 };
 
-export type Update2Responses = {
+export type Update3Responses = {
     /**
      * OK
      */
     200: ConnectorTypeResponse;
 };
 
-export type Update2Response = Update2Responses[keyof Update2Responses];
+export type Update3Response = Update3Responses[keyof Update3Responses];
+
+export type SummaryData = {
+    body?: never;
+    path?: never;
+    query?: {
+        periodKind?: 'OFFICIAL' | 'PROVISIONAL' | 'NONE';
+        periodType?: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+        from?: string;
+        to?: string;
+        network?: 'KIA' | 'JAC' | 'CONECTZ';
+        type?: 'CHARGING_POINT' | 'CHARGING_STATION';
+        brand?: string;
+        equipmentId?: string;
+        connectorId?: string;
+    };
+    url: '/api/v1/uptime/summary';
+};
+
+export type SummaryResponses = {
+    /**
+     * OK
+     */
+    200: UptimeSummaryResponse;
+};
+
+export type SummaryResponse = SummaryResponses[keyof SummaryResponses];
+
+export type ScopeData = {
+    body?: never;
+    path?: never;
+    query?: {
+        q?: string;
+    };
+    url: '/api/v1/uptime/scope/connectors';
+};
+
+export type ScopeResponses = {
+    /**
+     * OK
+     */
+    200: Array<ScopeConnectorResponse>;
+};
+
+export type ScopeResponse = ScopeResponses[keyof ScopeResponses];
+
+export type ExclusionsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        periodKind?: 'OFFICIAL' | 'PROVISIONAL' | 'NONE';
+        periodType?: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+        from?: string;
+        to?: string;
+        network?: 'KIA' | 'JAC' | 'CONECTZ';
+        type?: 'CHARGING_POINT' | 'CHARGING_STATION';
+        brand?: string;
+        equipmentId?: string;
+        connectorId?: string;
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/uptime/results/exclusions';
+};
+
+export type ExclusionsResponses = {
+    /**
+     * OK
+     */
+    200: PageResultExclusionResponse;
+};
+
+export type ExclusionsResponse = ExclusionsResponses[keyof ExclusionsResponses];
+
+export type EquipmentData = {
+    body?: never;
+    path?: never;
+    query?: {
+        periodKind?: 'OFFICIAL' | 'PROVISIONAL' | 'NONE';
+        periodType?: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+        from?: string;
+        to?: string;
+        network?: 'KIA' | 'JAC' | 'CONECTZ';
+        type?: 'CHARGING_POINT' | 'CHARGING_STATION';
+        brand?: string;
+        equipmentId?: string;
+        connectorId?: string;
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/uptime/results/equipment';
+};
+
+export type EquipmentResponses = {
+    /**
+     * OK
+     */
+    200: PageResultEquipmentResultResponse;
+};
+
+export type EquipmentResponse2 = EquipmentResponses[keyof EquipmentResponses];
+
+export type ConnectorsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        periodKind?: 'OFFICIAL' | 'PROVISIONAL' | 'NONE';
+        periodType?: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+        from?: string;
+        to?: string;
+        network?: 'KIA' | 'JAC' | 'CONECTZ';
+        type?: 'CHARGING_POINT' | 'CHARGING_STATION';
+        brand?: string;
+        equipmentId?: string;
+        connectorId?: string;
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/uptime/results/connectors';
+};
+
+export type ConnectorsResponses = {
+    /**
+     * OK
+     */
+    200: PageResultConnectorResultResponse;
+};
+
+export type ConnectorsResponse = ConnectorsResponses[keyof ConnectorsResponses];
+
+export type ReportData = {
+    body?: never;
+    path?: never;
+    query: {
+        format: 'PDF' | 'XLSX';
+        periodKind?: 'OFFICIAL' | 'PROVISIONAL' | 'NONE';
+        periodType?: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+        from?: string;
+        to?: string;
+        network?: 'KIA' | 'JAC' | 'CONECTZ';
+        type?: 'CHARGING_POINT' | 'CHARGING_STATION';
+        brand?: string;
+        equipmentId?: string;
+        connectorId?: string;
+    };
+    url: '/api/v1/uptime/report';
+};
+
+export type ReportResponses = {
+    /**
+     * Documento nuevo; X-Report-Id y X-Report-Cut-Off lo identifican
+     */
+    200: Blob | File;
+};
+
+export type ReportResponse = ReportResponses[keyof ReportResponses];
+
+export type PendingData = {
+    body?: never;
+    path?: never;
+    query?: {
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/uptime/pending-links';
+};
+
+export type PendingResponses = {
+    /**
+     * OK
+     */
+    200: PageResultUptimeImportRowResponse;
+};
+
+export type PendingResponse = PendingResponses[keyof PendingResponses];
+
+export type DetailData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/uptime/measurements/{id}';
+};
+
+export type DetailResponses = {
+    /**
+     * OK
+     */
+    200: MeasurementDetailResponse;
+};
+
+export type DetailResponse = DetailResponses[keyof DetailResponses];
+
+export type RevisionsData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/uptime/measurements/{id}/revisions';
+};
+
+export type RevisionsResponses = {
+    /**
+     * OK
+     */
+    200: MeasurementHistoryResponse;
+};
+
+export type RevisionsResponse = RevisionsResponses[keyof RevisionsResponses];
+
+export type Get1Data = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/uptime/imports/{id}';
+};
+
+export type Get1Responses = {
+    /**
+     * OK
+     */
+    200: UptimeImportBatchResponse;
+};
+
+export type Get1Response = Get1Responses[keyof Get1Responses];
+
+export type RowsData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        classification?: 'NEW' | 'IDENTICAL' | 'CONFLICT' | 'INVALID' | 'PENDING_LINK';
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/uptime/imports/{id}/rows';
+};
+
+export type RowsResponses = {
+    /**
+     * OK
+     */
+    200: PageResultUptimeImportRowResponse;
+};
+
+export type RowsResponse = RowsResponses[keyof RowsResponses];
+
+export type GridData = {
+    body?: never;
+    path?: never;
+    query: {
+        periodStart: string;
+        periodEnd: string;
+        network?: 'KIA' | 'JAC' | 'CONECTZ';
+        type?: 'CHARGING_POINT' | 'CHARGING_STATION';
+        equipmentId?: string;
+        showInactive?: boolean;
+    };
+    url: '/api/v1/uptime/grid';
+};
+
+export type GridResponses = {
+    /**
+     * OK
+     */
+    200: Array<GridRowResponse>;
+};
+
+export type GridResponse = GridResponses[keyof GridResponses];
+
+export type AliasesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        equipmentId?: string;
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/uptime/connector-aliases';
+};
+
+export type AliasesResponses = {
+    /**
+     * OK
+     */
+    200: PageResultConnectorAliasResponse;
+};
+
+export type AliasesResponse = AliasesResponses[keyof AliasesResponses];
 
 export type IssuedReportsData = {
     body?: never;
@@ -1308,7 +2386,7 @@ export type IssuedReportDownloadResponses = {
 
 export type IssuedReportDownloadResponse = IssuedReportDownloadResponses[keyof IssuedReportDownloadResponses];
 
-export type SummaryData = {
+export type Summary1Data = {
     body?: never;
     path?: never;
     query?: {
@@ -1322,16 +2400,16 @@ export type SummaryData = {
     url: '/api/v1/inventory/summary';
 };
 
-export type SummaryResponses = {
+export type Summary1Responses = {
     /**
      * OK
      */
     200: InventorySummaryResponse;
 };
 
-export type SummaryResponse = SummaryResponses[keyof SummaryResponses];
+export type Summary1Response = Summary1Responses[keyof Summary1Responses];
 
-export type ReportData = {
+export type Report1Data = {
     body?: never;
     path?: never;
     query: {
@@ -1346,14 +2424,14 @@ export type ReportData = {
     url: '/api/v1/inventory/report';
 };
 
-export type ReportResponses = {
+export type Report1Responses = {
     /**
      * OK
      */
     200: string;
 };
 
-export type ReportResponse = ReportResponses[keyof ReportResponses];
+export type Report1Response = Report1Responses[keyof Report1Responses];
 
 export type ResolveData = {
     body?: never;
@@ -1431,7 +2509,7 @@ export type EquipmentImportTemplateResponses = {
 
 export type EquipmentImportTemplateResponse = EquipmentImportTemplateResponses[keyof EquipmentImportTemplateResponses];
 
-export type Summary1Data = {
+export type Summary2Data = {
     body?: never;
     path?: never;
     query: {
@@ -1445,16 +2523,16 @@ export type Summary1Data = {
     url: '/api/v1/energy/summary';
 };
 
-export type Summary1Responses = {
+export type Summary2Responses = {
     /**
      * OK
      */
     200: ConsumptionSummaryResponse;
 };
 
-export type Summary1Response = Summary1Responses[keyof Summary1Responses];
+export type Summary2Response = Summary2Responses[keyof Summary2Responses];
 
-export type SearchData = {
+export type Search1Data = {
     body?: never;
     path?: never;
     query?: {
@@ -1473,14 +2551,14 @@ export type SearchData = {
     url: '/api/v1/energy/sessions';
 };
 
-export type SearchResponses = {
+export type Search1Responses = {
     /**
      * OK
      */
     200: PageResultSessionResponse;
 };
 
-export type SearchResponse = SearchResponses[keyof SearchResponses];
+export type Search1Response = Search1Responses[keyof Search1Responses];
 
 export type ReviewsData = {
     body?: never;
@@ -1500,7 +2578,7 @@ export type ReviewsResponses = {
 
 export type ReviewsResponse = ReviewsResponses[keyof ReviewsResponses];
 
-export type Report1Data = {
+export type Report2Data = {
     body?: never;
     path?: never;
     query: {
@@ -1515,16 +2593,16 @@ export type Report1Data = {
     url: '/api/v1/energy/report';
 };
 
-export type Report1Responses = {
+export type Report2Responses = {
     /**
      * Documento nuevo; X-Report-Id y X-Report-Cut-Off lo identifican
      */
     200: Blob | File;
 };
 
-export type Report1Response = Report1Responses[keyof Report1Responses];
+export type Report2Response = Report2Responses[keyof Report2Responses];
 
-export type Get1Data = {
+export type Get2Data = {
     body?: never;
     path: {
         id: string;
@@ -1533,16 +2611,16 @@ export type Get1Data = {
     url: '/api/v1/energy/imports/{id}';
 };
 
-export type Get1Responses = {
+export type Get2Responses = {
     /**
      * OK
      */
     200: ImportBatchResponse;
 };
 
-export type Get1Response = Get1Responses[keyof Get1Responses];
+export type Get2Response = Get2Responses[keyof Get2Responses];
 
-export type RowsData = {
+export type Rows1Data = {
     body?: never;
     path: {
         id: string;
@@ -1556,14 +2634,14 @@ export type RowsData = {
     url: '/api/v1/energy/imports/{id}/rows';
 };
 
-export type RowsResponses = {
+export type Rows1Responses = {
     /**
      * OK
      */
     200: PageResultImportRowResponse;
 };
 
-export type RowsResponse = RowsResponses[keyof RowsResponses];
+export type Rows1Response = Rows1Responses[keyof Rows1Responses];
 
 export type MeData = {
     body?: never;

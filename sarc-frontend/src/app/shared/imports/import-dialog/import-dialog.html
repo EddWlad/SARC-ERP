@@ -9,17 +9,36 @@
       </div>
     }
 
-    <mat-button-toggle-group
-      [value]="mode()"
-      (change)="mode.set($event.value)"
-      aria-label="Cómo cargar los datos"
-      class="mode"
-    >
-      <mat-button-toggle value="file">Archivo</mat-button-toggle>
-      <mat-button-toggle value="paste">Pegar filas</mat-button-toggle>
-    </mat-button-toggle-group>
+    @if (data.upload) {
+      <mat-button-toggle-group
+        [value]="mode()"
+        (change)="mode.set($event.value)"
+        aria-label="Cómo cargar los datos"
+        class="mode"
+      >
+        <mat-button-toggle value="file">Archivo</mat-button-toggle>
+        <mat-button-toggle value="paste">Pegar filas</mat-button-toggle>
+      </mat-button-toggle-group>
+    }
 
-    @if (data.choice; as choice) {
+    @if (usesFileChoice()) {
+      @if (data.fileChoice; as choice) {
+        <mat-form-field appearance="outline">
+          <mat-label>{{ choice.label }}</mat-label>
+          <mat-select [formField]="importForm.fileChoice">
+            @for (option of choice.options; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+          @if (choiceHint(choice, importForm.fileChoice().value()); as hint) {
+            <mat-hint>{{ hint }}</mat-hint>
+          }
+          @for (error of importForm.fileChoice().errors(); track error.kind) {
+            <mat-error>{{ error.message }}</mat-error>
+          }
+        </mat-form-field>
+      }
+    } @else if (data.choice; as choice) {
       <mat-form-field appearance="outline">
         <mat-label>{{ choice.label }}</mat-label>
         <mat-select [formField]="importForm.choice">
@@ -27,7 +46,7 @@
             <mat-option [value]="option.value">{{ option.label }}</mat-option>
           }
         </mat-select>
-        @if (choiceHint(importForm.choice().value()); as hint) {
+        @if (choiceHint(choice, importForm.choice().value()); as hint) {
           <mat-hint>{{ hint }}</mat-hint>
         }
         @for (error of importForm.choice().errors(); track error.kind) {

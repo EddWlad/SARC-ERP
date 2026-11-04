@@ -1,0 +1,37 @@
+// Pestañas de seccion de un modulo: enlaces de navegacion con icono. mat-tab-nav-bar sumaba al
+// bundle dependencias del CDK que unos pocos enlaces no necesitan.
+
+.tabs {
+  display: flex;
+  overflow-x: auto;
+  margin-bottom: var(--sarc-space-5);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  a {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--sarc-space-2);
+    min-height: 48px;
+    padding: 0 var(--sarc-space-4);
+    border-bottom: 3px solid transparent;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-title-small);
+    text-decoration: none;
+
+    &:hover {
+      background: color-mix(in srgb, var(--mat-sys-on-surface) 8%, transparent);
+      color: var(--mat-sys-on-surface);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--mat-sys-primary);
+      outline-offset: -2px;
+    }
+
+    &.active {
+      border-bottom-color: var(--mat-sys-primary);
+      color: var(--mat-sys-primary);
+    }
+  }
+}

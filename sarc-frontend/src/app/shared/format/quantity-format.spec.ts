@@ -1,3 +1,4 @@
+import { LOCALE_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { QuantityFormat } from './quantity-format';
@@ -7,6 +8,22 @@ describe('QuantityFormat', () => {
 
   beforeEach(() => {
     format = TestBed.inject(QuantityFormat);
+  });
+
+  it('muestra porcentajes y medidas con coma decimal y sin convertir ausencia en cero', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [{ provide: LOCALE_ID, useValue: 'es-EC' }],
+    });
+    const format = TestBed.inject(QuantityFormat);
+
+    expect(format.decimal('97.29')).toBe('97,29');
+    expect(format.percentage('97.29')).toBe('97,29 %');
+    expect(format.percentage('0.00')).toBe('0,00 %');
+    expect(format.percentage(undefined)).toBe('—');
+    expect(format.measure(10080)).toBe('10.080');
+    expect(format.measure(9.57)).toBe('9,57');
+    expect(format.measure(undefined)).toBe('—');
   });
 
   it('distingue la energía ausente de una lectura de cero', () => {

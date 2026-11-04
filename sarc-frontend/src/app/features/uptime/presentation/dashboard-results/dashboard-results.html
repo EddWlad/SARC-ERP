@@ -1,0 +1,175 @@
+@if (connectors().length > 0) {
+  <section class="results" aria-labelledby="ranking-title">
+    <h2 class="results-title" id="ranking-title">Ranking de menor uptime por conector</h2>
+    @if (isHandset()) {
+      <ul class="cards">
+        @for (item of connectorPage.visible(); track item.connectorId) {
+          <li class="card">
+            <div class="card-head">
+              <div>
+                <strong>{{ item.position }}. {{ item.equipmentName }}</strong>
+                <span class="muted block">
+                  Conector {{ item.ordinal }} · {{ item.connectorType }}
+                </span>
+              </div>
+              <strong class="uptime">{{ quantities.percentage(item.uptimePercent) }}</strong>
+            </div>
+            <span class="muted">
+              Fuera de línea {{ quantities.measure(item.offlineMinutes) }} min · Con falla
+              {{ quantities.measure(item.faultMinutes) }} min
+            </span>
+          </li>
+        }
+      </ul>
+    } @else {
+      <div class="table-scroll">
+        <table mat-table [dataSource]="connectorPage.visible()" class="table">
+          <ng-container matColumnDef="position">
+            <th mat-header-cell *matHeaderCellDef>Posición</th>
+            <td mat-cell *matCellDef="let item">{{ item.position }}</td>
+          </ng-container>
+          <ng-container matColumnDef="equipment">
+            <th mat-header-cell *matHeaderCellDef>Equipo</th>
+            <td mat-cell *matCellDef="let item">
+              <strong>{{ item.equipmentName }}</strong>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="connector">
+            <th mat-header-cell *matHeaderCellDef>Conector</th>
+            <td mat-cell *matCellDef="let item">{{ item.ordinal }} · {{ item.connectorType }}</td>
+          </ng-container>
+          <ng-container matColumnDef="uptime">
+            <th mat-header-cell *matHeaderCellDef class="number">Uptime</th>
+            <td mat-cell *matCellDef="let item" class="number">
+              <strong class="uptime">{{ quantities.percentage(item.uptimePercent) }}</strong>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="offline">
+            <th mat-header-cell *matHeaderCellDef class="number">Fuera de línea (min)</th>
+            <td mat-cell *matCellDef="let item" class="number">
+              {{ quantities.measure(item.offlineMinutes) }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="fault">
+            <th mat-header-cell *matHeaderCellDef class="number">Con falla (min)</th>
+            <td mat-cell *matCellDef="let item" class="number">
+              {{ quantities.measure(item.faultMinutes) }}
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="connectorColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: connectorColumns"></tr>
+        </table>
+      </div>
+    }
+    <mat-paginator
+      [length]="connectors().length"
+      [pageIndex]="connectorPage.index()"
+      [pageSize]="connectorPage.size()"
+      [pageSizeOptions]="pageSizeOptions"
+      (page)="connectorPage.change($event)"
+      aria-label="Paginación del ranking"
+    />
+  </section>
+}
+
+@if (equipment().length > 0) {
+  <section class="results" aria-labelledby="equipment-title">
+    <h2 class="results-title" id="equipment-title">Promedio de conectores por equipo</h2>
+    @if (isHandset()) {
+      <ul class="cards">
+        @for (item of equipmentPage.visible(); track item.equipmentId) {
+          <li class="card">
+            <div class="card-head">
+              <strong>{{ item.equipmentName }}</strong>
+              <strong class="uptime">{{ quantities.percentage(item.uptimePercent) }}</strong>
+            </div>
+            <span class="muted">
+              {{ item.connectorsIncluded }} de {{ item.connectorsInScope }} conectores
+            </span>
+          </li>
+        }
+      </ul>
+    } @else {
+      <table mat-table [dataSource]="equipmentPage.visible()" class="table">
+        <ng-container matColumnDef="equipment">
+          <th mat-header-cell *matHeaderCellDef>Equipo</th>
+          <td mat-cell *matCellDef="let item">
+            <strong>{{ item.equipmentName }}</strong>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="uptime">
+          <th mat-header-cell *matHeaderCellDef class="number">Uptime</th>
+          <td mat-cell *matCellDef="let item" class="number">
+            <strong class="uptime">{{ quantities.percentage(item.uptimePercent) }}</strong>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="connectors">
+          <th mat-header-cell *matHeaderCellDef class="number">Conectores incluidos</th>
+          <td mat-cell *matCellDef="let item" class="number">
+            {{ item.connectorsIncluded }} / {{ item.connectorsInScope }}
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="equipmentColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: equipmentColumns"></tr>
+      </table>
+    }
+    <mat-paginator
+      [length]="equipment().length"
+      [pageIndex]="equipmentPage.index()"
+      [pageSize]="equipmentPage.size()"
+      [pageSizeOptions]="pageSizeOptions"
+      (page)="equipmentPage.change($event)"
+      aria-label="Paginación de equipos"
+    />
+  </section>
+}
+
+@if (exclusions().length > 0) {
+  <section class="results" aria-labelledby="exclusions-title">
+    <h2 class="results-title" id="exclusions-title">Exclusiones</h2>
+    @if (isHandset()) {
+      <ul class="cards">
+        @for (item of exclusionPage.visible(); track item.connectorId + item.state) {
+          <li class="card">
+            <div class="card-head">
+              <div>
+                <strong>{{ item.equipmentName }}</strong>
+                <span class="muted block">Conector {{ item.ordinal }}</span>
+              </div>
+              <span class="badge badge-off">{{ stateLabels[item.state] }}</span>
+            </div>
+          </li>
+        }
+      </ul>
+    } @else {
+      <table mat-table [dataSource]="exclusionPage.visible()" class="table">
+        <ng-container matColumnDef="equipment">
+          <th mat-header-cell *matHeaderCellDef>Equipo</th>
+          <td mat-cell *matCellDef="let item">
+            <strong>{{ item.equipmentName }}</strong>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="connector">
+          <th mat-header-cell *matHeaderCellDef>Conector</th>
+          <td mat-cell *matCellDef="let item">{{ item.ordinal }}</td>
+        </ng-container>
+        <ng-container matColumnDef="state">
+          <th mat-header-cell *matHeaderCellDef>Estado</th>
+          <td mat-cell *matCellDef="let item">
+            <span class="badge badge-off">{{ stateLabels[item.state] }}</span>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="exclusionColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: exclusionColumns"></tr>
+      </table>
+    }
+    <mat-paginator
+      [length]="exclusions().length"
+      [pageIndex]="exclusionPage.index()"
+      [pageSize]="exclusionPage.size()"
+      [pageSizeOptions]="pageSizeOptions"
+      (page)="exclusionPage.change($event)"
+      aria-label="Paginación de exclusiones"
+    />
+  </section>
+}
