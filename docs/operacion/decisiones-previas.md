@@ -4,17 +4,17 @@
 
 Registro de las decisiones que el responsable del producto debe tomar **antes** de cualquier acción sobre recursos reales. Mientras una decisión figure como *pendiente*, la etapa E7 (VPS real) no se inicia.
 
-Estado de este registro: **decisiones registradas y habilitación de E7 pendiente**. Se rellena con fecha y nombre al aprobarse cada una. No escribir aquí valores secretos, direcciones de correo ni IP.
+Estado de este registro: **E7 autorizada para la primera publicación**. No escribir aquí valores secretos, direcciones de correo ni IP.
 
 ## Aprobación para iniciar E7
 
 | Campo | Valor |
 |---|---|
-| Aprobación escrita del responsable del producto para iniciar E7 | *pendiente* |
-| Fecha | — |
-| Quién aprueba | — |
+| Aprobación escrita del responsable del producto para iniciar E7 | EddWlad confirmó que realizó los ensayos pendientes y pidió cerrar la feature y publicar. El catálogo base se conserva por su instrucción posterior. |
+| Fecha | 2026-11-07 |
+| Quién aprueba | EddWlad |
 
-La aprobación habilita la configuración de producción en GitHub y en el VPS. Las pruebas de proveedor autorizadas por el titular quedan como evidencia previa para E0.
+La aprobación habilita la configuración de producción en GitHub y en el VPS. Las pruebas de proveedor autorizadas por el titular quedan como evidencia previa para E0. El mismo día, EddWlad autorizó la cuenta personal SSH por llave, el retiro del acceso directo de `root` tras probarla y la verificación final de la primera publicación. Las nuevas integraciones y los siguientes despliegues se gestionarán desde la Feature 008.
 
 ## Decisiones
 

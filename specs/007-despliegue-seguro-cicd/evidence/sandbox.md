@@ -29,6 +29,7 @@ Leyenda: **Hecho (local)** = verificado con pruebas o ensayos en el equipo; **Si
 
 ## Observaciones del ensayo
 
+- El 2026-11-07, EddWlad informó que ejecutó las pruebas pendientes y autorizó publicar. El detalle de los ensayos indicados como parciales corresponde a las comprobaciones registradas por el equipo técnico.
 - Tras `SIGKILL`, systemd reinició Java y Nginx. Desde la espera posterior al reinicio del servicio, HTTPS y readiness respondieron en 48 s y 1 s respectivamente. Docker reinició PostgreSQL tras `pg_ctl -m immediate stop`.
 - Tras detener y arrancar la distribución WSL, HTTPS, Angular y readiness respondieron en 29 s de sondeo. Docker, Nginx y Java arrancaron habilitados. Se conservaron un administrador, cinco roles de catálogo y 16 migraciones, con cero equipos.
 - El resumen de consumo devolvió 422 al usar el mismo inicio y fin. El chequeo de publicación ahora usa un período de un día con fecha final exclusiva. El doble de la API en `post-checks.bats` reproduce el rechazo de un período vacío.
