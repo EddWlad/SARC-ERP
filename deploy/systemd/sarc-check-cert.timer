@@ -1,0 +1,10 @@
+[Unit]
+Description=SARC: comprobacion de vigencia del certificado (diaria)
+
+[Timer]
+OnCalendar=*-*-* 06:00:00
+Persistent=true
+Unit=sarc-check-cert.service
+
+[Install]
+WantedBy=timers.target

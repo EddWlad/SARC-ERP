@@ -1,0 +1,92 @@
+name: Sonda externa
+
+# Comprueba cada 15 minutos, desde Internet y validando TLS, que SARC responde (FR-038, SC-017). Es el
+# complemento externo de los latidos del VPS: detecta una caída o un certificado inválido visto desde fuera.
+# Limitaciones declaradas: GitHub puede retrasar o desactivar los flujos programados (a los 60 días sin
+# actividad en el repositorio); los latidos de Healthchecks.io son la fuente principal. Revisión mensual en
+# docs/operacion/avisos.md.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonda-externa
+  cancel-in-progress: false
+
+jobs:
+  sonda:
+    name: Sonda HTTPS
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    env:
+      PUBLIC_URL: ${{ vars.SARC_PUBLIC_URL }}
+      HC_URL_SONDA: ${{ secrets.HC_URL_SONDA }}
+      RESPONSABLE: ${{ vars.SARC_RESPONSABLE }}
+      SUPLENTE: ${{ vars.SARC_SUPLENTE }}
+    steps:
+      - name: Comprobar readiness por HTTPS
+        id: sonda
+        shell: bash
+        run: |
+          if [ -z "$PUBLIC_URL" ]; then
+            echo "SARC_PUBLIC_URL no está definida: la sonda se activa al configurar producción."
+            echo "resultado=omitida" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # TLS validado contra el almacén del sistema (sin --insecure) y 20 s como máximo.
+          if respuesta="$(curl -fsS --max-time 20 "https://${PUBLIC_URL}/actuator/health/readiness")" \
+              && [[ "$respuesta" == *'"status":"UP"'* ]]; then
+            echo "resultado=ok" >>"$GITHUB_OUTPUT"
+          else
+            echo "La sonda no obtuvo readiness UP con TLS válido."
+            echo "resultado=fallo" >>"$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: Latido de la sonda
+        if: always() && steps.sonda.outputs.resultado != 'omitida'
+        shell: bash
+        run: |
+          if [ -z "$HC_URL_SONDA" ]; then exit 0; fi
+          if [ "${{ steps.sonda.outputs.resultado }}" = "ok" ]; then
+            curl -fsS -m 10 --retry 3 -o /dev/null "$HC_URL_SONDA" || true
+          else
+            curl -fsS -m 10 --retry 3 -o /dev/null "${HC_URL_SONDA%/}/fail" || true
+          fi
+
+      - name: Abrir o comentar el issue de alerta
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const etiqueta = 'alerta-operativa';
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: etiqueta });
+            } catch (e) {
+              await github.rest.issues.createLabel({ owner, repo, name: etiqueta, color: 'b60205',
+                description: 'Alerta operativa de SARC' });
+            }
+            const personas = [process.env.RESPONSABLE, process.env.SUPLENTE]
+              .map(p => (p || '').trim().replace(/^@/, '')).filter(Boolean);
+            const menciones = personas.length ? personas.map(p => '@' + p).join(' ') : '(responsable y suplente sin configurar)';
+            const enlace = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const titulo = 'SARC no responde desde Internet (sonda externa)';
+            const cuerpo = `La sonda externa falló a las ${new Date().toISOString()}. Ejecución: ${enlace}\n\n${menciones}`;
+            const abiertos = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', labels: etiqueta, per_page: 100,
+            });
+            const existente = abiertos.find(i => i.title === titulo && !i.pull_request);
+            if (existente) {
+              await github.rest.issues.createComment({ owner, repo, issue_number: existente.number, body: cuerpo });
+            } else {
+              await github.rest.issues.create({ owner, repo, title: titulo, body: cuerpo,
+                labels: [etiqueta], assignees: personas });
+            }

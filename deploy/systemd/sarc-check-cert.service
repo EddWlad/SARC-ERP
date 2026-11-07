@@ -1,0 +1,13 @@
+[Unit]
+Description=SARC: comprobacion de vigencia del certificado
+After=network-online.target
+
+[Service]
+Type=oneshot
+# root: leen /etc/sarc/sarc.env (y, la del certificado, /etc/letsencrypt). No escriben en disco.
+User=root
+ExecStart=/usr/local/sbin/sarc-check-cert
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict

@@ -1,0 +1,10 @@
+[Unit]
+Description=SARC: comprobacion de capacidad de disco (cada hora)
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=sarc-check-disk.service
+
+[Install]
+WantedBy=timers.target

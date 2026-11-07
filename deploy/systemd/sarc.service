@@ -1,0 +1,30 @@
+[Unit]
+Description=SARC (backend Spring Boot)
+Documentation=file:///opt/sarc/current/
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=sarc
+Group=sarc
+# Las credenciales viven solo en /etc/sarc/sarc.env (0640 root:sarc); /etc/sarc/verificacion.env nunca se carga aquí.
+EnvironmentFile=/etc/sarc/sarc.env
+WorkingDirectory=/opt/sarc/current
+ExecStart=/usr/bin/java -jar /opt/sarc/current/backend/sarc-backend.jar
+Restart=on-failure
+RestartSec=5
+# Endurecimiento
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/sarc
+# Salida a journald (retención configurada en journald.conf: 30 días)
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sarc
+
+[Install]
+WantedBy=multi-user.target
