@@ -1,9 +1,8 @@
 # Feature Specification: Preparación de SARC para despliegue seguro y CI/CD
 
 **Feature**: `007-despliegue-seguro-cicd`
-**Feature Branch**: ninguna creada; trabajo sin commits sobre `main` (a petición del responsable)
 **Created**: 2026-11-06
-**Status**: Draft — especificación funcional aclarada (5 decisiones en la sesión 2026-11-06). Plan técnico y tareas generados; sin implementación.
+**Status**: Cerrada. Primera publicación en producción verificada el 2026-11-07. Los [controles operativos pendientes](../../docs/operacion/pendientes-recursos-reales.md) conservan su seguimiento. Las nuevas integraciones y publicaciones se gestionan desde Feature 008.
 **Baseline**: `main` en `e85c910` (features 001–006 integradas). Esta feature no cambia reglas de negocio, permisos, importaciones, indicadores, historiales ni reportes.
 **Input**: Dejar definido cómo construir, verificar, publicar y recuperar SARC de forma segura y repetible para un futuro despliegue en un VPS de Contabo (6 vCPU, 12 GB de RAM, 200 GB SSD, Ubuntu, respaldo automático del proveedor). El despliegue real ocurrirá después, con el servidor contratado y una decisión explícita.
 
