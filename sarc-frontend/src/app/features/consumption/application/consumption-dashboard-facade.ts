@@ -13,6 +13,7 @@ import {
   NO_CONSUMPTION_FILTERS,
 } from '../domain/consumption';
 import { PeriodSelection } from './period-selection';
+import { retainedValue } from '../../../core/http/retained-value';
 
 /**
  * Estado del tablero de consumo (PRD 7.3): periodo, filtros, indicadores y reportes. El PDF y el
@@ -31,7 +32,7 @@ export class ConsumptionDashboardFacade {
     this.api.summaryRequest(this.period.range(), this.filters()),
   );
 
-  readonly summary = computed(() => (this.result.hasValue() ? this.result.value() : undefined));
+  readonly summary = retainedValue(this.result);
   readonly loading = this.result.isLoading;
   /** Mensaje del backend si no se pudo calcular (p. ej. periodo mayor a 366 dias). */
   readonly error = computed(() => {

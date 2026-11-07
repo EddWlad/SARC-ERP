@@ -1,7 +1,7 @@
 <h2 mat-dialog-title>{{ editing ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
 
 <form novalidate (submit)="onSubmit($event)">
-  <mat-dialog-content class="fields">
+  <mat-dialog-content class="fields sarc-stacked-fields">
     @if (errorMessage(); as message) {
       <div class="form-alert" role="alert">
         <svg lucideTriangleAlert [size]="20"></svg>
@@ -9,7 +9,7 @@
       </div>
     }
 
-    <mat-form-field appearance="outline">
+    <mat-form-field subscriptSizing="dynamic" appearance="outline">
       <mat-label>Correo electrónico</mat-label>
       <input matInput type="email" autocomplete="off" [formField]="userForm.email" />
       @if (editing) {
@@ -20,7 +20,7 @@
       }
     </mat-form-field>
 
-    <mat-form-field appearance="outline">
+    <mat-form-field subscriptSizing="dynamic" appearance="outline">
       <mat-label>Nombre completo</mat-label>
       <input matInput autocomplete="off" [formField]="userForm.fullName" />
       @for (error of userForm.fullName().errors(); track error.kind) {
@@ -42,7 +42,7 @@
     </mat-form-field>
 
     @if (editing) {
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Estado</mat-label>
         <mat-select [formField]="userForm.status">
           @for (status of statuses; track status) {

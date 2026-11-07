@@ -1,7 +1,7 @@
 <h2 mat-dialog-title>{{ title() }}</h2>
 
 <form novalidate (submit)="onSubmit($event)">
-  <mat-dialog-content>
+  <mat-dialog-content class="sarc-stacked-fields">
     @if (problem(); as error) {
       <div class="form-alert" role="alert">
         <svg lucideTriangleAlert [size]="20"></svg>
@@ -28,7 +28,7 @@
 
     <fieldset class="grid">
       <legend class="sarc-visually-hidden">Clasificación</legend>
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Red</mat-label>
         <mat-select [formField]="equipmentForm.network">
           @for (network of networks; track network) {
@@ -40,7 +40,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Tipo</mat-label>
         <mat-select [formField]="equipmentForm.type">
           @for (type of types; track type) {
@@ -55,7 +55,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Marca</mat-label>
         <mat-select [formField]="equipmentForm.brand">
           @for (brand of brands; track brand) {
@@ -68,7 +68,7 @@
       </mat-form-field>
 
       @if (!equipmentForm.usageStatus().hidden()) {
-        <mat-form-field appearance="outline">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline">
           <mat-label>Estado de uso</mat-label>
           <mat-select [formField]="equipmentForm.usageStatus">
             @for (status of usageStatuses; track status) {
@@ -86,7 +86,7 @@
 
     <fieldset class="grid">
       <legend class="sarc-visually-hidden">Identificación</legend>
-      <mat-form-field appearance="outline" class="wide">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="wide">
         <mat-label>Nombre</mat-label>
         <input matInput autocomplete="off" [formField]="equipmentForm.name" />
         @for (error of equipmentForm.name().errors(); track error.kind) {
@@ -94,7 +94,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Serie</mat-label>
         <input matInput autocomplete="off" [formField]="equipmentForm.serial" />
         @if (editing) {
@@ -123,7 +123,7 @@
         <p class="field-note">El código asignado es la serie.</p>
       }
 
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>UID/PUK</mat-label>
         <input matInput autocomplete="off" [formField]="equipmentForm.uidPuk" />
         <mat-hint>{{ point() ? 'Obligatorio en puntos de carga.' : 'Opcional.' }}</mat-hint>
@@ -136,7 +136,7 @@
     <fieldset class="grid">
       <legend class="sarc-visually-hidden">Conectores</legend>
       @if (!equipmentForm.pointConnector().hidden()) {
-        <mat-form-field appearance="outline">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline">
           <mat-label>Tipo de conector</mat-label>
           <mat-select [formField]="equipmentForm.pointConnector">
             @for (option of connectorOptions(); track option.id) {
@@ -167,7 +167,7 @@
 
     <fieldset class="grid">
       <legend class="sarc-visually-hidden">Ubicación y conexión</legend>
-      <mat-form-field appearance="outline" class="wide">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="wide">
         <mat-label>Ubicación</mat-label>
         <input matInput autocomplete="off" [formField]="equipmentForm.location" />
         @for (error of equipmentForm.location().errors(); track error.kind) {
@@ -175,7 +175,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Enlace de Google Maps</mat-label>
         <input matInput type="url" autocomplete="off" [formField]="equipmentForm.mapsUrl" />
         @for (error of equipmentForm.mapsUrl().errors(); track error.kind) {
@@ -183,7 +183,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>URL OCPP</mat-label>
         <input matInput type="url" autocomplete="off" [formField]="equipmentForm.ocppUrl" />
         <mat-hint>Dato restringido: solo lo ven administradores y analistas.</mat-hint>

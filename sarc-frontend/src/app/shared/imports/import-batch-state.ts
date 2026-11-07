@@ -11,6 +11,7 @@ import { firstValueFrom, map, Observable } from 'rxjs';
 
 import { ImportBatchLike, isInProgress } from './import-batch';
 import { retryTransientFailures, TransientRetry } from './transient-retry';
+import { retainedValue } from '../../core/http/retained-value';
 
 /** Cada cuanto se consulta un lote que trabaja en segundo plano. */
 const POLL_INTERVAL_MS = 1500;
@@ -99,10 +100,9 @@ export abstract class ImportBatchState<
       }
       return api.rowsRequest(id, this.classification(), this.pageIndex(), this.pageSize());
     });
-    this.rows = computed(() => (this.rowsResult.hasValue() ? this.rowsResult.value().content : []));
-    this.rowsTotal = computed(() =>
-      this.rowsResult.hasValue() ? this.rowsResult.value().totalElements : 0,
-    );
+    const latestRows = retainedValue(this.rowsResult);
+    this.rows = computed(() => latestRows()?.content ?? []);
+    this.rowsTotal = computed(() => latestRows()?.totalElements ?? 0);
     this.rowsLoading = this.rowsResult.isLoading;
     this.rowsFailed = computed(() => this.rowsResult.error() !== undefined);
     this.canConfirm = computed(

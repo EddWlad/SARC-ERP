@@ -1,6 +1,6 @@
 <h2 mat-dialog-title>Revisión energética</h2>
 <form novalidate (submit)="onSubmit($event)">
-  <mat-dialog-content class="fields" [attr.tabindex]="data.canEdit ? null : 0">
+  <mat-dialog-content class="fields sarc-stacked-fields" [attr.tabindex]="data.canEdit ? null : 0">
     <dl class="summary" aria-label="Sesión revisada">
       <div>
         <dt>Equipo</dt>
@@ -42,7 +42,7 @@
       </div>
     }
     @if (data.canEdit) {
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Decisión</mat-label>
         <mat-select [formField]="reviewForm.decision">
           <mat-option value="APPROVED">Aprobar energía</mat-option>
@@ -52,7 +52,7 @@
           <mat-error>{{ error.message }}</mat-error>
         }
       </mat-form-field>
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Justificación</mat-label>
         <textarea matInput [formField]="reviewForm.justification" rows="3"></textarea>
         <mat-hint>Obligatoria; se conserva en el historial.</mat-hint>

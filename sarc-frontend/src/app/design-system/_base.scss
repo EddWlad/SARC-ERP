@@ -33,6 +33,29 @@
     outline-offset: -2px;
   }
 
+  // Formularios con campos apilados: cada campo conserva la altura que tenía con el tamaño fijo
+  // (56px de caja + 19px de ayuda) para no cambiar el ritmo del formulario, pero la ayuda y los
+  // errores crecen si ocupan varias líneas en vez de superponerse al control siguiente.
+  .sarc-stacked-fields .mat-mdc-form-field {
+    min-height: 75px;
+  }
+
+  .sarc-stacked-fields .mat-mdc-form-field-subscript-dynamic-size {
+    padding-block-end: var(--sarc-space-1);
+  }
+
+  // La barra de carga de un listado se superpone al borde superior: aparecer o desaparecer no
+  // empuja el contenido hacia abajo.
+  .results:has(> mat-progress-bar) {
+    position: relative;
+  }
+
+  .results > mat-progress-bar {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 1;
+  }
+
   .sarc-visually-hidden {
     position: absolute;
     width: 1px;

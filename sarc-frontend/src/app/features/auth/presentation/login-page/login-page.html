@@ -1,5 +1,5 @@
 <sarc-auth-card heading="Ingresar" subtitle="Use su correo y contraseña corporativos.">
-  <form class="auth-form" novalidate (submit)="onSubmit($event)">
+  <form class="auth-form sarc-stacked-fields" novalidate (submit)="onSubmit($event)">
     @if (errorMessage(); as message) {
       <div class="form-alert" role="alert">
         <svg lucideTriangleAlert [size]="20"></svg>
@@ -7,7 +7,7 @@
       </div>
     }
 
-    <mat-form-field appearance="outline">
+    <mat-form-field subscriptSizing="dynamic" appearance="outline">
       <mat-label>Correo electrónico</mat-label>
       <input matInput type="email" autocomplete="username" [formField]="loginForm.email" />
       @for (error of loginForm.email().errors(); track error.kind) {
@@ -15,7 +15,7 @@
       }
     </mat-form-field>
 
-    <mat-form-field appearance="outline">
+    <mat-form-field subscriptSizing="dynamic" appearance="outline">
       <mat-label>Contraseña</mat-label>
       <input
         matInput

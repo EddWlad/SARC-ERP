@@ -1,7 +1,7 @@
 <h2 mat-dialog-title>Nueva importación</h2>
 
 <form novalidate (submit)="onSubmit($event)">
-  <mat-dialog-content class="fields">
+  <mat-dialog-content class="fields sarc-stacked-fields">
     @if (errorMessage(); as message) {
       <div class="form-alert" role="alert">
         <svg lucideTriangleAlert [size]="20"></svg>
@@ -23,7 +23,7 @@
 
     @if (usesFileChoice()) {
       @if (data.fileChoice; as choice) {
-        <mat-form-field appearance="outline">
+        <mat-form-field subscriptSizing="dynamic" appearance="outline">
           <mat-label>{{ choice.label }}</mat-label>
           <mat-select [formField]="importForm.fileChoice">
             @for (option of choice.options; track option.value) {
@@ -39,7 +39,7 @@
         </mat-form-field>
       }
     } @else if (data.choice; as choice) {
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>{{ choice.label }}</mat-label>
         <mat-select [formField]="importForm.choice">
           @for (option of choice.options; track option.value) {
@@ -76,7 +76,7 @@
         }
       </div>
     } @else {
-      <mat-form-field appearance="outline">
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Filas copiadas de la hoja</mat-label>
         <textarea matInput rows="8" [formField]="importForm.text"></textarea>
         <mat-hint>{{ data.pasteHint }}</mat-hint>

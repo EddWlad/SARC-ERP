@@ -1,7 +1,7 @@
 <h2 mat-dialog-title>Horario de atención</h2>
 
 <form novalidate (submit)="onSubmit($event)">
-  <mat-dialog-content>
+  <mat-dialog-content class="sarc-stacked-fields">
     @if (errorMessage(); as message) {
       <div class="form-alert" role="alert">
         <svg lucideTriangleAlert [size]="20"></svg>
@@ -9,7 +9,7 @@
       </div>
     }
 
-    <mat-form-field appearance="outline" class="mode">
+    <mat-form-field subscriptSizing="dynamic" appearance="outline" class="mode">
       <mat-label>Modo</mat-label>
       <mat-select [formField]="scheduleForm.mode">
         @for (mode of modes; track mode) {

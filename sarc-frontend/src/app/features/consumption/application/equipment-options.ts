@@ -4,6 +4,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 
 import { ConsumptionApi, EquipmentOptionPage } from '../data-access/consumption-api';
+import { retainedValue } from '../../../core/http/retained-value';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -21,5 +22,6 @@ export class EquipmentOptions {
     this.api.equipmentOptionsRequest(this.debouncedQuery()),
   );
 
-  readonly options = computed(() => (this.result.hasValue() ? this.result.value().content : []));
+  private readonly latest = retainedValue(this.result);
+  readonly options = computed(() => this.latest()?.content ?? []);
 }

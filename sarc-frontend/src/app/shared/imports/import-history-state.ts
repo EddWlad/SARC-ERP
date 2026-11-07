@@ -3,6 +3,7 @@ import { computed, effect, Signal, signal } from '@angular/core';
 
 import { ImportBatchLike, isInProgress } from './import-batch';
 import { retryTransientFailures, TransientRetry } from './transient-retry';
+import { retainedValue } from '../../core/http/retained-value';
 
 const DEFAULT_PAGE_SIZE = 20;
 const POLL_INTERVAL_MS = 3000;
@@ -44,10 +45,9 @@ export abstract class ImportHistoryState<
     this.result = httpResource<ImportHistoryPage<B>>(() =>
       api.historyRequest(this.pageIndex(), this.pageSize()),
     );
-    this.batches = computed(() => (this.result.hasValue() ? this.result.value().content : []));
-    this.totalElements = computed(() =>
-      this.result.hasValue() ? this.result.value().totalElements : 0,
-    );
+    const latest = retainedValue(this.result);
+    this.batches = computed(() => latest()?.content ?? []);
+    this.totalElements = computed(() => latest()?.totalElements ?? 0);
     this.loading = this.result.isLoading;
     this.failed = computed(() => this.result.error() !== undefined);
     this.retry = retryTransientFailures(this.result, POLL_INTERVAL_MS);

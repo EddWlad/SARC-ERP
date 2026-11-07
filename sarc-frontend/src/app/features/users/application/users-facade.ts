@@ -12,6 +12,7 @@ import {
   UserFilters,
   UserPage,
 } from '../domain/user';
+import { retainedValue } from '../../../core/http/retained-value';
 
 const SEARCH_DEBOUNCE_MS = 300;
 const DEFAULT_PAGE_SIZE = 20;
@@ -46,10 +47,9 @@ export class UsersFacade {
     }),
   );
 
-  readonly users = computed(() => (this.result.hasValue() ? this.result.value().content : []));
-  readonly totalElements = computed(() =>
-    this.result.hasValue() ? this.result.value().totalElements : 0,
-  );
+  private readonly latest = retainedValue(this.result);
+  readonly users = computed(() => this.latest()?.content ?? []);
+  readonly totalElements = computed(() => this.latest()?.totalElements ?? 0);
   readonly loading = this.result.isLoading;
   readonly failed = computed(() => this.result.error() !== undefined);
 

@@ -18,6 +18,7 @@ import {
   EnergyDecision,
 } from '../domain/consumption';
 import { PeriodSelection } from './period-selection';
+import { retainedValue } from '../../../core/http/retained-value';
 
 const SEARCH_DEBOUNCE_MS = 300;
 const DEFAULT_PAGE_SIZE = 20;
@@ -57,13 +58,10 @@ export class SessionsFacade {
     this.api.summaryRequest(this.period.range(), this.filters()),
   );
 
-  readonly summary = computed(() =>
-    this.summaryResult.hasValue() ? this.summaryResult.value() : undefined,
-  );
-  readonly sessions = computed(() => (this.result.hasValue() ? this.result.value().content : []));
-  readonly totalElements = computed(() =>
-    this.result.hasValue() ? this.result.value().totalElements : 0,
-  );
+  readonly summary = retainedValue(this.summaryResult);
+  private readonly latest = retainedValue(this.result);
+  readonly sessions = computed(() => this.latest()?.content ?? []);
+  readonly totalElements = computed(() => this.latest()?.totalElements ?? 0);
   readonly loading = this.result.isLoading;
   readonly failed = computed(() => this.result.error() !== undefined);
   /** Filtros propios del historico (estado y busqueda), ademas de los compartidos. */

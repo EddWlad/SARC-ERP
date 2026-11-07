@@ -13,6 +13,7 @@ import {
   ReportEquipmentOption,
   ReportKind,
 } from '../domain/issued-report';
+import { retainedValue } from '../../../core/http/retained-value';
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -30,10 +31,9 @@ export class IssuedReportsFacade {
     this.api.listRequest(this.kind(), this.pageIndex(), this.pageSize()),
   );
 
-  readonly reports = computed(() => (this.result.hasValue() ? this.result.value().content : []));
-  readonly totalElements = computed(() =>
-    this.result.hasValue() ? this.result.value().totalElements : 0,
-  );
+  private readonly latest = retainedValue(this.result);
+  readonly reports = computed(() => this.latest()?.content ?? []);
+  readonly totalElements = computed(() => this.latest()?.totalElements ?? 0);
   readonly loading = this.result.isLoading;
   readonly failed = computed(() => this.result.error() !== undefined);
 

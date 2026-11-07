@@ -16,6 +16,7 @@ import {
 } from '../domain/equipment';
 import { ReportFormat } from '../../../shared/reports/report-format';
 import { InventorySummary } from '../domain/inventory-summary';
+import { retainedValue } from '../../../core/http/retained-value';
 
 const SEARCH_DEBOUNCE_MS = 300;
 const DEFAULT_PAGE_SIZE = 20;
@@ -59,15 +60,12 @@ export class InventoryFacade {
     this.inventoryApi.summaryRequest(this.appliedFilters()),
   );
 
-  readonly equipment = computed(() => (this.result.hasValue() ? this.result.value().content : []));
-  readonly totalElements = computed(() =>
-    this.result.hasValue() ? this.result.value().totalElements : 0,
-  );
+  private readonly latest = retainedValue(this.result);
+  readonly equipment = computed(() => this.latest()?.content ?? []);
+  readonly totalElements = computed(() => this.latest()?.totalElements ?? 0);
   readonly loading = this.result.isLoading;
   readonly failed = computed(() => this.result.error() !== undefined);
-  readonly summary = computed(() =>
-    this.summaryResult.hasValue() ? this.summaryResult.value() : undefined,
-  );
+  readonly summary = retainedValue(this.summaryResult);
   readonly hasFilters = computed(() =>
     Object.values(this.filters()).some((value) => value.trim() !== ''),
   );
