@@ -76,6 +76,11 @@ case "$url" in
 	if [ "$cabecera" = "tokenficticio" ] && [[ "$datos" == *"verificacion@example.invalid"* ]] && [[ "$datos" == *"$FAKE_PASS"* ]]; then
 		printf '192.0.2.10\tFALSE\t/\tFALSE\t0\tSESION\tabc\n' >>"$jar"; cuerpo '{}'; codigo 200
 	else cuerpo '{}'; codigo 401; fi ;;
+*/api/v1/energy/summary\?from=*\&to=*)
+	periodo="${url##*\?from=}"
+	desde="${periodo%%&to=*}"
+	hasta="${periodo##*&to=}"
+	if sesion && [[ "$desde" < "$hasta" ]]; then cuerpo '{}'; codigo 200; else cuerpo '{}'; codigo 422; fi ;;
 */api/v1/uptime/*) if sesion && [ "${FAKE_UPTIME:-ok}" = ok ]; then cuerpo '[]'; codigo 200; else cuerpo '{}'; codigo 500; fi ;;
 */api/v1/reports/issued/*/download) if sesion && [[ "$url" == *"$REPORT_ID"* ]]; then cuerpo 'PDF-FICTICIO'; codigo 200; else cuerpo '{}'; codigo 404; fi ;;
 */api/v1/*) if sesion; then cuerpo '{}'; codigo 200; else cuerpo '{}'; codigo 401; fi ;;
