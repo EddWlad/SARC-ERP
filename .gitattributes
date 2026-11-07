@@ -1,2 +1,9 @@
 * text=auto
 *.pdf binary
+
+# Feature 007: scripts de despliegue siempre con fin de linea LF (se ejecutan en Linux)
+deploy/** text eol=lf
+.github/scripts/** text eol=lf
+*.sh text eol=lf
+*.bats text eol=lf
+deploy/computador-local/*.ps1 text eol=crlf

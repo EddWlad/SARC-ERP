@@ -39,3 +39,11 @@ documents/informes_de_enerlink_wallbox/
 
 # Binario de Impeccable: se descarga solo en la primera ejecucion
 **/impeccable/scripts/bin/
+
+# Credenciales del servidor de produccion: nunca versionar (repositorio publico)
+documents/Usuario y contraseña de SARC_Servidor.txt
+
+# Feature 007: rutas de trabajo de los ensayos y copias de base de datos (nunca se versionan)
+deploy/tests/tmp/
+**/*.dump
+**/*.dump.age
