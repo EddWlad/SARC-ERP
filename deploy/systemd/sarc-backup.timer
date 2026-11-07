@@ -1,0 +1,10 @@
+[Unit]
+Description=SARC: copia nocturna de PostgreSQL (diaria 02:00, America/Guayaquil)
+
+[Timer]
+OnCalendar=*-*-* 02:00:00 America/Guayaquil
+Persistent=true
+Unit=sarc-backup.service
+
+[Install]
+WantedBy=timers.target
