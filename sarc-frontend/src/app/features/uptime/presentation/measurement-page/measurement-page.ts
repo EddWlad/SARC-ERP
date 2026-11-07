@@ -12,6 +12,8 @@ import {
   LucideRotateCcw,
 } from '@lucide/angular';
 
+import { StatesChart } from '../states-chart/states-chart';
+import { StateCompositionResponse } from '../../../../core/api/generated';
 import { MeasurementFacade } from '../../application/measurement-facade';
 import {
   OBSERVATION_LABELS,
@@ -31,6 +33,7 @@ import { QuantityFormat } from '../../../../shared/format/quantity-format';
   selector: 'sarc-measurement-page',
   imports: [
     DatePipe,
+    StatesChart,
     MatButtonModule,
     MatProgressBarModule,
     RouterLink,
@@ -60,9 +63,16 @@ import { QuantityFormat } from '../../../../shared/format/quantity-format';
         <div>
           <h1>{{ item.equipmentName }} · Conector {{ item.ordinal }}</h1>
           <p>
-            {{ periods[item.periodType] }} ·
-            {{ item.periodStart | date: 'dd/MM/yyyy HH:mm' : '-0500' }} a
-            {{ item.periodEnd | date: 'dd/MM/yyyy HH:mm' : '-0500' }}
+            {{ item.periodType ? periods[item.periodType] : 'Por conciliar' }} ·
+            @if (item.temporalPrecision === 'KNOWN_RANGE') {
+              {{ item.periodStart | date: 'dd/MM/yyyy HH:mm:ss' : '-0500' }} a
+              {{ item.periodEnd | date: 'dd/MM/yyyy HH:mm:ss' : '-0500' }}
+            } @else {
+              Horario real no informado
+            }
+            @if (item.referenceWeek) {
+              · Semana de referencia {{ item.referenceWeek }}
+            }
           </p>
           @if (labelDiffers()) {
             <p>
@@ -83,7 +93,9 @@ import { QuantityFormat } from '../../../../shared/format/quantity-format';
         </div>
         @if (facade.canEdit) {
           <div class="header-actions">
-            @if (item.reviewState === 'PENDING') {
+            @if (
+              item.reviewState === 'PENDING' && item.temporalPrecision !== 'REQUIRES_RECONCILIATION'
+            ) {
               <button
                 matButton="filled"
                 type="button"
@@ -94,7 +106,20 @@ import { QuantityFormat } from '../../../../shared/format/quantity-format';
                 Validar
               </button>
             }
-            <button matButton="tonal" type="button" [disabled]="facade.busy()" (click)="correct()">
+            <button
+              matButton="outlined"
+              type="button"
+              [disabled]="facade.busy()"
+              (click)="classifyTemporal()"
+            >
+              Conciliar período
+            </button>
+            <button
+              matButton="tonal"
+              type="button"
+              [disabled]="facade.busy() || item.temporalPrecision === 'REQUIRES_RECONCILIATION'"
+              (click)="correct()"
+            >
               <svg lucidePencil [size]="18"></svg>
               Corregir
             </button>
@@ -159,6 +184,11 @@ import { QuantityFormat } from '../../../../shared/format/quantity-format';
         </li>
       </ul>
 
+      @if (composition(); as statesComposition) {
+        <section class="panel detail">
+          <sarc-states-chart [composition]="statesComposition" [level]="2" />
+        </section>
+      }
       @if (facade.canEdit) {
         @if (pendingOverEffective(); as effective) {
           <p class="dashboard-note detail">
@@ -175,6 +205,28 @@ import { QuantityFormat } from '../../../../shared/format/quantity-format';
         <section class="results detail" aria-labelledby="history-title">
           <h2 class="results-title" id="history-title">Historial</h2>
           <ol class="cards">
+            @for (event of history.temporalChanges; track event.eventId) {
+              <li class="card">
+                <strong
+                  >Clasificación temporal ·
+                  {{ event.actorKind === 'SYSTEM' ? 'Sistema' : 'Operador' }}</strong
+                >
+                <span
+                  >{{ event.occurredAt | date: 'dd/MM/yyyy HH:mm:ss' : '-0500' }} ·
+                  {{ event.outcome }}</span
+                >
+                <p>{{ event.reason }}</p>
+                <p>
+                  Antecedente temporal (puede incluir horario asignado):
+                  {{ event.previousTemporal['precision'] }} ·
+                  {{ event.previousTemporal['start'] }} a {{ event.previousTemporal['end'] }}
+                </p>
+                <p>
+                  Resultado: {{ event.resultTemporal['precision'] }} · Referencia
+                  {{ event.resultTemporal['referenceWeek'] }}
+                </p>
+              </li>
+            }
             @for (revision of history.revisions; track revision.revision) {
               <li class="card">
                 <div class="card-head">
@@ -278,6 +330,34 @@ export class MeasurementPage implements OnInit {
     return effective && effective.revision !== this.facade.detail()?.revision ? effective : null;
   });
 
+  protected readonly composition = computed<StateCompositionResponse | null>(() => {
+    const item = this.facade.detail();
+    if (!item || item.readingClass !== 'MEASURED') return null;
+    const values = [
+      item.availableMinutes,
+      item.occupiedMinutes,
+      item.faultMinutes,
+      item.offlineMinutes,
+    ];
+    const complete = values.every((value) => value != null);
+    return {
+      availableMinutes: item.availableMinutes,
+      occupiedMinutes: item.occupiedMinutes,
+      faultMinutes: item.faultMinutes,
+      offlineMinutes: item.offlineMinutes,
+      totalKnownMinutes: values.reduce<number>((sum, value) => sum + (value ?? 0), 0),
+      selectedMeasurements: 1,
+      completeMeasurements: complete ? 1 : 0,
+      isComplete: complete,
+      knownMeasurementsByState: {
+        available: item.availableMinutes == null ? 0 : 1,
+        occupied: item.occupiedMinutes == null ? 0 : 1,
+        fault: item.faultMinutes == null ? 0 : 1,
+        offline: item.offlineMinutes == null ? 0 : 1,
+      },
+    };
+  });
+
   ngOnInit(): void {
     void this.facade.load(this.id());
   }
@@ -292,6 +372,27 @@ export class MeasurementPage implements OnInit {
       { title: 'Validar medición observada', action: 'Validar', required: true },
       (text) => this.facade.validate(text),
     );
+  }
+
+  protected classifyTemporal(): void {
+    const item = this.facade.detail();
+    if (!item) return;
+    this.dialog.open(JustificationDialog, {
+      data: {
+        title: 'Conciliar período',
+        action: 'Guardar decisión',
+        required: true,
+        temporal: { referenceWeek: item.referenceWeek },
+        error: () => this.facade.error(),
+        submitTemporal: (
+          request: Omit<
+            import('../../../../core/api/generated').TemporalClassificationRequest,
+            'version'
+          >,
+        ) => this.facade.classifyTemporal(request),
+      },
+      autoFocus: 'first-tabbable',
+    });
   }
 
   protected correct(): void {

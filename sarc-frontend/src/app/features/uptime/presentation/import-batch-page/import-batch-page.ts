@@ -1,3 +1,4 @@
+import { uptimeTemporalLabel, uptimeCanConfirmExact } from '../../domain/uptime-import';
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -78,13 +79,13 @@ import {
     } @else if (facade.batch(); as batch) {
       <sarc-import-batch-header
         [state]="facade"
-        [kind]="periodLabels[batch.declaredPeriodType]"
+        [kind]="periodLabels[batch.declaredPeriodType] + ' · ' + temporalLabel(batch)"
         [confirmSummary]="confirmSummary()"
         applyingMessage="Incorporando las mediciones..."
         [completedMessage]="completedMessage()"
       />
 
-      @if (facade.reviewable()) {
+      @if (facade.reviewable() && canConfirmExact(batch)) {
         <mat-checkbox
           class="exact"
           [checked]="facade.exactConfirmed()"
@@ -282,6 +283,8 @@ export class UptimeImportBatchPage {
   protected readonly facade = inject(UptimeImportBatchFacade);
   protected readonly quantities = inject(QuantityFormat);
   protected readonly periodLabels = PERIOD_TYPE_LABELS;
+  protected readonly temporalLabel = uptimeTemporalLabel;
+  protected readonly canConfirmExact = uptimeCanConfirmExact;
   protected readonly classificationLabels = UPTIME_CLASSIFICATION_LABELS;
   protected readonly pageSizeOptions = [25, 50, 100];
   protected readonly isHandset = injectIsHandset();

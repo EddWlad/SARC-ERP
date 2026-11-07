@@ -12,6 +12,8 @@ import { QuantityFormat } from '../../../../shared/format/quantity-format';
 import { injectIsHandset } from '../../../../shared/ui/handset';
 import { ReviewFacade } from '../../application/review-facade';
 import {
+  TEMPORAL_WORK_LABELS,
+  TEMPORAL_OUTCOME_LABELS,
   MeasurementQueue,
   OBSERVATION_LABELS,
   ObservationCode,
@@ -23,6 +25,7 @@ import {
 const QUEUE_LABELS: Readonly<Record<MeasurementQueue, string>> = {
   PENDING: 'Pendientes',
   OBSERVED: 'Observadas',
+  TEMPORAL_RECONCILIATION: 'Conciliación temporal',
 };
 
 /** Cola de mediciones por validar. */
@@ -50,11 +53,21 @@ const QUEUE_LABELS: Readonly<Record<MeasurementQueue, string>> = {
           <button
             matButton="filled"
             type="button"
-            [disabled]="facade.selected().size === 0 || facade.busy()"
+            [disabled]="
+              facade.selected().size === 0 ||
+              facade.busy() ||
+              (facade.queue() === 'TEMPORAL_RECONCILIATION' &&
+                (facade.work()?.status === 'RUNNING' || facade.work()?.status === 'QUEUED'))
+            "
             (click)="facade.validateSelected()"
           >
             <svg lucideCircleCheck [size]="18"></svg>
-            Validar selección ({{ facade.selected().size }})
+            {{
+              facade.queue() === 'TEMPORAL_RECONCILIATION'
+                ? 'Comprobar evidencia (bloques de 500)'
+                : 'Validar selección'
+            }}
+            ({{ facade.selected().size }})
           </button>
         </div>
       }
@@ -83,6 +96,48 @@ const QUEUE_LABELS: Readonly<Record<MeasurementQueue, string>> = {
       }
     </div>
 
+    @if (facade.work(); as work) {
+      <section class="outcome" aria-label="Transición temporal" role="status">
+        <h2>Comprobación de evidencia temporal</h2>
+        <p>
+          {{ workLabels[work.status] }} · {{ work.processed }} de {{ work.total }} procesadas ·
+          Intento {{ work.attempt }}
+        </p>
+        @if (work.failureCode) {
+          <p>{{ work.failureCode }}. El trabajo se conserva para reintentar.</p>
+        }
+        @if (work.status === 'FAILED' || work.status === 'INTERRUPTED') {
+          <button matButton type="button" [disabled]="facade.busy()" (click)="facade.retryWork()">
+            Reintentar trabajo
+          </button>
+        }
+        <ul>
+          @for (result of work.results.content; track result.id) {
+            <li>
+              <a [routerLink]="['/uptime/mediciones', result.id]">Medición</a>:
+              {{ outcomeLabels[result.outcome] }}
+            </li>
+          }
+        </ul>
+        <button
+          matButton
+          type="button"
+          [disabled]="facade.workPage() === 0"
+          (click)="facade.readWork(facade.workPage() - 1)"
+        >
+          Anteriores
+        </button>
+        <button
+          matButton
+          type="button"
+          [disabled]="facade.workPage() + 1 >= work.results.totalPages"
+          (click)="facade.readWork(facade.workPage() + 1)"
+        >
+          Siguientes
+        </button>
+        <button matButton type="button" (click)="facade.load()">Actualizar cola</button>
+      </section>
+    }
     @if (facade.result(); as result) {
       <div role="status" class="outcome">
         <p>
@@ -121,7 +176,9 @@ const QUEUE_LABELS: Readonly<Record<MeasurementQueue, string>> = {
                 <mat-checkbox
                   [aria-label]="'Seleccionar ' + item.equipmentName + ' conector ' + item.ordinal"
                   [checked]="facade.selected().has(item.id)"
-                  [disabled]="!!item.observations?.length"
+                  [disabled]="
+                    facade.queue() !== 'TEMPORAL_RECONCILIATION' && !!item.observations?.length
+                  "
                   (change)="facade.toggle(item.id)"
                 />
                 <a class="link grow" [routerLink]="['/uptime/mediciones', item.id]">
@@ -130,9 +187,16 @@ const QUEUE_LABELS: Readonly<Record<MeasurementQueue, string>> = {
                 <strong class="uptime">{{ quantities.percentage(item.uptimePercent) }}</strong>
               </div>
               <span class="muted">
-                {{ periods[item.periodType] }} ·
-                {{ item.periodStart | date: 'dd/MM/yyyy HH:mm' : '-0500' }} a
-                {{ item.periodEnd | date: 'dd/MM/yyyy HH:mm' : '-0500' }}
+                {{ item.periodType ? periods[item.periodType] : 'Por conciliar' }} ·
+                @if (item.temporalPrecision === 'KNOWN_RANGE') {
+                  {{ item.periodStart | date: 'dd/MM/yyyy HH:mm:ss' : '-0500' }} a
+                  {{ item.periodEnd | date: 'dd/MM/yyyy HH:mm:ss' : '-0500' }}
+                } @else {
+                  Horario real no informado
+                }
+                @if (item.referenceWeek) {
+                  · Referencia {{ item.referenceWeek }}
+                }
               </span>
               @for (code of item.observations; track code) {
                 <span class="badge badge-warn wrap">{{ observations[code] }}</span>
@@ -156,7 +220,9 @@ const QUEUE_LABELS: Readonly<Record<MeasurementQueue, string>> = {
               <mat-checkbox
                 [aria-label]="'Seleccionar ' + item.equipmentName + ' conector ' + item.ordinal"
                 [checked]="facade.selected().has(item.id)"
-                [disabled]="!!item.observations?.length"
+                [disabled]="
+                  facade.queue() !== 'TEMPORAL_RECONCILIATION' && !!item.observations?.length
+                "
                 (change)="facade.toggle(item.id)"
               />
             </td>
@@ -177,8 +243,15 @@ const QUEUE_LABELS: Readonly<Record<MeasurementQueue, string>> = {
             <td mat-cell *matCellDef="let item">
               {{ periodLabel(item.periodType) }}
               <span class="muted block">
-                {{ item.periodStart | date: 'dd/MM/yyyy HH:mm' : '-0500' }} a
-                {{ item.periodEnd | date: 'dd/MM/yyyy HH:mm' : '-0500' }}
+                @if (item.temporalPrecision === 'KNOWN_RANGE') {
+                  {{ item.periodStart | date: 'dd/MM/yyyy HH:mm:ss' : '-0500' }} a
+                  {{ item.periodEnd | date: 'dd/MM/yyyy HH:mm:ss' : '-0500' }}
+                } @else {
+                  Horario real no informado
+                }
+                @if (item.referenceWeek) {
+                  · Referencia {{ item.referenceWeek }}
+                }
               </span>
             </td>
           </ng-container>
@@ -251,6 +324,8 @@ const QUEUE_LABELS: Readonly<Record<MeasurementQueue, string>> = {
   `,
 })
 export class ReviewPage implements OnInit {
+  protected readonly workLabels = TEMPORAL_WORK_LABELS;
+  protected readonly outcomeLabels = TEMPORAL_OUTCOME_LABELS;
   protected readonly facade = inject(ReviewFacade);
   protected readonly quantities = inject(QuantityFormat);
   protected readonly isHandset = injectIsHandset();
@@ -276,6 +351,7 @@ export class ReviewPage implements OnInit {
 
   ngOnInit(): void {
     void this.facade.load();
+    void this.facade.readWork();
   }
 
   protected changeQueue(queue: MeasurementQueue | undefined): void {

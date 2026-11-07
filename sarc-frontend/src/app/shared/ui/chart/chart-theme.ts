@@ -3,7 +3,7 @@ import { DOCUMENT, computed, inject, Service, signal } from '@angular/core';
 import { ThemeStore } from '../../../core/theme/theme-store';
 
 /** Colores de serie disponibles (tokens `--sarc-series-*`), asignados en orden fijo por categoria. */
-export type SeriesColor = 'series-1' | 'series-2' | 'series-3';
+export type SeriesColor = 'series-1' | 'series-2' | 'series-3' | 'series-4';
 
 /** Colores ya resueltos (rgb) del tema activo, listos para un lienzo que no entiende variables CSS. */
 export interface ChartColors {
@@ -15,7 +15,7 @@ export interface ChartColors {
   readonly fontFamily: string;
 }
 
-const SERIES: readonly SeriesColor[] = ['series-1', 'series-2', 'series-3'];
+const SERIES: readonly SeriesColor[] = ['series-1', 'series-2', 'series-3', 'series-4'];
 
 /**
  * Traduce los tokens del tema a colores concretos para Chart.js. Los tokens usan light-dark(), que

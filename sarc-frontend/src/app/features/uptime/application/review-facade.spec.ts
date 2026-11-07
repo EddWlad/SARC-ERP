@@ -33,6 +33,7 @@ describe('ReviewFacade', () => {
   }
 
   beforeEach(() => {
+    sessionStorage.clear();
     TestBed.configureTestingModule({
       providers: [ReviewFacade, provideHttpClient(), provideHttpClientTesting()],
     });
@@ -103,5 +104,60 @@ describe('ReviewFacade', () => {
 
     expect(facade.error()).not.toBe('');
     expect(facade.selected().size).toBe(1);
+  });
+  it('la conciliación temporal no obliga a revalidar observaciones de valores', async () => {
+    facade.queue.set('TEMPORAL_RECONCILIATION' as never);
+    await load([
+      { ...item('temporal', ['DURATION_INVALID']), temporalPrecision: 'REQUIRES_RECONCILIATION' },
+    ]);
+    facade.selectAll();
+    expect([...facade.selected()]).toEqual(['temporal']);
+  });
+
+  it('repite una solicitud fallida con la misma clave y lee el resultado durable', async () => {
+    facade.queue.set('TEMPORAL_RECONCILIATION');
+    await load([item('a')]);
+    facade.selectAll();
+    const first = facade.transitionSelected();
+    const initial = http.expectOne(LIST_URL + '/temporal-transition');
+    const key = initial.request.headers.get('Idempotency-Key');
+    expect(key).toBeTruthy();
+    initial.flush(
+      { detail: 'Temporalmente indisponible' },
+      { status: 503, statusText: 'Unavailable' },
+    );
+    await first;
+    const second = facade.transitionSelected();
+    const repeated = http.expectOne(LIST_URL + '/temporal-transition');
+    expect(repeated.request.headers.get('Idempotency-Key')).toBe(key);
+    repeated.flush({ workId: 'work', status: 'QUEUED', version: 0 });
+    await vi.waitFor(() =>
+      http
+        .expectOne((request) => request.url === LIST_URL + '/temporal-transition/work')
+        .flush({
+          workId: 'work',
+          status: 'COMPLETED',
+          version: 3,
+          processed: 1,
+          total: 1,
+          results: page([{ id: 'a', outcome: 'STALE_VERSION' }]),
+        }),
+    );
+    await second;
+    expect(facade.work()?.processed).toBe(1);
+    expect(facade.work()?.status).toBe('COMPLETED');
+  });
+  it('detiene la consulta periódica al salir', async () => {
+    vi.useFakeTimers();
+    facade.workId.set('work');
+    const reading = facade.readWork();
+    http
+      .expectOne((request) => request.url === LIST_URL + '/temporal-transition/work')
+      .flush({ workId: 'work', status: 'RUNNING', version: 1 });
+    await reading;
+    TestBed.resetTestingModule();
+    await vi.advanceTimersByTimeAsync(3000);
+    http.expectNone((request) => request.url.includes('temporal-transition'));
+    vi.useRealTimers();
   });
 });

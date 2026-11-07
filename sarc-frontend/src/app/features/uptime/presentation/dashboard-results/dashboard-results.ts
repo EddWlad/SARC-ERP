@@ -31,6 +31,9 @@ export class DashboardResults {
   readonly connectors = input.required<readonly ConnectorResultResponse[]>();
   readonly equipment = input.required<readonly EquipmentResultResponse[]>();
   readonly exclusions = input.required<readonly ExclusionResponse[]>();
+  /** Identifica el bloque cuando la pagina muestra dos: ids y nombres accesibles no se repiten. */
+  readonly scope = input('oficial');
+  readonly scopeLabel = input('');
 
   protected readonly quantities = inject(QuantityFormat);
   protected readonly isHandset = injectIsHandset();

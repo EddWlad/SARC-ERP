@@ -14,6 +14,7 @@ import { GridRowResponse } from '../../../../core/api/generated';
 import { injectIsHandset } from '../../../../shared/ui/handset';
 import { CapturePeriod, CaptureFacade } from '../../application/capture-facade';
 import { PERIOD_TYPE_LABELS, PeriodType } from '../../domain/uptime-labels';
+import { toOperatingInstant } from '../../domain/uptime-time';
 import { MeasurementForm } from '../measurement-form/measurement-form';
 
 const SITUATION_LABELS: Readonly<Record<string, string>> = {
@@ -25,7 +26,6 @@ const SITUATION_LABELS: Readonly<Record<string, string>> = {
 };
 
 /** Convierte un `datetime-local` a instante en la zona operativa (Ecuador, sin horario de verano). */
-const toOperatingInstant = (local: string): string => `${local}:00-05:00`;
 
 /** Grilla de conectores para un periodo real, y secuencia de captura. */
 @Component({
@@ -60,16 +60,28 @@ const toOperatingInstant = (local: string): string => `${local}:00-05:00`;
           }
         </mat-select>
       </mat-form-field>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Desde</mat-label>
-        <input matInput type="datetime-local" [(ngModel)]="start" name="start" required />
-      </mat-form-field>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Hasta</mat-label>
-        <input matInput type="datetime-local" [(ngModel)]="end" name="end" required />
-      </mat-form-field>
+      @if (periodType() === 'ROLLING_7D') {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Semana de referencia del informe</mat-label>
+          <input matInput type="date" [(ngModel)]="referenceWeek" name="referenceWeek" required />
+          <mat-hint>Elija el lunes de la semana.</mat-hint>
+        </mat-form-field>
+      } @else {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Desde</mat-label>
+          <input matInput type="datetime-local" [(ngModel)]="start" name="start" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Hasta</mat-label>
+          <input matInput type="datetime-local" [(ngModel)]="end" name="end" required />
+        </mat-form-field>
+      }
       <mat-checkbox [(ngModel)]="showInactive" name="showInactive">Incluir inactivos</mat-checkbox>
-      <button matButton="filled" type="submit" [disabled]="!start() || !end()">
+      <button
+        matButton="filled"
+        type="submit"
+        [disabled]="periodType() === 'ROLLING_7D' ? !referenceWeek() : !start() || !end()"
+      >
         <svg lucideSearch [size]="18"></svg>
         Consultar
       </button>
@@ -135,7 +147,14 @@ const toOperatingInstant = (local: string): string => `${local}:00-05:00`;
           <ng-container matColumnDef="situation">
             <th mat-header-cell *matHeaderCellDef>Estado</th>
             <td mat-cell *matCellDef="let row">
-              <span class="badge" [class]="badgeOf(row)">{{ situationLabels[row.situation] }}</span>
+              <div class="badges">
+                <span class="badge" [class]="badgeOf(row)">{{
+                  situationLabels[row.situation]
+                }}</span>
+                @if (row.referenceReportPresent) {
+                  <span class="badge">Informe sin horario registrado</span>
+                }
+              </div>
             </td>
           </ng-container>
           <ng-container matColumnDef="actions">
@@ -172,8 +191,34 @@ const toOperatingInstant = (local: string): string => `${local}:00-05:00`;
 
     // Se acomoda al ancho util: el menu lateral resta espacio que una media query no ve.
     .filters {
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      // Los campos arrancan arriba: una ayuda bajo uno no debe empujar a los demas controles.
+      align-items: start;
+    }
+
+    // Misma altura que un campo outline (56px) para que alineen con la caja, no con su ayuda.
+    .filters > mat-checkbox,
+    .filters > button {
+      align-self: start;
+      min-height: 56px;
+    }
+
+    // El boton no se estira a todo el ancho de su celda cuando queda solo en una fila.
+    .filters > button {
+      justify-self: start;
+      min-width: 160px;
+    }
+
+    .filters > mat-checkbox {
+      display: flex;
       align-items: center;
+    }
+
+    // Las etiquetas de estado conviven en una fila con separacion, y bajan si falta ancho.
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sarc-space-1) var(--sarc-space-2);
     }
 
     .actions {
@@ -189,7 +234,8 @@ export class CapturePage {
   protected readonly situationLabels = SITUATION_LABELS;
   protected readonly columns = ['equipment', 'connector', 'situation', 'actions'];
   protected readonly types: PeriodType[] = ['ROLLING_24H', 'ROLLING_7D', 'ROLLING_30D'];
-  protected readonly periodType = signal<PeriodType>('ROLLING_24H');
+  protected readonly periodType = signal<PeriodType>('ROLLING_7D');
+  protected readonly referenceWeek = signal('');
   protected readonly start = signal('');
   protected readonly end = signal('');
   protected readonly showInactive = this.facade.showInactive;
@@ -217,8 +263,9 @@ export class CapturePage {
     event.preventDefault();
     const period: CapturePeriod = {
       periodType: this.periodType(),
-      periodStart: toOperatingInstant(this.start()),
-      periodEnd: toOperatingInstant(this.end()),
+      periodStart: this.periodType() === 'ROLLING_7D' ? '' : toOperatingInstant(this.start()),
+      periodEnd: this.periodType() === 'ROLLING_7D' ? '' : toOperatingInstant(this.end()),
+      ...(this.periodType() === 'ROLLING_7D' ? { referenceWeek: this.referenceWeek() } : {}),
     };
     this.facade.setPeriod(period);
     await this.facade.load();

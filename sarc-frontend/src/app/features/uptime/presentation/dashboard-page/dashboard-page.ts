@@ -10,6 +10,7 @@ import { QuantityFormat } from '../../../../shared/format/quantity-format';
 import { ReportFormat } from '../../../../shared/reports/report-format';
 import { ChartSeries, ChartView } from '../../../../shared/ui/chart/chart-view';
 import { DashboardFacade } from '../../application/dashboard-facade';
+import { StatesChart } from '../states-chart/states-chart';
 import { DashboardResults } from '../dashboard-results/dashboard-results';
 import { UptimeFilterBar } from '../uptime-filter-bar/uptime-filter-bar';
 
@@ -20,6 +21,7 @@ const LOWEST_SHOWN = 10;
   selector: 'sarc-uptime-dashboard',
   imports: [
     ChartView,
+    StatesChart,
     DashboardResults,
     MatButtonModule,
     MatProgressBarModule,
@@ -55,6 +57,17 @@ export class DashboardPage implements OnInit {
   protected readonly lowestSeries = computed<ChartSeries>(() => ({
     label: 'Uptime',
     values: this.lowest().map((item) => Number(item.uptimePercent)),
+    colors: 'series-1',
+  }));
+  private readonly reportLowest = computed(() =>
+    this.facade.referenceConnectors().slice(0, LOWEST_SHOWN),
+  );
+  protected readonly reportLowestLabels = computed(() =>
+    this.reportLowest().map((item) => item.equipmentName + ' · ' + item.ordinal),
+  );
+  protected readonly reportLowestSeries = computed<ChartSeries>(() => ({
+    label: 'Promedio del informe',
+    values: this.reportLowest().map((item) => Number(item.uptimePercent)),
     colors: 'series-1',
   }));
   protected readonly cutOff = computed(() => {

@@ -31,8 +31,8 @@ import { CaptureFacade } from '../../application/capture-facade';
           </p>
         }
         <div class="block">
-          <mat-form-field appearance="outline">
-            <mat-label>Pegar bloque de Enerlink (opcional)</mat-label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Bloque de Enerlink (opcional)</mat-label>
             <textarea #firstField matInput rows="3" [formField]="block.text"></textarea>
           </mat-form-field>
           <button
@@ -45,23 +45,31 @@ import { CaptureFacade } from '../../application/capture-facade';
           </button>
         </div>
         <div class="fields">
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Desde (fecha)</mat-label>
+            <input matInput type="date" [formField]="measurement.periodStart" />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Hasta (fecha, inclusive)</mat-label>
+            <input matInput type="date" [formField]="measurement.periodEnd" />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Disponible (min)</mat-label>
             <input matInput inputmode="decimal" [formField]="measurement.available" />
           </mat-form-field>
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Ocupado (min)</mat-label>
             <input matInput inputmode="decimal" [formField]="measurement.occupied" />
           </mat-form-field>
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Con falla (min)</mat-label>
             <input matInput inputmode="decimal" [formField]="measurement.fault" />
           </mat-form-field>
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Fuera de línea (min)</mat-label>
             <input matInput inputmode="decimal" [formField]="measurement.offline" />
           </mat-form-field>
-          <mat-form-field appearance="outline" class="wide">
+          <mat-form-field appearance="outline" class="wide" subscriptSizing="dynamic">
             <mat-label>Porcentaje de Enerlink (opcional)</mat-label>
             <input matInput inputmode="decimal" [formField]="measurement.reportedPercent" />
           </mat-form-field>
@@ -70,7 +78,7 @@ import { CaptureFacade } from '../../application/capture-facade';
           <div class="form-alert" role="alert"><p>Ingrese solo números en los tiempos.</p></div>
         }
         @if (facade.conflict()) {
-          <mat-form-field appearance="outline" class="justification">
+          <mat-form-field appearance="outline" class="justification" subscriptSizing="dynamic">
             <mat-label>Justificación de la corrección</mat-label>
             <textarea matInput rows="2" [formField]="correction.text"></textarea>
           </mat-form-field>
@@ -134,7 +142,8 @@ import { CaptureFacade } from '../../application/capture-facade';
     .fields {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: var(--sarc-space-2) var(--sarc-space-4);
+      gap: var(--sarc-space-3) var(--sarc-space-4);
+      margin-top: var(--sarc-space-3);
       min-width: min(480px, 75vw);
 
       @media (max-width: 599.98px) {
@@ -165,6 +174,8 @@ export class MeasurementForm {
   /** Se reinicia al cambiar el conector porque el borrador de la fachada vuelve a blanco. */
   readonly model = linkedSignal(() => this.facade.draft());
   readonly measurement = form(this.model, (path) => {
+    required(path.periodStart, { message: 'Indique el inicio real' });
+    required(path.periodEnd, { message: 'Indique el fin real' });
     required(path.available, { message: 'Requerido' });
     required(path.occupied, { message: 'Requerido' });
     required(path.fault, { message: 'Requerido' });
@@ -185,6 +196,9 @@ export class MeasurementForm {
   });
 
   async onParse(): Promise<void> {
+    // El borrador de la fachada reinicia el formulario: se le entrega antes lo ya digitado
+    // (p. ej. las fechas) para que interpretar el bloque no lo borre.
+    this.facade.updateDraft(this.model());
     await this.facade.parseBlock(this.blockText().text.trim());
   }
 

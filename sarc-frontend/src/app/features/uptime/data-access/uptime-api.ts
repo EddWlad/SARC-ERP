@@ -27,8 +27,9 @@ import { ReportFormat } from '../../../shared/reports/report-format';
 import { MeasurementQueue, PeriodType } from '../domain/uptime-labels';
 
 export interface GridQuery {
-  readonly periodStart: string;
-  readonly periodEnd: string;
+  readonly periodStart?: string;
+  readonly periodEnd?: string;
+  readonly referenceWeek?: string;
   readonly network?: string;
   readonly type?: string;
   readonly equipmentId?: string;
@@ -46,6 +47,8 @@ export interface MeasurementQuery {
 /** Filtros comunes de indicadores. `to` es exclusivo; sin `periodKind` aplica la apertura. */
 export interface UptimeFilters {
   readonly periodKind?: 'OFFICIAL' | 'PROVISIONAL';
+  readonly referenceWeek?: string;
+  readonly temporalSection?: 'KNOWN_RANGE' | 'REFERENCE_WEEK';
   readonly periodType?: PeriodType;
   readonly from?: string;
   readonly to?: string;
@@ -62,6 +65,35 @@ export class UptimeApi {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${API_BASE}/uptime`;
 
+  transition(items: readonly { id: string; version: number }[], key: string) {
+    return this.http.post<import('../../../core/api/generated').TemporalTransitionWorkResponse>(
+      this.baseUrl + '/measurements/temporal-transition',
+      { items },
+      { headers: { 'Idempotency-Key': key } },
+    );
+  }
+  transitionWork(id: string, page = 0) {
+    return this.http.get<import('../../../core/api/generated').TemporalTransitionWorkResponse>(
+      this.baseUrl + '/measurements/temporal-transition/' + id,
+      { params: { page, size: 20 } },
+    );
+  }
+  retryTransition(id: string, version: number) {
+    return this.http.post<import('../../../core/api/generated').TemporalTransitionWorkResponse>(
+      this.baseUrl + '/measurements/temporal-transition/' + id + '/retry',
+      { version },
+    );
+  }
+  classifyTemporal(
+    id: string,
+    request: import('../../../core/api/generated').TemporalClassificationRequest,
+  ) {
+    return this.http.post<MeasurementDetailResponse>(
+      this.baseUrl + '/measurements/' + id + '/temporal-classification',
+      request,
+    );
+  }
+
   grid(query: GridQuery) {
     return this.http.get<GridRowResponse[]>(`${this.baseUrl}/grid`, { params: { ...query } });
   }
@@ -73,7 +105,7 @@ export class UptimeApi {
   /** Reporte corporativo con el mismo filtro del tablero; la respuesta completa trae el nombre. */
   downloadReport(format: ReportFormat, filters: UptimeFilters) {
     return this.http.get(`${this.baseUrl}/report`, {
-      params: { ...filters, format },
+      params: { ...filterParams(filters), format },
       observe: 'response',
       responseType: 'blob',
     });
@@ -137,25 +169,25 @@ export class UptimeApi {
 
   summary(filters: UptimeFilters) {
     return this.http.get<UptimeSummaryResponse>(`${this.baseUrl}/summary`, {
-      params: { ...filters },
+      params: { ...filterParams(filters) },
     });
   }
 
   connectorResults(filters: UptimeFilters, page: number, size: number) {
     return this.http.get<PageResultConnectorResultResponse>(`${this.baseUrl}/results/connectors`, {
-      params: { ...filters, page, size },
+      params: { ...filterParams(filters), page, size },
     });
   }
 
   equipmentResults(filters: UptimeFilters, page: number, size: number) {
     return this.http.get<PageResultEquipmentResultResponse>(`${this.baseUrl}/results/equipment`, {
-      params: { ...filters, page, size },
+      params: { ...filterParams(filters), page, size },
     });
   }
 
   exclusionResults(filters: UptimeFilters, page: number, size: number) {
     return this.http.get<PageResultExclusionResponse>(`${this.baseUrl}/results/exclusions`, {
-      params: { ...filters, page, size },
+      params: { ...filterParams(filters), page, size },
     });
   }
 
@@ -170,4 +202,10 @@ export class UptimeApi {
       `${this.baseUrl}/measurements/${id}/revisions`,
     );
   }
+}
+
+function filterParams(filters: UptimeFilters): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(filters).filter((entry): entry is [string, string] => entry[1] != null),
+  );
 }

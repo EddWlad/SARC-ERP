@@ -45,6 +45,8 @@ export type UptimeImportRowResponse = {
     outcome?: 'APPLIED' | 'SKIPPED' | 'FAILED' | 'PENDING_LINK' | 'LINKED';
     appliedMeasurementId?: string | null;
     version: number;
+    temporalPrecision: 'KNOWN_RANGE' | 'REFERENCE_WEEK' | 'REQUIRES_RECONCILIATION';
+    referenceWeek?: string | null;
 };
 
 export type UpdateConnectorAliasRequest = {
@@ -267,6 +269,7 @@ export type RegisterMeasurementRequest = {
     reportedPercent?: number;
     origin: 'MANUAL' | 'BLOCK' | 'FILE' | 'PASTE';
     sourceText?: string;
+    referenceWeek?: string;
 };
 
 export type MeasurementResponse = {
@@ -276,12 +279,12 @@ export type MeasurementResponse = {
     connectorId: string;
     equipmentId: string;
     source: 'ENERLINK';
-    periodStart: string;
-    periodEnd: string;
+    periodStart?: string | null;
+    periodEnd?: string | null;
     periodZone: string;
     revision: number;
     readingClass: 'MEASURED' | 'NO_DATA' | 'OUT_OF_SCOPE' | 'RETIRED';
-    periodType: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+    periodType?: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
     reviewState: 'PENDING' | 'VALIDATED' | 'SUPERSEDED';
     availableMinutes?: number | null;
     occupiedMinutes?: number | null;
@@ -294,11 +297,61 @@ export type MeasurementResponse = {
     validatable: boolean;
     excluded: boolean;
     uptimeBasis: 'STATES' | 'REPORTED_PERCENT';
+    temporalPrecision: 'KNOWN_RANGE' | 'REFERENCE_WEEK' | 'REQUIRES_RECONCILIATION';
+    referenceWeek?: string | null;
 };
 
 export type ValidateMeasurementRequest = {
     version: number;
     justification?: string;
+};
+
+export type TemporalClassificationRequest = {
+    version: number;
+    temporalPrecision: 'KNOWN_RANGE' | 'REFERENCE_WEEK' | 'REQUIRES_RECONCILIATION';
+    referenceWeek?: string;
+    periodStart?: string;
+    periodEnd?: string;
+    justification: string;
+    evidence: string;
+};
+
+export type FactLabel = {
+    equipmentName: string;
+    assignedCode?: string | null;
+    connectorType: string;
+};
+
+export type MeasurementDetailResponse = {
+    id: string;
+    version: number;
+    connectorId: string;
+    equipmentId: string;
+    ordinal: number;
+    equipmentName: string;
+    assignedCode?: string | null;
+    periodStart?: string | null;
+    periodEnd?: string | null;
+    revision: number;
+    readingClass: 'MEASURED' | 'NO_DATA' | 'OUT_OF_SCOPE' | 'RETIRED';
+    periodType?: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+    reviewState: 'PENDING' | 'VALIDATED' | 'SUPERSEDED';
+    availableMinutes?: number | null;
+    occupiedMinutes?: number | null;
+    faultMinutes?: number | null;
+    offlineMinutes?: number | null;
+    evaluatedMinutes?: number | null;
+    uptimePercent?: string | null;
+    factLabel: FactLabel;
+    observations?: Array<'SUM_BELOW_DURATION' | 'PERCENT_MISMATCH' | 'SUM_ABOVE_DURATION' | 'SUM_ZERO' | 'PERCENT_OUT_OF_RANGE' | 'DURATION_INVALID' | 'WINDOW_DURATION_MISMATCH'> | null;
+    validatable?: boolean | null;
+    reportedPercent?: string | null;
+    justification?: string | null;
+    excluded?: boolean | null;
+    effectiveRevision?: number | null;
+    uptimeBasis: 'STATES' | 'REPORTED_PERCENT';
+    temporalPrecision: 'KNOWN_RANGE' | 'REFERENCE_WEEK' | 'REQUIRES_RECONCILIATION';
+    referenceWeek?: string | null;
 };
 
 export type JustifiedVersionRequest = {
@@ -336,6 +389,50 @@ export type BatchValidationResult = {
 export type Skipped = {
     id: string;
     reason: 'OBSERVED' | 'STALE_VERSION' | 'NOT_PENDING' | 'NOT_FOUND';
+};
+
+export type TemporalTransitionRequest = {
+    items: Array<Item>;
+};
+
+export type ItemResult = {
+    id: string;
+    version: number;
+    outcome: 'APPLIED' | 'VERIFIED_KNOWN_RANGE' | 'REQUIRES_RECONCILIATION' | 'ALREADY_APPLIED' | 'STALE_VERSION';
+    eventId?: string | null;
+};
+
+export type PageResultItemResult = {
+    content: Array<ItemResult>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type TemporalTransitionWorkResponse = {
+    workId: string;
+    version: number;
+    status: 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'INTERRUPTED';
+    policyVersion: string;
+    total: number;
+    processed: number;
+    counts: {
+        [key: string]: number;
+    };
+    attempt: number;
+    requestedBy: string;
+    lastAttemptBy?: string | null;
+    createdAt: string;
+    startedAt?: string | null;
+    finishedAt?: string | null;
+    failureCode?: string | null;
+    cutOff: string;
+    results: PageResultItemResult;
+};
+
+export type VersionRequest = {
+    version: number;
 };
 
 export type ParseBlockRequest = {
@@ -392,10 +489,8 @@ export type UptimeImportBatchResponse = {
     createdAt: string;
     confirmedAt?: string | null;
     version: number;
-};
-
-export type VersionRequest = {
-    version: number;
+    temporalPrecision: 'KNOWN_RANGE' | 'REFERENCE_WEEK' | 'REQUIRES_RECONCILIATION';
+    referenceWeek?: string | null;
 };
 
 export type ConfirmUptimeImportRequest = {
@@ -642,12 +737,46 @@ export type Operations = {
     correctionsPending: number;
 };
 
+export type ReferenceReport = {
+    referenceWeek: string;
+    uptimePercent?: string | null;
+    aggregationMethod: string;
+    equipmentEvaluated: number;
+    equipmentWithoutData: number;
+    connectorsIncluded: number;
+    connectorsInScope: number;
+    coverage: Coverage;
+    composition: StateCompositionResponse;
+};
+
 export type ResolvedPeriod = {
     kind: 'OFFICIAL' | 'PROVISIONAL' | 'NONE';
     periodType?: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
     from?: string | null;
     to?: string | null;
     timeZone: string;
+};
+
+export type Selection = {
+    basis: 'ACTUAL_RANGE' | 'REFERENCE_WEEK' | 'NONE';
+    referenceWeek?: string | null;
+    periodType?: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
+    timeZone: string;
+    temporalSection?: 'KNOWN_RANGE' | 'REFERENCE_WEEK' | 'REQUIRES_RECONCILIATION';
+};
+
+export type StateCompositionResponse = {
+    availableMinutes?: number | null;
+    occupiedMinutes?: number | null;
+    faultMinutes?: number | null;
+    offlineMinutes?: number | null;
+    totalKnownMinutes: number;
+    selectedMeasurements: number;
+    completeMeasurements: number;
+    knownMeasurementsByState: {
+        [key: string]: number;
+    };
+    isComplete: boolean;
 };
 
 export type Trend = {
@@ -659,12 +788,17 @@ export type UptimeSummaryResponse = {
     resolvedPeriod: ResolvedPeriod;
     official?: Kpis;
     provisional?: Kpis;
-    coverage: Coverage;
+    coverage?: Coverage;
     trend: Array<Trend>;
     notices: Array<'NO_OFFICIAL_WEEK' | 'LATEST_WEEK_MISSING' | 'NO_EVALUABLE_CONNECTORS'>;
     lastValidatedAt?: string | null;
     cutOff: string;
     operations?: Operations;
+    selection: Selection;
+    referenceReport?: ReferenceReport;
+    provisionalCoverage?: Coverage;
+    provisionalComposition?: StateCompositionResponse;
+    temporalReconciliationCount: number;
 };
 
 export type ScopeConnectorResponse = {
@@ -700,11 +834,14 @@ export type EquipmentResultResponse = {
     network: 'KIA' | 'JAC' | 'CONECTZ';
     type: 'CHARGING_POINT' | 'CHARGING_STATION';
     uptimePercent?: string | null;
-    evaluatedMinutes: number;
-    offlineMinutes: number;
-    faultMinutes: number;
+    evaluatedMinutes?: number | null;
+    offlineMinutes?: number | null;
+    faultMinutes?: number | null;
     connectorsIncluded: number;
     connectorsInScope: number;
+    referenceWeek?: string | null;
+    temporalPrecision: 'KNOWN_RANGE' | 'REFERENCE_WEEK' | 'REQUIRES_RECONCILIATION';
+    aggregationMethod: string;
 };
 
 export type PageResultEquipmentResultResponse = {
@@ -727,11 +864,14 @@ export type ConnectorResultResponse = {
     type: 'CHARGING_POINT' | 'CHARGING_STATION';
     brand?: string | null;
     uptimePercent: string;
-    evaluatedMinutes: number;
-    offlineMinutes: number;
-    faultMinutes: number;
-    from: string;
-    to: string;
+    evaluatedMinutes?: number | null;
+    offlineMinutes?: number | null;
+    faultMinutes?: number | null;
+    from?: string | null;
+    to?: string | null;
+    referenceWeek?: string | null;
+    temporalPrecision: 'KNOWN_RANGE' | 'REFERENCE_WEEK' | 'REQUIRES_RECONCILIATION';
+    aggregationMethod: string;
 };
 
 export type PageResultConnectorResultResponse = {
@@ -748,42 +888,6 @@ export type PageResultUptimeImportRowResponse = {
     size: number;
     totalElements: number;
     totalPages: number;
-};
-
-export type FactLabel = {
-    equipmentName: string;
-    assignedCode?: string | null;
-    connectorType: string;
-};
-
-export type MeasurementDetailResponse = {
-    id: string;
-    version: number;
-    connectorId: string;
-    equipmentId: string;
-    ordinal: number;
-    equipmentName: string;
-    assignedCode?: string | null;
-    periodStart: string;
-    periodEnd: string;
-    revision: number;
-    readingClass: 'MEASURED' | 'NO_DATA' | 'OUT_OF_SCOPE' | 'RETIRED';
-    periodType: 'ROLLING_24H' | 'ROLLING_7D' | 'ROLLING_30D' | 'EXACT_WEEK';
-    reviewState: 'PENDING' | 'VALIDATED' | 'SUPERSEDED';
-    availableMinutes?: number | null;
-    occupiedMinutes?: number | null;
-    faultMinutes?: number | null;
-    offlineMinutes?: number | null;
-    evaluatedMinutes?: number | null;
-    uptimePercent?: string | null;
-    factLabel: FactLabel;
-    observations?: Array<'SUM_BELOW_DURATION' | 'PERCENT_MISMATCH' | 'SUM_ABOVE_DURATION' | 'SUM_ZERO' | 'PERCENT_OUT_OF_RANGE' | 'DURATION_INVALID' | 'WINDOW_DURATION_MISMATCH'> | null;
-    validatable?: boolean | null;
-    reportedPercent?: string | null;
-    justification?: string | null;
-    excluded?: boolean | null;
-    effectiveRevision?: number | null;
-    uptimeBasis: 'STATES' | 'REPORTED_PERCENT';
 };
 
 export type PageResultMeasurementDetailResponse = {
@@ -804,6 +908,7 @@ export type Exclusion = {
 export type MeasurementHistoryResponse = {
     revisions: Array<Revision>;
     exclusions: Array<Exclusion>;
+    temporalChanges: Array<TemporalChange>;
 };
 
 export type Revision = {
@@ -825,6 +930,24 @@ export type Revision = {
     validatedAt?: string | null;
     validationJustification?: string | null;
     supersededAt?: string | null;
+};
+
+export type TemporalChange = {
+    eventId: string;
+    actorKind: string;
+    actorId?: string | null;
+    occurredAt: string;
+    outcome: string;
+    reason: string;
+    previousTemporal: {
+        [key: string]: unknown;
+    };
+    resultTemporal: {
+        [key: string]: unknown;
+    };
+    evidence: {
+        [key: string]: unknown;
+    };
 };
 
 export type PageResultUptimeImportBatchResponse = {
@@ -851,6 +974,7 @@ export type GridRowResponse = {
     situation: 'NONE' | 'PENDING' | 'OBSERVED' | 'VALIDATED' | 'EXCLUDED';
     measurementId?: string | null;
     version?: number | null;
+    referenceReportPresent: boolean;
 };
 
 export type PageResultConnectorAliasResponse = {
@@ -1294,7 +1418,7 @@ export type SearchData = {
     query?: {
         connectorId?: string;
         equipmentId?: string;
-        queue?: 'PENDING' | 'OBSERVED' | 'VALIDATED' | 'EXCLUDED';
+        queue?: 'PENDING' | 'OBSERVED' | 'VALIDATED' | 'TEMPORAL_RECONCILIATION' | 'EXCLUDED';
         page?: number;
         size?: number;
     };
@@ -1343,6 +1467,24 @@ export type ValidateResponses = {
 };
 
 export type ValidateResponse = ValidateResponses[keyof ValidateResponses];
+
+export type ClassifyTemporalData = {
+    body: TemporalClassificationRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/uptime/measurements/{id}/temporal-classification';
+};
+
+export type ClassifyTemporalResponses = {
+    /**
+     * OK
+     */
+    200: MeasurementDetailResponse;
+};
+
+export type ClassifyTemporalResponse = ClassifyTemporalResponses[keyof ClassifyTemporalResponses];
 
 export type RestoreData = {
     body: JustifiedVersionRequest;
@@ -1413,6 +1555,43 @@ export type ValidateBatchResponses = {
 };
 
 export type ValidateBatchResponse = ValidateBatchResponses[keyof ValidateBatchResponses];
+
+export type TransitionData = {
+    body: TemporalTransitionRequest;
+    headers?: {
+        'Idempotency-Key'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/uptime/measurements/temporal-transition';
+};
+
+export type TransitionResponses = {
+    /**
+     * OK
+     */
+    200: TemporalTransitionWorkResponse;
+};
+
+export type TransitionResponse = TransitionResponses[keyof TransitionResponses];
+
+export type RetryTransitionData = {
+    body: VersionRequest;
+    path: {
+        workId: string;
+    };
+    query?: never;
+    url: '/api/v1/uptime/measurements/temporal-transition/{workId}/retry';
+};
+
+export type RetryTransitionResponses = {
+    /**
+     * OK
+     */
+    200: TemporalTransitionWorkResponse;
+};
+
+export type RetryTransitionResponse = RetryTransitionResponses[keyof RetryTransitionResponses];
 
 export type ParseData = {
     body: ParseBlockRequest;
@@ -2068,6 +2247,8 @@ export type SummaryData = {
         brand?: string;
         equipmentId?: string;
         connectorId?: string;
+        referenceWeek?: string;
+        temporalSection?: 'KNOWN_RANGE' | 'REFERENCE_WEEK' | 'REQUIRES_RECONCILIATION';
     };
     url: '/api/v1/uptime/summary';
 };
@@ -2112,6 +2293,8 @@ export type ExclusionsData = {
         brand?: string;
         equipmentId?: string;
         connectorId?: string;
+        referenceWeek?: string;
+        temporalSection?: 'KNOWN_RANGE' | 'REFERENCE_WEEK' | 'REQUIRES_RECONCILIATION';
         page?: number;
         size?: number;
     };
@@ -2140,6 +2323,8 @@ export type EquipmentData = {
         brand?: string;
         equipmentId?: string;
         connectorId?: string;
+        referenceWeek?: string;
+        temporalSection?: 'KNOWN_RANGE' | 'REFERENCE_WEEK' | 'REQUIRES_RECONCILIATION';
         page?: number;
         size?: number;
     };
@@ -2168,6 +2353,8 @@ export type ConnectorsData = {
         brand?: string;
         equipmentId?: string;
         connectorId?: string;
+        referenceWeek?: string;
+        temporalSection?: 'KNOWN_RANGE' | 'REFERENCE_WEEK' | 'REQUIRES_RECONCILIATION';
         page?: number;
         size?: number;
     };
@@ -2197,6 +2384,8 @@ export type ReportData = {
         brand?: string;
         equipmentId?: string;
         connectorId?: string;
+        referenceWeek?: string;
+        temporalSection?: 'KNOWN_RANGE' | 'REFERENCE_WEEK' | 'REQUIRES_RECONCILIATION';
     };
     url: '/api/v1/uptime/report';
 };
@@ -2265,6 +2454,27 @@ export type RevisionsResponses = {
 
 export type RevisionsResponse = RevisionsResponses[keyof RevisionsResponses];
 
+export type TransitionWorkData = {
+    body?: never;
+    path: {
+        workId: string;
+    };
+    query?: {
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/uptime/measurements/temporal-transition/{workId}';
+};
+
+export type TransitionWorkResponses = {
+    /**
+     * OK
+     */
+    200: TemporalTransitionWorkResponse;
+};
+
+export type TransitionWorkResponse = TransitionWorkResponses[keyof TransitionWorkResponses];
+
 export type Get1Data = {
     body?: never;
     path: {
@@ -2308,9 +2518,10 @@ export type RowsResponse = RowsResponses[keyof RowsResponses];
 export type GridData = {
     body?: never;
     path?: never;
-    query: {
-        periodStart: string;
-        periodEnd: string;
+    query?: {
+        periodStart?: string;
+        periodEnd?: string;
+        referenceWeek?: string;
         network?: 'KIA' | 'JAC' | 'CONECTZ';
         type?: 'CHARGING_POINT' | 'CHARGING_STATION';
         equipmentId?: string;

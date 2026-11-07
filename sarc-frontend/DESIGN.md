@@ -517,3 +517,7 @@ quedan siempre visibles en pantallas bajas. Todo diálogo con formulario pasa po
 - **Don't** usar `appearance="fill"` en un campo: el sistema es `outline` en sus 60 instancias.
 - **Don't** importar un módulo de Material con overlay, ni un pipe de `@angular/common`, desde el
   bundle inicial: el presupuesto es de 500 kB y ambos arrastran el CDK o el chunk compartido.
+
+### Composición de uptime (Feature-006)
+
+Cuarta serie categórica: --sarc-series-4, violeta #8259b5 en claro y #bb9bdc en oscuro. Las tres series existentes se conservan. Orden fijo: Disponible (1), Ocupado (2), Con falla (3), Fuera de línea (4). Leyenda textual con minutos y cobertura por estado; el color no es la única identificación. Ausencia no es cero; sin tiempos positivos no se dibuja dona.

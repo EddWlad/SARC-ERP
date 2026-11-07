@@ -165,4 +165,62 @@ describe('DashboardFacade', () => {
 
     expect(facade.refreshFailed()).toBe(false);
   });
+  it('fija la referencia resuelta y consulta los dos apartados sin limites falsos', async () => {
+    const loading = facade.load();
+    http
+      .expectOne((request) => request.url === BASE + '/summary')
+      .flush({
+        ...summary(),
+        resolvedPeriod: {
+          kind: 'PROVISIONAL',
+          periodType: 'ROLLING_7D',
+          timeZone: 'America/Guayaquil',
+        },
+        selection: {
+          basis: 'REFERENCE_WEEK',
+          referenceWeek: '2026-10-26',
+          periodType: 'ROLLING_7D',
+          timeZone: 'America/Guayaquil',
+        },
+        referenceReport: { uptimePercent: '50.00', aggregationMethod: 'REPORT_MEAN' },
+      });
+    await Promise.resolve();
+    const requests = http.match((request) => request.url.includes(BASE + '/results/'));
+    requests.forEach((request) => request.flush(page()));
+    await loading;
+    expect(requests.length).toBe(6);
+    expect(
+      requests.every((request) => request.request.params.get('referenceWeek') === '2026-10-26'),
+    ).toBe(true);
+    expect(
+      requests.some(
+        (request) => request.request.params.get('temporalSection') === 'REFERENCE_WEEK',
+      ),
+    ).toBe(true);
+    expect(requests.every((request) => !request.request.params.has('from'))).toBe(true);
+    expect(facade.rangeLabel()).toContain('2026-10-26');
+    facade.updateFilters({ network: 'KIA' });
+    const filtered = http.expectOne((request) => request.url === BASE + '/summary');
+    expect(filtered.request.params.get('referenceWeek')).toBe('2026-10-26');
+    filtered.flush({
+      ...summary(),
+      selection: { basis: 'REFERENCE_WEEK', referenceWeek: '2026-10-26' },
+      referenceReport: { uptimePercent: null },
+      cutOff: '2026-11-02T17:00:00Z',
+    });
+    await vi.waitFor(() => {
+      http
+        .match((request) => request.url.includes(BASE + '/results/'))
+        .forEach((request) => request.flush(page()));
+      expect(facade.summary()?.cutOff).toBe('2026-11-02T17:00:00Z');
+    });
+    expect(facade.summary()?.referenceReport?.uptimePercent).toBeNull();
+    const refreshing = facade.refresh();
+    http
+      .expectOne((request) => request.url === BASE + '/summary')
+      .flush({ detail: 'Fallo' }, { status: 500, statusText: 'Error' });
+    await refreshing;
+    expect(facade.refreshFailed()).toBe(true);
+    expect(facade.summary()?.cutOff).toBe('2026-11-02T17:00:00Z');
+  });
 });

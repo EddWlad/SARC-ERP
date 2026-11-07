@@ -47,6 +47,12 @@ export class MeasurementFacade {
     return this.act((id, version) => this.api.correct(id, { ...request, version }));
   }
 
+  classifyTemporal(
+    request: Omit<import('../../../core/api/generated').TemporalClassificationRequest, 'version'>,
+  ): Promise<boolean> {
+    return this.act((id, version) => this.api.classifyTemporal(id, { ...request, version }));
+  }
+
   exclude(justification: string): Promise<boolean> {
     return this.act((id, version) => this.api.exclude(id, { version, justification }));
   }

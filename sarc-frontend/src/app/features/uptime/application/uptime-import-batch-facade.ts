@@ -4,6 +4,7 @@ import { ImportBatchState } from '../../../shared/imports/import-batch-state';
 import { UptimeImportsApi } from '../data-access/uptime-imports-api';
 import {
   UptimeImportBatch,
+  uptimeCanConfirmExact,
   UptimeImportRow,
   UptimeRowClassification,
   UptimeRowDecision,
@@ -28,7 +29,7 @@ export class UptimeImportBatchFacade extends ImportBatchState<
       rowsRequest: (id, classification, page, size) =>
         api.rowsRequest(id, classification, page, size),
       decide: (id, rows, decision) => api.decide(id, rows, decision),
-      confirm: (batch) => api.confirm(batch, exact()),
+      confirm: (batch) => api.confirm(batch, uptimeCanConfirmExact(batch) && exact()),
       retry: (batch) => api.retry(batch),
       discard: (batch) => api.discard(batch),
     });

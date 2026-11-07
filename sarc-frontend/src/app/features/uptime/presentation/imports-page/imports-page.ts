@@ -24,6 +24,7 @@ import {
   DECLARED_PERIOD_TYPES,
   reportWeeks,
   UptimeImportBatch,
+  uptimeTemporalLabel,
 } from '../../domain/uptime-import';
 import { PERIOD_TYPE_LABELS } from '../../domain/uptime-labels';
 
@@ -81,6 +82,7 @@ import { PERIOD_TYPE_LABELS } from '../../domain/uptime-labels';
               <div class="card-head">
                 <a class="link" [routerLink]="[batch.id]">
                   <strong>{{ periodLabels[batch.declaredPeriodType] }}</strong>
+                  <span class="muted block">{{ temporalLabel(batch) }}</span>
                   <span class="muted block">{{ batch.createdAt | date: 'short' }}</span>
                 </a>
                 <sarc-import-status-badge [status]="batch.status" />
@@ -159,13 +161,14 @@ export class UptimeImportsPage {
   protected readonly facade = inject(UptimeImportHistory);
   protected readonly quantities = inject(QuantityFormat);
   protected readonly periodLabels = PERIOD_TYPE_LABELS;
+  protected readonly temporalLabel = uptimeTemporalLabel;
   protected readonly originLabels = ORIGIN_LABELS;
   protected readonly pageSizeOptions = [10, 20, 50];
   protected readonly isHandset = injectIsHandset();
   protected readonly columns = ['created', 'origin', 'status', 'rows', 'applied'];
 
   protected periodLabelOf(batch: UptimeImportBatch): string {
-    return PERIOD_TYPE_LABELS[batch.declaredPeriodType];
+    return PERIOD_TYPE_LABELS[batch.declaredPeriodType] + ' · ' + uptimeTemporalLabel(batch);
   }
 
   protected originOf(batch: UptimeImportBatch): string {
@@ -190,12 +193,12 @@ export class UptimeImportsPage {
         })),
       },
       fileChoice: {
-        label: 'Semana del informe',
+        label: 'Semana de referencia del informe',
         requiredMessage: 'Seleccione la semana que reporta el informe',
         options: reportWeeks(new Date()).map((week) => ({
           value: week.value,
           label: week.label,
-          hint: 'Columnas: Cargador, Conector, Uptime (%), Fuera de línea, Disponible y En falla (hrs). Se guarda el uptime del informe.',
+          hint: 'Columnas: Cargador, Conector, Uptime (%), Fuera de línea, Disponible y En falla (hrs). Se conserva el porcentaje y la semana de referencia, sin inventar horarios ni Ocupado.',
         })),
       },
       upload: (file, weekStart) => this.facade.upload(weekStart, file),

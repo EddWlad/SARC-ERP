@@ -31,7 +31,14 @@ const PERIOD_LABELS: Readonly<Record<PeriodChoice, string>> = {
   CUSTOM: 'Personalizado',
 };
 
-const NO_PERIOD = { periodKind: undefined, periodType: undefined, from: undefined, to: undefined };
+const NO_PERIOD = {
+  periodKind: undefined,
+  periodType: undefined,
+  from: undefined,
+  to: undefined,
+  referenceWeek: undefined,
+  temporalSection: undefined,
+};
 const MAX_PERIOD_DAYS = 366;
 const DAY_MS = 86_400_000;
 
@@ -65,6 +72,21 @@ const isoDate = (date: Date): string =>
           </mat-chip-option>
         }
       </mat-chip-listbox>
+      @if (choice() === 'ROLLING_7D') {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Semana de referencia (lunes)</mat-label>
+          <input
+            matInput
+            type="date"
+            [value]="filters().referenceWeek ?? ''"
+            (change)="referenceChanged($any($event.target).value)"
+          />
+          <mat-hint>Vacío: última referencia con datos validados.</mat-hint>
+          @if (rangeError(); as message) {
+            <mat-error>{{ message }}</mat-error>
+          }
+        </mat-form-field>
+      }
       @if (choice() === 'CUSTOM') {
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="range">
           <mat-label>Rango de fechas</mat-label>
@@ -213,6 +235,20 @@ export class UptimeFilterBar {
     }
     this.rangeError.set(undefined);
     this.filtersChange.emit({ ...NO_PERIOD, from: isoDate(start), to: isoDate(next) });
+  }
+
+  protected referenceChanged(value: string): void {
+    if (value && new Date(value + 'T12:00:00Z').getUTCDay() !== 1) {
+      this.rangeError.set('Elige un lunes como referencia.');
+      return;
+    }
+    this.rangeError.set(undefined);
+    this.filtersChange.emit({
+      ...NO_PERIOD,
+      periodKind: 'PROVISIONAL',
+      periodType: 'ROLLING_7D',
+      referenceWeek: value || undefined,
+    });
   }
 
   protected clear(): void {

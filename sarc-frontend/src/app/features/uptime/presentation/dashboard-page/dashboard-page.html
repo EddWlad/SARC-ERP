@@ -96,7 +96,9 @@
       </ul>
     </section>
   } @else {
-    <div class="state"><p>No hay uptime validado en este período con los filtros elegidos.</p></div>
+    <div class="state">
+      <p>No hay uptime con horario real validado en este período con los filtros elegidos.</p>
+    </div>
   }
 
   @if (facade.secondary(); as provisional) {
@@ -107,75 +109,86 @@
     </p>
   }
 
-  <section class="coverage" aria-labelledby="coverage-title">
-    <h2 id="coverage-title">
-      Cobertura: {{ quantities.percentage(summary.coverage.percent) }} ·
-      {{ summary.coverage.included }} de {{ summary.coverage.denominator }} conectores
-    </h2>
-    <div class="groups">
-      <section class="panel" aria-labelledby="coverage-state">
-        <h3 id="coverage-state">Estado de las mediciones</h3>
-        <ul>
-          <li class="metric-row">
-            <span>Validadas</span>
-            <strong>{{ quantities.count(summary.coverage.byState.validated) }}</strong>
-          </li>
-          <li class="metric-row">
-            <span>Pendientes de revisión</span>
-            <strong>{{ quantities.count(summary.coverage.byState.pendingReview) }}</strong>
-          </li>
-          <li class="metric-row">
-            <span>Sin datos</span>
-            <strong>{{ quantities.count(summary.coverage.byState.noData) }}</strong>
-          </li>
-          <li class="metric-row">
-            <span>Sin medición</span>
-            <strong>{{ quantities.count(summary.coverage.byState.withoutMeasurement) }}</strong>
-          </li>
-        </ul>
-      </section>
-      <section class="panel" aria-labelledby="coverage-out">
-        <h3 id="coverage-out">Fuera del cálculo</h3>
-        <ul>
-          <li class="metric-row">
-            <span>Fuera de alcance</span>
-            <strong>{{ quantities.count(summary.coverage.byState.outOfScope) }}</strong>
-          </li>
-          <li class="metric-row">
-            <span>Retirados</span>
-            <strong>{{ quantities.count(summary.coverage.byState.retired) }}</strong>
-          </li>
-          <li class="metric-row">
-            <span>Excluidas</span>
-            <strong>{{ quantities.count(summary.coverage.byState.excluded) }}</strong>
-          </li>
-          <li class="metric-row">
-            <span>Pendientes de vincular (sin atribuir)</span>
-            <strong>{{ quantities.count(summary.coverage.pendingLink) }}</strong>
-          </li>
-        </ul>
-      </section>
-      @if (summary.operations; as operations) {
-        <section class="panel" aria-labelledby="coverage-work">
-          <h3 id="coverage-work">Trabajo operativo</h3>
+  @if (summary.coverage ?? summary.provisionalCoverage; as coverage) {
+    <section class="coverage" aria-labelledby="coverage-title">
+      <h2 id="coverage-title">
+        Cobertura con horario real: {{ quantities.percentage(coverage.percent) }} ·
+        {{ coverage.included }} de {{ coverage.denominator }} conectores
+      </h2>
+      <div class="groups">
+        <section class="panel" aria-labelledby="coverage-state">
+          <h3 id="coverage-state">Estado de las mediciones</h3>
           <ul>
             <li class="metric-row">
-              <span>Observadas</span>
-              <strong>{{ quantities.count(operations.observed) }}</strong>
+              <span>Validadas</span>
+              <strong>{{ quantities.count(coverage.byState.validated) }}</strong>
             </li>
             <li class="metric-row">
-              <span>Listas para validar</span>
-              <strong>{{ quantities.count(operations.readyToValidate) }}</strong>
+              <span>Pendientes de revisión</span>
+              <strong>{{ quantities.count(coverage.byState.pendingReview) }}</strong>
             </li>
             <li class="metric-row">
-              <span>Correcciones pendientes</span>
-              <strong>{{ quantities.count(operations.correctionsPending) }}</strong>
+              <span>Sin datos</span>
+              <strong>{{ quantities.count(coverage.byState.noData) }}</strong>
+            </li>
+            <li class="metric-row">
+              <span>Sin medición</span>
+              <strong>{{ quantities.count(coverage.byState.withoutMeasurement) }}</strong>
             </li>
           </ul>
         </section>
-      }
-    </div>
-  </section>
+        <section class="panel" aria-labelledby="coverage-out">
+          <h3 id="coverage-out">Fuera del cálculo</h3>
+          <ul>
+            <li class="metric-row">
+              <span>Fuera de alcance</span>
+              <strong>{{ quantities.count(coverage.byState.outOfScope) }}</strong>
+            </li>
+            <li class="metric-row">
+              <span>Retirados</span>
+              <strong>{{ quantities.count(coverage.byState.retired) }}</strong>
+            </li>
+            <li class="metric-row">
+              <span>Excluidas</span>
+              <strong>{{ quantities.count(coverage.byState.excluded) }}</strong>
+            </li>
+            <li class="metric-row">
+              <span>Pendientes de vincular (sin atribuir)</span>
+              <strong>{{ quantities.count(coverage.pendingLink) }}</strong>
+            </li>
+          </ul>
+        </section>
+        @if (summary.operations; as operations) {
+          <section class="panel" aria-labelledby="coverage-work">
+            <h3 id="coverage-work">Trabajo operativo</h3>
+            <ul>
+              <li class="metric-row">
+                <span>Observadas</span>
+                <strong>{{ quantities.count(operations.observed) }}</strong>
+              </li>
+              <li class="metric-row">
+                <span>Listas para validar</span>
+                <strong>{{ quantities.count(operations.readyToValidate) }}</strong>
+              </li>
+              <li class="metric-row">
+                <span>Correcciones pendientes</span>
+                <strong>{{ quantities.count(operations.correctionsPending) }}</strong>
+              </li>
+            </ul>
+          </section>
+        }
+      </div>
+    </section>
+  }
+  @if (summary.selection.basis === 'REFERENCE_WEEK') {
+    <h2 class="section-title">Capturas con horario real · promedio ponderado por minutos</h2>
+    <p class="dashboard-note">
+      Los rangos reales pertenecen a cada conector; la referencia es el contexto del informe.
+    </p>
+  }
+  @if (summary.provisionalComposition; as composition) {
+    <section class="panel"><sarc-states-chart [composition]="composition" /></section>
+  }
 
   <div class="charts">
     <section class="panel" aria-labelledby="trend-title">
@@ -214,6 +227,64 @@
     [equipment]="facade.equipment()"
     [exclusions]="facade.exclusions()"
   />
+
+  @if (summary.referenceReport; as report) {
+    <section class="reference-report" aria-label="Informe sin horario real">
+      <h2 class="section-title">Informe sin horario real · semana {{ report.referenceWeek }}</h2>
+      <p class="dashboard-note">
+        Promedio del informe: porcentajes de conectores validados. No representa una duración
+        observada.
+      </p>
+      <ul class="kpi-grid">
+        <li class="kpi-tile">
+          <span class="kpi-value">{{ quantities.percentage(report.uptimePercent) }}</span
+          ><span class="kpi-label">Promedio del informe</span>
+        </li>
+        <li class="kpi-tile">
+          <span class="kpi-value"
+            >{{ report.coverage.included }}/{{ report.coverage.denominator }}</span
+          ><span class="kpi-label"
+            >Conectores incluidos · {{ quantities.percentage(report.coverage.percent) }}</span
+          >
+        </li>
+      </ul>
+      <p class="dashboard-note">
+        Pendientes de revisión: {{ report.coverage.byState.pendingReview }} · Sin datos:
+        {{ report.coverage.byState.noData }} · Sin medición:
+        {{ report.coverage.byState.withoutMeasurement }} · Fuera de alcance:
+        {{ report.coverage.byState.outOfScope }} · Retirados:
+        {{ report.coverage.byState.retired }} · Excluidas: {{ report.coverage.byState.excluded }} ·
+        Pendientes de vincular sin atribuir: {{ report.coverage.pendingLink }}
+      </p>
+      <section class="panel"><sarc-states-chart [composition]="report.composition" /></section>
+      @if (facade.referenceConnectors().length > 0) {
+        <section class="panel" aria-label="Conectores con menor porcentaje del informe">
+          <h3>Menor porcentaje del informe sin horario real</h3>
+          <sarc-chart-view
+            kind="bar"
+            [horizontal]="true"
+            [labels]="reportLowestLabels()"
+            [series]="reportLowestSeries()"
+            [format]="formatPercent"
+            description="Diez conectores con menor porcentaje del informe sin horario real"
+          />
+        </section>
+      }
+      <sarc-dashboard-results
+        [connectors]="facade.referenceConnectors()"
+        [equipment]="facade.referenceEquipment()"
+        [exclusions]="facade.referenceExclusions()"
+        scope="informe"
+        scopeLabel="informe sin horario real"
+      />
+    </section>
+  }
+  @if (summary.temporalReconciliationCount > 0) {
+    <p class="dashboard-note" role="status">
+      {{ summary.temporalReconciliationCount }} mediciones de esta referencia requieren clasificar
+      su apartado temporal. No se incluyen en ninguno de los dos cálculos.
+    </p>
+  }
 
   <p class="dashboard-note generated">
     Corte {{ cutOff() }} · Solo mediciones validadas; la red y el tipo salen del inventario.

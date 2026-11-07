@@ -4,15 +4,19 @@ import { firstValueFrom } from 'rxjs';
 import { GridRowResponse, MeasurementResponse } from '../../../core/api/generated';
 import { toProblem } from '../../../core/http/problem';
 import { UptimeApi } from '../data-access/uptime-api';
+import { dayEndInstant, dayStartInstant } from '../domain/uptime-time';
 import { OBSERVATION_LABELS, PeriodType } from '../domain/uptime-labels';
 
 export interface CapturePeriod {
+  readonly referenceWeek?: string;
   readonly periodType: PeriodType;
   readonly periodStart: string;
   readonly periodEnd: string;
 }
 
 export interface MeasurementDraft {
+  readonly periodStart: string;
+  readonly periodEnd: string;
   readonly available: string;
   readonly occupied: string;
   readonly fault: string;
@@ -26,6 +30,8 @@ export interface MeasurementConflict {
 }
 
 const EMPTY_DRAFT: MeasurementDraft = {
+  periodStart: '',
+  periodEnd: '',
   available: '',
   occupied: '',
   fault: '',
@@ -70,8 +76,9 @@ export class CaptureFacade {
       this.rows.set(
         await firstValueFrom(
           this.api.grid({
-            periodStart: period.periodStart,
-            periodEnd: period.periodEnd,
+            ...(period.referenceWeek
+              ? { referenceWeek: period.referenceWeek }
+              : { periodStart: period.periodStart, periodEnd: period.periodEnd }),
             showInactive: this.showInactive(),
             ...(equipmentId ? { equipmentId } : {}),
           }),
@@ -104,6 +111,7 @@ export class CaptureFacade {
     try {
       const block = await firstValueFrom(this.api.parseBlock(text));
       this.draft.set({
+        ...this.draft(),
         available: String(block.available),
         occupied: String(block.occupied),
         fault: String(block.fault),
@@ -130,6 +138,10 @@ export class CaptureFacade {
     const current = this.current();
     if (!period || !current) return false;
     const draft = this.draft();
+    if (period.referenceWeek && (!draft.periodStart || !draft.periodEnd)) {
+      this.error.set('Indique las fechas Desde y Hasta de este conector.');
+      return false;
+    }
     const sourceText = this.blockText();
     this.busy.set(true);
     this.error.set('');
@@ -139,8 +151,9 @@ export class CaptureFacade {
         this.api.register({
           connectorId: current.connectorId,
           source: 'ENERLINK',
-          periodStart: period.periodStart,
-          periodEnd: period.periodEnd,
+          periodStart: draft.periodStart ? dayStartInstant(draft.periodStart) : period.periodStart,
+          periodEnd: draft.periodEnd ? dayEndInstant(draft.periodEnd) : period.periodEnd,
+          ...(period.referenceWeek ? { referenceWeek: period.referenceWeek } : {}),
           periodType: period.periodType,
           exactConfirmed: false,
           availableMinutes: Number(draft.available),

@@ -251,6 +251,47 @@ describe('CaptureFacade', () => {
     request.flush({ id: 'm1', version: 0, observations: [] });
     await saving;
   });
+  it('captura horarios por conector conservando solo la referencia al avanzar', async () => {
+    facade.setPeriod({
+      periodType: 'ROLLING_7D',
+      referenceWeek: '2026-10-26',
+      periodStart: '',
+      periodEnd: '',
+    });
+    const loading = facade.load();
+    const grid = http.expectOne((request) => request.url === GRID_URL);
+    expect(grid.request.params.get('referenceWeek')).toBe('2026-10-26');
+    expect(grid.request.params.has('periodStart')).toBe(false);
+    grid.flush([row('c1'), row('c2')]);
+    await loading;
+    facade.select('c1');
+    facade.updateDraft({
+      available: '9815',
+      occupied: '31',
+      fault: '0',
+      offline: '234',
+      periodStart: '2026-10-26',
+      periodEnd: '2026-11-01',
+    });
+    const saving = facade.save(true);
+    const pending = http.expectOne(MEASUREMENTS_URL);
+    expect(pending.request.body.referenceWeek).toBe('2026-10-26');
+    // Solo fechas: inicio a las 00:00 y fin inclusivo = 00:00 del dia siguiente (Ecuador).
+    expect(pending.request.body.periodStart).toBe('2026-10-26T00:00:00-05:00');
+    expect(pending.request.body.periodEnd).toBe('2026-11-02T00:00:00-05:00');
+    pending.flush({
+      id: 'm1',
+      version: 0,
+      result: 'CREATED',
+      observations: [],
+      reviewState: 'PENDING',
+    });
+    await saving;
+    expect(facade.current()?.connectorId).toBe('c2');
+    expect(facade.draft().periodStart).toBe('');
+    expect(facade.draft().periodEnd).toBe('');
+    expect(facade.period()?.referenceWeek).toBe('2026-10-26');
+  });
 });
 
 const saved = () => ({ id: 'm1', version: 5, observations: [] });

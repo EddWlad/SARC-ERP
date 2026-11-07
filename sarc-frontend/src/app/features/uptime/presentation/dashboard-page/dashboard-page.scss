@@ -50,7 +50,7 @@
 
   .groups {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: var(--sarc-space-3);
   }
 }
@@ -68,4 +68,25 @@
 
 .generated {
   margin-block: var(--sarc-space-4);
+}
+
+.section-title {
+  margin: var(--sarc-space-6) 0 var(--sarc-space-2);
+  font: var(--mat-sys-title-large);
+}
+
+:host > .panel {
+  margin-block: var(--sarc-space-3) var(--sarc-space-4);
+}
+
+.reference-report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sarc-space-3);
+  min-width: 0;
+
+  h3 {
+    margin: 0 0 var(--sarc-space-3);
+    font: var(--mat-sys-title-medium);
+  }
 }

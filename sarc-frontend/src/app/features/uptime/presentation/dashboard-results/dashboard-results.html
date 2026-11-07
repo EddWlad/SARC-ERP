@@ -1,6 +1,13 @@
 @if (connectors().length > 0) {
-  <section class="results" aria-labelledby="ranking-title">
-    <h2 class="results-title" id="ranking-title">Ranking de menor uptime por conector</h2>
+  <section
+    class="results"
+    [attr.aria-label]="
+      'Ranking de menor uptime por conector' + (scopeLabel() ? ' · ' + scopeLabel() : '')
+    "
+  >
+    <h2 class="results-title" [id]="'ranking-title-' + scope()">
+      Ranking de menor uptime por conector
+    </h2>
     @if (isHandset()) {
       <ul class="cards">
         @for (item of connectorPage.visible(); track item.connectorId) {
@@ -67,14 +74,21 @@
       [pageSize]="connectorPage.size()"
       [pageSizeOptions]="pageSizeOptions"
       (page)="connectorPage.change($event)"
-      aria-label="Paginación del ranking"
+      [attr.aria-label]="'Paginación del ranking' + (scopeLabel() ? ' · ' + scopeLabel() : '')"
     />
   </section>
 }
 
 @if (equipment().length > 0) {
-  <section class="results" aria-labelledby="equipment-title">
-    <h2 class="results-title" id="equipment-title">Promedio de conectores por equipo</h2>
+  <section
+    class="results"
+    [attr.aria-label]="
+      'Promedio de conectores por equipo' + (scopeLabel() ? ' · ' + scopeLabel() : '')
+    "
+  >
+    <h2 class="results-title" [id]="'equipment-title-' + scope()">
+      Promedio de conectores por equipo
+    </h2>
     @if (isHandset()) {
       <ul class="cards">
         @for (item of equipmentPage.visible(); track item.equipmentId) {
@@ -119,14 +133,17 @@
       [pageSize]="equipmentPage.size()"
       [pageSizeOptions]="pageSizeOptions"
       (page)="equipmentPage.change($event)"
-      aria-label="Paginación de equipos"
+      [attr.aria-label]="'Paginación de equipos' + (scopeLabel() ? ' · ' + scopeLabel() : '')"
     />
   </section>
 }
 
 @if (exclusions().length > 0) {
-  <section class="results" aria-labelledby="exclusions-title">
-    <h2 class="results-title" id="exclusions-title">Exclusiones</h2>
+  <section
+    class="results"
+    [attr.aria-label]="'Exclusiones' + (scopeLabel() ? ' · ' + scopeLabel() : '')"
+  >
+    <h2 class="results-title" [id]="'exclusions-title-' + scope()">Exclusiones</h2>
     @if (isHandset()) {
       <ul class="cards">
         @for (item of exclusionPage.visible(); track item.connectorId + item.state) {
@@ -169,7 +186,7 @@
       [pageSize]="exclusionPage.size()"
       [pageSizeOptions]="pageSizeOptions"
       (page)="exclusionPage.change($event)"
-      aria-label="Paginación de exclusiones"
+      [attr.aria-label]="'Paginación de exclusiones' + (scopeLabel() ? ' · ' + scopeLabel() : '')"
     />
   </section>
 }

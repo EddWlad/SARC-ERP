@@ -127,3 +127,23 @@ function dayLabel(date: Date): string {
 function pad(value: number): string {
   return String(value).padStart(2, '0');
 }
+
+/** Contexto del informe, nunca intervalo observado. */
+export function uptimeTemporalLabel(
+  batch: Pick<UptimeImportBatch, 'temporalPrecision' | 'referenceWeek'>,
+): string {
+  if (batch.temporalPrecision === 'REFERENCE_WEEK') {
+    return (
+      'Horario real no informado' +
+      (batch.referenceWeek ? ' · Referencia ' + batch.referenceWeek : '')
+    );
+  }
+  return batch.temporalPrecision === 'KNOWN_RANGE'
+    ? 'Con horario real'
+    : 'Procedencia temporal por conciliar';
+}
+export function uptimeCanConfirmExact(
+  batch: Pick<UptimeImportBatch, 'temporalPrecision'>,
+): boolean {
+  return batch.temporalPrecision === 'KNOWN_RANGE';
+}

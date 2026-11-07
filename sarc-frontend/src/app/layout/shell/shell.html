@@ -10,12 +10,12 @@
     (closedStart)="menuOpen.set(false)"
     (closed)="restoreMenuFocus()"
   >
-    <div class="brand">
-      <svg lucideZap class="brand-icon"></svg>
-      <span class="brand-name">SARC</span>
-    </div>
-
     <nav aria-label="Menú principal">
+      <div class="brand">
+        <svg lucideZap class="brand-icon"></svg>
+        <span class="brand-name">SARC</span>
+      </div>
+
       <ul class="nav-list">
         @for (item of navItems(); track item.path) {
           <li>
@@ -36,7 +36,7 @@
   </mat-sidenav>
 
   <mat-sidenav-content class="content-area">
-    <mat-toolbar class="topbar">
+    <mat-toolbar class="topbar" role="banner">
       @if (isHandset()) {
         <button
           #menuButton

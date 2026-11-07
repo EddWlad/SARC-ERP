@@ -1,4 +1,4 @@
-import { reportWeeks } from './uptime-import';
+import { reportWeeks, uptimeTemporalLabel, uptimeCanConfirmExact } from './uptime-import';
 
 describe('reportWeeks', () => {
   it('ofrece las semanas ya terminadas, de lunes a domingo, la más reciente primero', () => {
@@ -10,5 +10,16 @@ describe('reportWeeks', () => {
 
   it('un domingo aún no cierra su semana', () => {
     expect(reportWeeks(new Date(2026, 10, 1), 1)[0].value).toBe('2026-10-19');
+  });
+});
+
+describe('precision del informe de uptime', () => {
+  it('rotula referencia sin fabricar horario ni habilitar exactitud', () => {
+    const batch = { temporalPrecision: 'REFERENCE_WEEK' as const, referenceWeek: '2026-10-19' };
+    expect(uptimeTemporalLabel(batch)).toContain('Horario real no informado');
+    expect(uptimeTemporalLabel(batch)).toContain('2026-10-19');
+    expect(uptimeCanConfirmExact(batch)).toBe(false);
+    expect(uptimeCanConfirmExact({ temporalPrecision: 'KNOWN_RANGE' })).toBe(true);
+    expect(uptimeCanConfirmExact({ temporalPrecision: 'REQUIRES_RECONCILIATION' })).toBe(false);
   });
 });
