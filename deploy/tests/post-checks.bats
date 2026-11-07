@@ -53,7 +53,7 @@ while (($# > 0)); do
 	-X) metodo="$2"; shift ;;
 	-H) case "$2" in X-XSRF-TOKEN:*) cabecera="${2#X-XSRF-TOKEN: }" ;; esac; shift ;;
 	-d) datos="$(cat)"; shift ;;
-	-w | -m | --cacert) shift ;;
+	-w | -m | --cacert | --noproxy | --connect-to) shift ;;
 	-*) ;;
 	*) url="$1" ;;
 	esac
@@ -95,6 +95,7 @@ veredicto() { echo "$output" | grep -c '^VEREDICTO '; }
 	done
 	[ "$(veredicto)" -eq 1 ]
 	[[ "$output" == *"VEREDICTO COMPLETADA"* ]]
+	grep -Fq -- '--connect-to 192.0.2.10:443:127.0.0.1:443 https://192.0.2.10/' "$CALLS"
 }
 
 @test "la credencial de la cuenta de verificacion no aparece en la salida ni en los argumentos" {

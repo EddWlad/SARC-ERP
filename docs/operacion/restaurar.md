@@ -68,7 +68,7 @@ Es una copia **del VPS completo** del proveedor. Sirve para reconstruir el servi
 
 ## Archivos de Cloudinary (FR-041, FR-046)
 
-- **Backup de Cloudinary** (activado para `sarc-prod`, ver `pendientes-recursos-reales.md`): permite **restaurar archivos eliminados y versiones anteriores** desde la consola de Cloudinary.
+- **Backup de Cloudinary** permite restaurar archivos eliminados y versiones anteriores desde la consola. Tras comprobar la cuota y una copia real de muestra, habilitar `SARC_STORAGE_CLOUDINARY_BACKUP_UPLOADS=true` en el VPS. SARC pide backup al subir cada archivo de `sarc-prod`, sin cambiar el ajuste global de la cuenta compartida. Ver `pendientes-recursos-reales.md`.
 - **Exportación local mensual** (`Exportar-Cloudinary.ps1`, solo lectura sobre Cloudinary): deja copias de los archivos y un índice `export-<fecha>.json`. Sirve como respaldo independiente y para comprobar en el ensayo que las referencias guardadas en la base existen.
 - Toda referencia guardada en la base de producción debe existir en Cloudinary (actual o restaurable) o en la exportación.
 

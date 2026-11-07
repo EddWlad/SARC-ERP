@@ -19,7 +19,9 @@ Leyenda de «Dónde vive»: **VPS** = `/etc/sarc/sarc.env` (0640 root:sarc); **V
 | `CLOUDINARY_API_KEY` | Clave de API de Cloudinary de producción | Sí | VPS | Responsable del producto | Anual o ante exposición | La clave anterior, usada contra la API, devuelve 401 |
 | `CLOUDINARY_API_SECRET` | Secreto de la clave de Cloudinary | Sí | VPS | Responsable del producto | Junto con la clave | Igual que la fila anterior |
 | `SARC_STORAGE_CLOUDINARY_ROOT_FOLDER` | Carpeta raíz de archivos (`sarc-prod`) | Sí | VPS | Responsable del producto | No rota | — |
+| `SARC_STORAGE_CLOUDINARY_BACKUP_UPLOADS` | Solicita backup en cada subida de SARC. Activar en producción tras probar el alcance y la cuota de Cloudinary | Sí, tras verificación del proveedor | VPS | Responsable del producto | No rota | — |
 | `SARC_DEPLOY_ENV` | `produccion` o `ensayo` (solo VM de ensayo) | Sí | VPS | Responsable técnico | No rota | — |
+| `SARC_GITHUB_REPO` | Repositorio público de las versiones candidatas (`propietario/repositorio`) | Sí | VPS | Responsable técnico | Si cambia el repositorio | — |
 | `SARC_PUBLIC_IP` | IP pública del VPS (no secreta); ruta del certificado y verificación de la IP en `sarc-check-cert` | Sí | VPS | Responsable técnico | Si cambia la IP | — |
 | `SARC_VERIFY_REPORT_ID` | Identificador del reporte de verificación | Tras la primera instalación | VPS | Responsable técnico | Si se reemplaza el reporte | — |
 | `SARC_BOOTSTRAP_ADMIN_EMAIL` | Correo del administrador inicial | Solo primer arranque | VPS | Responsable técnico | Se borra tras el primer arranque | Confirmar que ya no está en el archivo |

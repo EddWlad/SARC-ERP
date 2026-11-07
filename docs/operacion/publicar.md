@@ -22,10 +22,10 @@ Cómo solicitar, aprobar y comprobar una publicación de SARC, y qué hacer cuan
 
 ## 2. Aprobar
 
-El trabajo `desplegar` queda en espera: GitHub notifica a los revisores del entorno `production` (responsable y suplente).
+El trabajo `desplegar` queda en espera. GitHub notifica a los revisores configurados en el entorno `production`.
 
 1. El revisor abre la ejecución y pulsa **Review deployments**, marca `production` y **Approve and deploy** (o **Reject**).
-2. Quién aprueba: el responsable del producto o su suplente. Con «prevent self-review» activado (decisión de `decisiones-previas.md`), quien solicitó no puede aprobar su propia solicitud.
+2. Aprueba el responsable del producto o su suplente. La excepción registrada en `decisiones-previas.md` permite que EddWlad apruebe su propia solicitud solo para la primera instalación y su verificación. Antes de una publicación normal, designar al suplente y activar «prevent self-review».
 3. La aprobación vale **una sola ejecución**; no se reutiliza.
 4. Sin aprobación no se ejecuta ningún paso sobre el VPS. Un rechazo o un tiempo vencido cancela la solicitud.
 

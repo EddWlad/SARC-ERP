@@ -47,13 +47,16 @@ registrar() {
 # curl con validación TLS; en la VM de ensayo (SARC_DEPLOY_ENV=ensayo) acepta la CA de prueba.
 http() {
 	local -a extra=()
+	if [[ -z "${SARC_POSTCHECK_BASE_URL:-}" ]]; then
+		extra+=(--noproxy '*' --connect-to "${SARC_PUBLIC_IP:-}:443:127.0.0.1:443")
+	fi
 	if [[ "${SARC_DEPLOY_ENV:-produccion}" == "ensayo" && -n "${SARC_TEST_CA_FILE:-}" ]]; then
 		extra+=(--cacert "$SARC_TEST_CA_FILE")
 	fi
 	curl -sS -m 20 -o "$body" -w '%{http_code}' -b "$jar" -c "$jar" "${extra[@]}" "$@" 2>/dev/null || echo "000"
 }
 
-# --- 1. Disponibilidad: la página principal por HTTPS y readiness público ---
+# --- 1. Disponibilidad: página y readiness por HTTPS local, con el certificado público ---
 disponible=FALLO
 if [[ -n "${SARC_PUBLIC_IP:-}${SARC_POSTCHECK_BASE_URL:-}" ]]; then
 	code="$(http "$base_url/")"

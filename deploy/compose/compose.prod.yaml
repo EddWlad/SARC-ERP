@@ -20,7 +20,7 @@ services:
       # Volumen externo y persistente: no forma parte de ninguna versión ni se borra al publicar.
       - sarc_pgdata:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sarc -d sarc"]
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "sarc", "-d", "sarc"]
       interval: 10s
       timeout: 5s
       retries: 6

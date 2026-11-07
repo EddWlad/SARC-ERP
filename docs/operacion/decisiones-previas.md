@@ -4,7 +4,7 @@
 
 Registro de las decisiones que el responsable del producto debe tomar **antes** de cualquier acción sobre recursos reales. Mientras una decisión figure como *pendiente*, la etapa E7 (VPS real) no se inicia.
 
-Estado de este registro: **ninguna decisión tomada todavía**. Se rellena con fecha y nombre al aprobarse cada una. No escribir aquí valores secretos, direcciones de correo ni IP.
+Estado de este registro: **decisiones parciales registradas**. Se rellena con fecha y nombre al aprobarse cada una. No escribir aquí valores secretos, direcciones de correo ni IP.
 
 ## Aprobación para iniciar E7
 
@@ -20,13 +20,14 @@ Sin esta aprobación no se ejecuta ninguna tarea de producción real (contratar,
 
 | # | Decisión | Opciones y criterio | Estado | Resuelta por / fecha |
 |---|---|---|---|---|
-| 1 | Repositorio público o privado (R11) | El repositorio hoy es público: *issues*, registros de Actions y Releases son visibles. Si sigue público, nada sensible en registros ni avisos (regla ya aplicada). Si pasa a privado, GitHub puede requerir un plan de pago para algunas protecciones. | *Pendiente* | — |
-| 2 | Computador local designado | Equipo autorizado de la organización, siempre disponible en horario laboral, con usuario restringido. | *Pendiente* | — |
-| 3 | Responsable y suplente | Dos personas con cuenta de GitHub y correo propios; ambas reciben todos los avisos y aprueban publicaciones. | *Pendiente* | — |
-| 4 | Cuenta de Healthchecks.io | Confirmar que el plan elegido permite el uso previsto (uso comercial) y el correo de aviso de ambas personas. Alternativa de pago si no. | *Pendiente* | — |
-| 5 | Backup de Cloudinary: alcance y cuota | La cuenta de Cloudinary es **compartida** con otro proyecto: medir el efecto del Backup en la cuota antes de activarlo para `sarc-prod`. | *Pendiente* | — |
-| 6 | Rol de la cuenta de verificación posterior | El rol con menos privilegios que pueda leer los cuatro módulos según el PRD; **nunca ADMINISTRADOR**. | *Pendiente* | — |
-| 7 | «Prevent self-review» en el entorno `production` | Activarlo si el responsable y el suplente son personas distintas del que dispara la publicación; con una sola persona disponible se documenta la excepción. | *Pendiente* | — |
+| 1 | Repositorio público o privado (R11) | Mantener público. Los avisos, registros y Releases excluyen datos sensibles. | Decidida | EddWlad / 2026-11-07 |
+| 2 | Computador local designado | Este PC Windows, con copias cifradas. Comprobar cifrado del destino, acceso restringido, espacio y disponibilidad diaria antes de registrar la tarea. | Decidida | EddWlad / 2026-11-07 |
+| 3 | Responsable y suplente | Responsable `EddWlad`. Suplente por designar. Excepción temporal para primera instalación y su verificación: EddWlad confirma la recepción de todos los avisos. Para publicaciones normales se exige suplente y nueva prueba de recepción de ambos. | Decidida | EddWlad / 2026-11-07 |
+| 4 | Cuenta de Healthchecks.io | Confirmar que el plan elegido permite el uso comercial. Verificar los destinatarios de correo según la decisión 3. | *Pendiente* | — |
+| 5 | Backup de Cloudinary: alcance y cuota | Consulta autorizada confirmó que se comparte el mismo entorno. SARC puede solicitar backup en cada subida a `sarc-prod` con `SARC_STORAGE_CLOUDINARY_BACKUP_UPLOADS`. Falta verificar una copia real de muestra y su efecto en la cuota antes de activar la opción. | *Pendiente de prueba real* | — |
+| 6 | Rol de la cuenta de verificación posterior | Propuesta técnica: `ASISTENTE` con un reporte de verificación de indicadores oficiales. Confirmar la decisión y probar las lecturas de los cuatro módulos y la descarga. | *Pendiente* | — |
+| 7 | «Prevent self-review» en el entorno `production` | Excepción temporal para que EddWlad pueda aprobar la primera instalación y su verificación con revisión obligatoria. Al designar suplente, activarlo y confirmar la revisión independiente antes de la primera publicación normal. | Decidida | EddWlad / 2026-11-07 |
+| 8 | Datos de la primera instalación | Base de producción nueva. Flyway crea esquema, roles y catálogo base de conectores. Se da de alta el administrador inicial. Equipos, consumos, mediciones y demás datos operativos se crean en producción. | Decidida | EddWlad / 2026-11-07 |
 
 ## Requisitos del computador local
 

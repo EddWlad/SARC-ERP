@@ -36,6 +36,16 @@ verificar_sin_cambios() {
 	verificar_sin_cambios
 }
 
+@test "sin repositorio candidato válido devuelve 12 sin mostrar el valor" {
+	unset SARC_RELEASE_BASE_URL
+	export SARC_GITHUB_REPO='valor-no-valido'
+	run "$DEPLOY" "$VERSION"
+	[ "$status" -eq 12 ]
+	[[ "$output" == *"SARC_GITHUB_REPO"* ]]
+	[[ "$output" != *"valor-no-valido"* ]]
+	verificar_sin_cambios
+}
+
 @test "paso 2: una variable ausente o sin definir devuelve 12 sin imprimir valores" {
 	sed -i 's/^CLOUDINARY_API_SECRET=.*/CLOUDINARY_API_SECRET=<definir>/' "$SARC_ENV_FILE"
 	run "$DEPLOY" "$VERSION"

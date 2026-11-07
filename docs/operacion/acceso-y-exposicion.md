@@ -47,7 +47,7 @@ Aplicar con `sudo sshd -t && sudo systemctl reload ssh`. Antes de cerrar la sesi
 | Cuenta | Para qué | Privilegios |
 |---|---|---|
 | Una cuenta personal por persona (responsable y suplente) | Administración | `sudo`; ingreso solo con clave |
-| `sarc` | Ejecuta `sarc.service` | Sin shell ni ingreso; solo lee `/etc/sarc/sarc.env` (grupo) y escribe en `/var/lib/sarc` |
+| `sarc` | Ejecuta `sarc.service` | Sin shell ni ingreso. La configuración de SARC se carga desde el archivo protegido de su servicio. El estado operativo de despliegue pertenece a root. |
 | `sarc-deploy` | Recibe el despliegue desde GitHub | **Sin privilegios y sin shell**: su clave tiene comando forzado (`sarc-deploy-ssh-wrapper`) que solo acepta `deploy <version>`, `deploy --primera-instalacion <version>` o `deploy --verificar <version>` y lo ejecuta como `sudo -n /usr/local/sbin/sarc-deploy …` gracias a **una única regla `sudoers`** (`deploy/sudoers/sarc-deploy`). Los scripts y sus bibliotecas pertenecen a root (`/usr/local/sbin/` root:root 0755; `/usr/local/lib/sarc/` root:root 0644) y la cuenta no puede modificarlos. |
 | `sarc-backup` | Descarga de copias desde el computador local | **Solo SFTP enjaulado**, sin shell; lectura de las copias y escritura **solo** en `received/` |
 

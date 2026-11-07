@@ -1,0 +1,14 @@
+[Unit]
+Description=SARC (PostgreSQL persistente)
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/docker compose --env-file /etc/sarc/sarc.env -p sarc -f /opt/sarc/compose/compose.prod.yaml up -d --no-recreate --wait --wait-timeout 90 postgres
+TimeoutStartSec=120
+Restart=on-failure
+RestartSec=5

@@ -10,9 +10,14 @@ setup_file() {
 	T="$(mktemp -d)"
 	hostpath() { if (cd "$1" && pwd -W >/dev/null 2>&1); then (cd "$1" && pwd -W); else (cd "$1" && pwd); fi; }
 
-	mkdir -p "$T/conf" "$T/certs/live/192.0.2.10" "$T/maint" "$T/var" "$T/front" "$T/acme/.well-known/acme-challenge"
+	mkdir -p "$T/conf" "$T/certs/live/192.0.2.10" "$T/maint" "$T/var" "$T/front" "$T/packaged" "$T/acme/.well-known/acme-challenge"
 	sed 's/<IP_PUBLICA>/192.0.2.10/g' "$REPO_ROOT/deploy/nginx/sarc.conf.template" >"$T/conf/sarc.conf"
-	: >"$T/conf/default.conf"
+	printf 'server { listen 80 default_server; root /usr/share/nginx/html; }\n' >"$T/conf/default.conf"
+	{
+		printf 'events {}\nhttp {\n'
+		sed 's/<IP_PUBLICA>/192.0.2.10/g' "$REPO_ROOT/deploy/nginx/sarc-http.conf.template"
+		printf '}\n'
+	} >"$T/conf/bootstrap.conf"
 	cp "$REPO_ROOT/deploy/nginx/maintenance.html" "$T/maint/maintenance.html"
 	echo "<html>SARC-FRONTEND</html>" >"$T/front/index.html"
 	echo "desafio-de-prueba" >"$T/acme/.well-known/acme-challenge/token"
@@ -30,13 +35,16 @@ STUB
 
 	NAME="sarc-nginx-test-$$"
 	docker run -d --name "$NAME" \
+		--restart unless-stopped \
 		-v "$(hostpath "$T/conf")/sarc.conf:/etc/nginx/conf.d/sarc.conf:ro" \
+		-v "$(hostpath "$T/conf")/bootstrap.conf:/etc/nginx/sarc-bootstrap.conf:ro" \
 		-v "$(hostpath "$T/conf")/stub.conf:/etc/nginx/conf.d/stub.conf:ro" \
 		-v "$(hostpath "$T/conf")/default.conf:/etc/nginx/conf.d/default.conf:ro" \
 		-v "$(hostpath "$T/certs"):/etc/letsencrypt:ro" \
 		-v "$(hostpath "$T/maint"):/opt/sarc/maintenance:ro" \
 		-v "$(hostpath "$T/var"):/var/lib/sarc" \
 		-v "$(hostpath "$T/front"):/opt/sarc/current/frontend:ro" \
+		-v "$(hostpath "$T/packaged"):/usr/share/nginx/html:ro" \
 		-v "$(hostpath "$T/acme"):/var/www/certbot:ro" \
 		-p 127.0.0.1:18080:80 -p 127.0.0.1:18443:443 nginx:stable >/dev/null
 	export T NAME
@@ -55,11 +63,16 @@ codigo() { curl -sk -o /dev/null -w '%{http_code}' "$@"; }
 	[ "$status" -eq 0 ]
 }
 
+@test "la configuracion de primera emision no necesita certificados" {
+	run docker exec "$NAME" nginx -t -c /etc/nginx/sarc-bootstrap.conf
+	[ "$status" -eq 0 ]
+}
+
 @test "el puerto 80 redirige a 443 salvo el desafio ACME" {
-	run curl -s -D - -o /dev/null http://127.0.0.1:18080/algo
+	run curl -s -H 'Host: 192.0.2.10' -D - -o /dev/null http://127.0.0.1:18080/algo
 	[[ "$output" == *" 301 "* ]]
 	[[ "$output" == *"ocation: https://"* ]]
-	run curl -s http://127.0.0.1:18080/.well-known/acme-challenge/token
+	run curl -s -H 'Host: 192.0.2.10' http://127.0.0.1:18080/.well-known/acme-challenge/token
 	[[ "$output" == *"desafio-de-prueba"* ]]
 }
 
@@ -83,10 +96,12 @@ codigo() { curl -sk -o /dev/null -w '%{http_code}' "$@"; }
 }
 
 @test "HSTS sin includeSubDomains y cabeceras de seguridad" {
-	run curl -skI https://127.0.0.1:18443/
-	[[ "$output" == *"Strict-Transport-Security: max-age=31536000"* ]]
-	[[ "$output" != *"includeSubDomains"* ]]
-	[[ "$output" == *"X-Content-Type-Options: nosniff"* ]]
+	for path in / /api/v1/algo /actuator/health/readiness; do
+		run curl -skI "https://127.0.0.1:18443$path"
+		[ "$status" -eq 0 ]
+		printf '%s\n' "$output" | tr -d '\r' | grep -Eiq '^strict-transport-security: max-age=31536000$'
+		printf '%s\n' "$output" | tr -d '\r' | grep -Eiq '^x-content-type-options: nosniff$'
+	done
 }
 
 @test "el limite de peticiones al ingreso responde 429" {
@@ -103,6 +118,13 @@ codigo() { curl -sk -o /dev/null -w '%{http_code}' "$@"; }
 	[ "$(codigo https://127.0.0.1:18443/)" = "503" ]
 	run curl -sk https://127.0.0.1:18443/
 	[[ "$output" == *"mantenimiento"* ]]
+	run curl -skI https://127.0.0.1:18443/
+	printf '%s\n' "$output" | tr -d '\r' | grep -Eiq '^strict-transport-security: max-age=31536000$'
+	printf '%s\n' "$output" | tr -d '\r' | grep -Eiq '^retry-after: 300$'
+	[ "$(codigo -H 'X-Forwarded-For: 127.0.0.1' https://127.0.0.1:18443/)" = "503" ]
+	run docker exec "$NAME" curl -fsSk --noproxy '*' --connect-to 192.0.2.10:443:127.0.0.1:443 https://192.0.2.10/
+	[ "$status" -eq 0 ]
+	[[ "$output" == *"SARC-FRONTEND"* ]]
 	rm -f "$T/var/maintenance.flag"
 	[ "$(codigo https://127.0.0.1:18443/)" = "200" ]
 }
@@ -114,4 +136,23 @@ codigo() { curl -sk -o /dev/null -w '%{http_code}' "$@"; }
 	[[ "$output" != *"valor-secreto-de-prueba"* ]]
 	[[ "$output" != *"token-secreto"* ]]
 	[[ "$output" != *"parametro-secreto"* ]]
+}
+
+@test "una salida de Nginx y el cambio de la pagina del paquete preservan el frontend" {
+	printf '<html>Welcome to nginx!</html>\n' >"$T/packaged/index.html"
+	reinicios="$(docker inspect -f '{{.RestartCount}}' "$NAME")"
+	docker exec "$NAME" nginx -s quit
+	for _ in $(seq 1 30); do
+		actual="$(docker inspect -f '{{.RestartCount}}' "$NAME")"
+		if ((actual > reinicios)) && curl -fsk https://127.0.0.1:18443/ruta/frontend | grep -q 'SARC-FRONTEND'; then
+			break
+		fi
+		sleep 1
+	done
+	((actual > reinicios))
+	run curl -fsk https://127.0.0.1:18443/ruta/frontend
+	[ "$status" -eq 0 ]
+	[[ "$output" == *"SARC-FRONTEND"* ]]
+	run curl -fs -H 'Host: paquete.example.invalid' http://127.0.0.1:18080/
+	[[ "$output" == *"Welcome to nginx!"* ]]
 }

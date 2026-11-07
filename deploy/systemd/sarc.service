@@ -1,9 +1,9 @@
 [Unit]
 Description=SARC (backend Spring Boot)
 Documentation=file:///opt/sarc/current/
-After=network-online.target docker.service
-Wants=network-online.target
-Requires=docker.service
+After=network-online.target docker.service sarc-postgres.service
+Wants=network-online.target sarc-postgres.service
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
@@ -13,14 +13,13 @@ Group=sarc
 EnvironmentFile=/etc/sarc/sarc.env
 WorkingDirectory=/opt/sarc/current
 ExecStart=/usr/bin/java -jar /opt/sarc/current/backend/sarc-backend.jar
-Restart=on-failure
+Restart=always
 RestartSec=5
 # Endurecimiento
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
-ReadWritePaths=/var/lib/sarc
 # Salida a journald (retención configurada en journald.conf: 30 días)
 StandardOutput=journal
 StandardError=journal
