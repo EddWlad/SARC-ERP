@@ -6,6 +6,24 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "start", "--prefix", "sarc-frontend"],
       "port": 4200
+    },
+    {
+      "name": "sarc-frontend-qa004",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start", "--prefix", "sarc-frontend", "--", "--host", "127.0.0.1", "--port", "4201", "--proxy-config", "../sarc-bakend/target/feature004-browser-proxy.json"],
+      "port": 4201
+    },
+    {
+      "name": "sarc-frontend-qa005",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start", "--prefix", "sarc-frontend", "--", "--host", "127.0.0.1", "--port", "4202", "--proxy-config", "../sarc-bakend/target/feature005-browser-proxy.json"],
+      "port": 4202
+    },
+    {
+      "name": "sarc-frontend-qa006",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start", "--prefix", "sarc-frontend", "--", "--host", "127.0.0.1", "--port", "4203", "--proxy-config", "../sarc-bakend/target/feature006-browser-proxy.json"],
+      "port": 4203
     }
   ]
 }
