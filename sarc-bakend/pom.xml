@@ -15,6 +15,10 @@
 	<description>Sistema Administrativo de Reportes de Carga - backend</description>
 	<properties>
 		<java.version>25</java.version>
+		<!-- Correcciones de seguridad para las dos ramas de Jackson y Tomcat embebido. -->
+		<jackson-2-bom.version>2.21.7</jackson-2-bom.version>
+		<jackson-bom.version>3.1.7</jackson-bom.version>
+		<tomcat.version>11.0.25</tomcat.version>
 		<!-- Version de la aplicacion que informa build-info; el flujo de version candidata la
 		     sustituye con -Dsarc.version=AAAA.MM.DD-run-sha7. -->
 		<sarc.version>0.0.1-SNAPSHOT</sarc.version>

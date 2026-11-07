@@ -212,11 +212,11 @@ jobs:
       - id: prep-checkout
         uses: actions/checkout@v4
       - id: prep-herramientas
-        name: Instalar bats y jq
+        name: Instalar herramientas de pruebas de despliegue
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y bats jq
+          sudo apt-get install -y age bats jq
       - id: shellcheck
         shell: bash
         run: |
