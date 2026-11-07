@@ -6,6 +6,9 @@ spring:
     url: ${SARC_DB_URL}
     username: ${SARC_DB_USER}
     password: ${SARC_DB_PASSWORD}
+  flyway:
+    init-sqls:
+      - "SET sarc.empty_initial_connector_catalog = 'on'"
 
 # Produccion no arranca sin credenciales de Cloudinary (FR-025): el error nombra las propiedades, nunca valores.
 sarc:

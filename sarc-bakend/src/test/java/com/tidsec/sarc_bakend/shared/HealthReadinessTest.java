@@ -1,5 +1,6 @@
 package com.tidsec.sarc_bakend.shared;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,6 +31,7 @@ import com.tidsec.sarc_bakend.TestcontainersConfiguration;
 @SpringBootTest(properties = {
 		"SARC_DB_URL=sin-uso", "SARC_DB_USER=sin-uso", "SARC_DB_PASSWORD=sin-uso",
 		"sarc.storage.cloudinary.required=false",
+		"sarc.bootstrap-admin.email=admin-qa@example.invalid", "sarc.bootstrap-admin.password=Temporal-QA-2026!",
 		"spring.datasource.hikari.connection-timeout=1500" })
 @ActiveProfiles("prod")
 @AutoConfigureMockMvc
@@ -39,6 +42,19 @@ class HealthReadinessTest {
 
 	@Autowired MockMvc mvc;
 	@Autowired PostgreSQLContainer postgres;
+	@Autowired JdbcClient jdbc;
+
+	@Test
+	@Order(0)
+	void freshProductionStartsWithOnlyTheAdministratorAndRoles() {
+		assertThat(jdbc.sql("select email from auth_user").query(String.class).list())
+				.containsExactly("admin-qa@example.invalid");
+		assertThat(jdbc.sql("select role_code from auth_user_role").query(String.class).list())
+				.containsExactly("ADMINISTRADOR");
+		assertThat(jdbc.sql("select count(*) from auth_role").query(Long.class).single()).isEqualTo(5L);
+		assertThat(jdbc.sql("select count(*) from asset_connector_type").query(Long.class).single()).isZero();
+		assertThat(jdbc.sql("select count(*) from asset_equipment").query(Long.class).single()).isZero();
+	}
 
 	@Test
 	@Order(1)

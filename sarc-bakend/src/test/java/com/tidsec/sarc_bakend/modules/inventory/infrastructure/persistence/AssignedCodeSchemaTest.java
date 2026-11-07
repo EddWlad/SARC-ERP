@@ -34,6 +34,7 @@ class AssignedCodeSchemaTest {
 				String relatedBefore = connectorSnapshot(connection, previous);
 				String before = snapshot(connection, previous);
 				Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
+						.initSql("SET sarc.empty_initial_connector_catalog = 'on'")
 						.load().migrate();
 				assertThat(snapshot(connection, previous)).isEqualTo(before);
 				assertThat(connectorSnapshot(connection, previous)).isEqualTo(relatedBefore);
