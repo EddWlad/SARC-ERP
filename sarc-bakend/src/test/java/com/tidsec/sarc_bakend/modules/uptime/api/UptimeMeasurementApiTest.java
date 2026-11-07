@@ -236,4 +236,42 @@ class UptimeMeasurementApiTest {
 				.param("equipmentId", Feature005Fixtures.KIA_POINT.toString()))
 				.andExpect(jsonPath("$.length()").value(0));
 	}
+    private static String weeklyBody(UUID connector,String second) {
+        return """
+            {"connectorId":"%s","source":"ENERLINK","periodStart":"2026-10-28T08:06:%s-05:00",
+             "periodEnd":"2026-11-04T08:06:%s-05:00","periodType":"ROLLING_7D","referenceWeek":"2026-10-26",
+             "exactConfirmed":false,"availableMinutes":9815,"occupiedMinutes":31,"faultMinutes":0,
+             "offlineMinutes":234,"origin":"BLOCK","sourceText":"bloque sintetico"}
+            """.formatted(connector,second,second);
+    }
+    @Test void weeklyCapturePreservesReferenceSecondsAndIdempotence() throws Exception {
+        UUID first=connector(Feature005Fixtures.JAC_STATION,1),second=connector(Feature005Fixtures.JAC_STATION,2);
+        String a=weeklyBody(first,"20");
+        register(analyst,a).andExpect(status().isCreated())
+            .andExpect(jsonPath("$.referenceWeek").value("2026-10-26"))
+            .andExpect(jsonPath("$.temporalPrecision").value("KNOWN_RANGE"))
+            .andExpect(jsonPath("$.uptimePercent").value("97.68"))
+            .andExpect(jsonPath("$.periodStart").value("2026-10-28T13:06:20Z"));
+        register(analyst,weeklyBody(second,"45")).andExpect(status().isCreated())
+            .andExpect(jsonPath("$.periodStart").value("2026-10-28T13:06:45Z"));
+        register(analyst,a).andExpect(status().isOk());
+        register(analyst,a.replace("2026-10-26","2026-11-02"))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("UPTIME_REFERENCE_DIFFERS"));
+        assertThat(count("upt_measurement")).isEqualTo(2);
+    }
+    @Test void weeklyGridNeedsReferenceRatherThanCommonLimits() throws Exception {
+        register(analyst,weeklyBody(connector(Feature005Fixtures.JAC_STATION,1),"20"))
+            .andExpect(status().isCreated());
+        mvc.perform(get("/api/v1/uptime/grid").cookie(analyst).param("referenceWeek","2026-10-26"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$[?(@.situation == 'PENDING')]").isNotEmpty());
+        mvc.perform(get("/api/v1/uptime/grid").cookie(analyst).param("referenceWeek","2026-10-26")
+            .param("periodStart",START).param("periodEnd",END)).andExpect(status().isUnprocessableContent());
+    }
+    @Test void weeklyGridDoesNotTreatAnotherWindowAsWeeklyCapture() throws Exception {
+        UUID id=connector(Feature005Fixtures.JAC_STATION,1);
+        register(analyst,weeklyBody(id,"20").replace("ROLLING_7D","ROLLING_24H")).andExpect(status().isCreated());
+        mvc.perform(get("/api/v1/uptime/grid").cookie(analyst).param("referenceWeek","2026-10-26"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$[?(@.connectorId == '"+id+"' && @.situation == 'NONE')]").isNotEmpty());
+    }
+
 }

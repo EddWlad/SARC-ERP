@@ -1,6 +1,7 @@
 package com.tidsec.sarc_bakend.modules.uptime.api.request;
 
 import java.time.LocalDate;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision;
 import java.util.UUID;
 
 import org.springframework.format.annotation.DateTimeFormat;
@@ -15,9 +16,9 @@ import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
 public record UptimeFilterParams(OpeningPeriodPolicy.Kind periodKind, PeriodType periodType,
 		@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
 		@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to, ChargingNetwork network, InfrastructureType type,
-		String brand, UUID equipmentId, UUID connectorId) {
+		String brand, UUID equipmentId, UUID connectorId, LocalDate referenceWeek, TemporalPrecision temporalSection) {
 
 	public UptimeFilter toFilter() {
-		return new UptimeFilter(periodKind, periodType, from, to, network, type, brand, equipmentId, connectorId);
+		return new UptimeFilter(periodKind, periodType, from, to, network, type, brand, equipmentId, connectorId, referenceWeek, temporalSection);
 	}
 }

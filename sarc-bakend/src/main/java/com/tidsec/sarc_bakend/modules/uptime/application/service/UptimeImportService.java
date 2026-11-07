@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -97,7 +98,7 @@ public class UptimeImportService {
 		byte[] content = command.content();
 		ImportFiles.requireContent(content.length);
 		String fileName = ImportFiles.safeName(command.fileName(), "uptime");
-		return open((id, reference) -> UptimeImportBatch.openWeekly(id, MeasurementSource.ENERLINK, start, end,
+		return open((id, reference) -> UptimeImportBatch.openWeeklyReference(id, MeasurementSource.ENERLINK, monday,
 				fileName, ContentFingerprint.sha256(content), reference), fileName, content,
 				Map.of("origin", ImportOrigin.FILE.name(), "weekStart", monday.toString()),
 				() -> reader.readSheets(content));
@@ -147,6 +148,9 @@ public class UptimeImportService {
 
 	public UptimeImportBatch confirm(UUID id, long version, boolean exactConfirmed) {
 		UptimeImportBatch batch = loadForChange(id, version);
+        if (exactConfirmed && imports.hasRowsWithoutKnownRange(id))
+            throw new BusinessRuleException("UPTIME_REAL_RANGE_REQUIRED",
+                "El informe sin horario real no se puede confirmar como semana exacta.");
 		UUID author = actor.id().orElse(null);
 		Instant now = clock.instant();
 		batch.confirm(author, now);

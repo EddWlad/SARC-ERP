@@ -50,7 +50,8 @@ final class UptimeLabels {
 		return value.setScale(2, RoundingMode.HALF_UP).toPlainString().replace('.', ',');
 	}
 
-	static String hours(long minutes) {
+	static String hours(Long minutes) {
+        if(minutes==null)return "No informado";
 		return decimal(BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP));
 	}
 

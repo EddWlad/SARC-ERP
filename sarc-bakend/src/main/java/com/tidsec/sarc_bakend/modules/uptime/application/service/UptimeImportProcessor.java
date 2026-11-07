@@ -2,6 +2,10 @@ package com.tidsec.sarc_bakend.modules.uptime.application.service;
 
 import java.time.Clock;
 import java.time.Instant;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.MeasurementPeriod;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -93,7 +97,7 @@ class UptimeImportProcessor {
 
 	void apply(UUID batchId) {
 		try {
-			while (Boolean.TRUE.equals(transactions.execute(status -> applyNextChunk(batchId)))) {
+			while (applyChunk(batchId)) {
 				// Cada vuelta confirma un tramo; se repite hasta que no quedan filas sin resultado.
 			}
 			transactions.executeWithoutResult(status -> complete(batchId));
@@ -103,10 +107,18 @@ class UptimeImportProcessor {
 		}
 	}
 
+    private boolean applyChunk(UUID batchId) {
+        try { return Boolean.TRUE.equals(transactions.execute(status->applyNextChunk(batchId))); }
+        catch (DataIntegrityViolationException | ObjectOptimisticLockingFailureException concurrent) {
+            // La transaccion abortada no se reutiliza. Releer reconoce la identidad ganadora.
+            return Boolean.TRUE.equals(transactions.execute(status->applyNextChunk(batchId)));
+        }
+    }
+
 	private void classify(UUID batchId, List<TabularSheet> tabular) {
 		UptimeImportBatch batch = load(batchId);
-		UptimeRowParser.DeclaredPeriod period = batch.getDeclaredPeriodStart() == null ? null
-				: new UptimeRowParser.DeclaredPeriod(batch.getDeclaredPeriodStart(), batch.getDeclaredPeriodEnd());
+		UptimeRowParser.DeclaredPeriod period = batch.getReferenceWeek() == null ? null
+                : new UptimeRowParser.DeclaredPeriod(batch.getReferenceWeek());
 		List<UptimeRowParser.ParsedRow> parsed = parser.parse(tabular, period);
 		if (parsed.isEmpty()) {
 			throw new BusinessRuleException("IMPORT_NO_ROWS", "El archivo no tiene filas de uptime.");
@@ -137,10 +149,12 @@ class UptimeImportProcessor {
 		}
 		PeriodType declared = batch.getDeclaredPeriodType();
 		try {
-			PeriodRules.check(parsed.periodStart(), parsed.periodEnd(), declared, false, now, zone.zone());
-			row.assess(declared, MeasurementRules.assess(parsed.values(),
-					PeriodRules.durationMinutes(parsed.periodStart(), parsed.periodEnd()), declared),
-					parsed.values().reportedPercent());
+			MeasurementPeriod period = parsed.periodStart()==null && parsed.periodEnd()==null
+                ? MeasurementPeriod.reference(batch.getReferenceWeek(),zone.zone().getId())
+                : MeasurementPeriod.known(parsed.periodStart(),parsed.periodEnd(),zone.zone().getId(),batch.getReferenceWeek());
+            period.validate(declared,false,now);
+            row.usePeriod(period);
+            row.assess(declared,MeasurementRules.assess(parsed.values(),period,declared),parsed.values().reportedPercent());
 		}
 		catch (BusinessRuleException ex) {
 			return invalid(row, List.of(new RowIssue(ex.code(), ex.getMessage())));
@@ -162,7 +176,7 @@ class UptimeImportProcessor {
 			}
 			return row;
 		}
-		if (!seen.add(connector.connectorId() + "|" + parsed.periodStart() + "|" + parsed.periodEnd())) {
+		if (!seen.add(connector.connectorId() + "|" + batch.getSource() + "|" + row.getPeriod(zone.zone().getId()))) {
 			return invalid(row,
 					List.of(new RowIssue("DUPLICATED_IN_BATCH", "El conector y período ya aparecen antes en este lote.")));
 		}
@@ -172,7 +186,7 @@ class UptimeImportProcessor {
 
 	private void compare(UptimeImportBatch batch, UptimeImportRow row, MeasurableConnector connector) {
 		Optional<Measurement> existing = measurements.findByIdentity(connector.connectorId(), batch.getSource(),
-				row.getPeriodStart(), row.getPeriodEnd());
+				row.getPeriod(zone.zone().getId()));
 		if (existing.isEmpty()) {
 			row.classify(UptimeRowClassification.NEW, connector.equipmentId(), connector.connectorId(), null, null,
 					List.of());
@@ -229,7 +243,7 @@ class UptimeImportProcessor {
 		}
 		RevisionData data = imported.data(batch, row, connector, batch.getConfirmedBy(), row.getJustification());
 		Optional<Measurement> existing = measurements.findByIdentity(connector.connectorId(), batch.getSource(),
-				row.getPeriodStart(), row.getPeriodEnd());
+				row.getPeriod(zone.zone().getId()));
 		if (existing.isEmpty()) {
 			row.recordOutcome(UptimeRowOutcome.APPLIED, imported.create(batch, row, connector, data).getId());
 			return;

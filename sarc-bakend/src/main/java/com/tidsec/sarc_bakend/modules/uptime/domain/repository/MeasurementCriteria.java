@@ -10,6 +10,7 @@ public record MeasurementCriteria(UUID connectorId, UUID equipmentId, Queue queu
 		PENDING,
 		OBSERVED,
 		VALIDATED,
+		TEMPORAL_RECONCILIATION,
 		EXCLUDED
 	}
 }

@@ -1,6 +1,7 @@
 package com.tidsec.sarc_bakend.modules.uptime.application.service;
 
 import java.util.List;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision;
 import java.util.UUID;
 
 import org.springframework.security.access.AccessDeniedException;
@@ -31,11 +32,12 @@ public class MeasurementReadService {
 	private final MeasurementRepository measurements;
 	private final ConnectorDirectory connectors;
 	private final UptimeReadAccess access;
+    private final com.tidsec.sarc_bakend.modules.uptime.domain.repository.MeasurementTemporalChangeRepository temporal;
 
-	MeasurementReadService(MeasurementRepository measurements, ConnectorDirectory connectors, UptimeReadAccess access) {
+	MeasurementReadService(MeasurementRepository measurements, ConnectorDirectory connectors, UptimeReadAccess access, com.tidsec.sarc_bakend.modules.uptime.domain.repository.MeasurementTemporalChangeRepository temporal) {
 		this.measurements = measurements;
 		this.connectors = connectors;
-		this.access = access;
+		this.access = access;this.temporal=temporal;
 	}
 
 	public PageResult<MeasurementDetail> search(UUID connectorId, UUID equipmentId, MeasurementCriteria.Queue queue,
@@ -51,7 +53,8 @@ public class MeasurementReadService {
 	public MeasurementDetail detail(UUID id) {
 		boolean operational = access.canReadOperational();
 		Measurement measurement = measurements.findById(id).orElseThrow(MeasurementReadService::notFound);
-		if (!operational && (measurement.getEffectiveRevision() == null || measurement.isExcluded())) {
+		if (!operational && (measurement.getEffectiveRevision() == null || measurement.isExcluded()
+            || measurement.getTemporalPrecision() == TemporalPrecision.REQUIRES_RECONCILIATION)) {
 			throw notFound();
 		}
 		return detail(measurement, operational);
@@ -60,7 +63,7 @@ public class MeasurementReadService {
 	@PreAuthorize(UptimePermissions.EDITORS)
 	public MeasurementHistory history(UUID id) {
 		measurements.findById(id).orElseThrow(MeasurementReadService::notFound);
-		return new MeasurementHistory(measurements.findRevisions(id), measurements.findExclusions(id));
+		return new MeasurementHistory(measurements.findRevisions(id), measurements.findExclusions(id),temporal.history(id));
 	}
 
 	private MeasurementDetail detail(Measurement measurement, boolean operational) {

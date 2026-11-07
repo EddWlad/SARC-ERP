@@ -33,7 +33,7 @@ class EnerlinkUptimeParserTest {
 			"Disponible (hrs)", "En falla (hrs)" };
 	private static final ZoneId ZONE = ZoneId.of("America/Guayaquil");
 	private static final UptimeRowParser.DeclaredPeriod WEEK = new UptimeRowParser.DeclaredPeriod(
-			Instant.parse("2026-10-19T05:00:00Z"), Instant.parse("2026-10-26T05:00:00Z"));
+			java.time.LocalDate.of(2026,10,19));
 
 	private final EnerlinkUptimeParser parser = new EnerlinkUptimeParser(new OperatingZone(ZONE));
 	private final TabularReader reader = new TabularReader();
@@ -50,8 +50,8 @@ class EnerlinkUptimeParserTest {
 		assertThat(first.rowNumber()).isEqualTo(EnerlinkUptimeParser.SHEET_STRIDE + 4);
 		assertThat(first.site()).isEmpty();
 		assertThat(first.charger()).isEqualTo("KIA SEDE UNO");
-		assertThat(first.periodStart()).isEqualTo(WEEK.start());
-		assertThat(first.periodEnd()).isEqualTo(WEEK.end());
+		assertThat(first.periodStart()).isNull();
+		assertThat(first.periodEnd()).isNull();
 		assertThat(first.values().basis()).isEqualTo(UptimeBasis.REPORTED_PERCENT);
 		assertThat(first.values().occupied()).isNull();
 		assertThat(first.values().reportedPercent()).isEqualByComparingTo("99.40");
@@ -167,4 +167,12 @@ class EnerlinkUptimeParserTest {
 			}
 		}
 	}
+    @Test void declaredWeekDoesNotOverwriteRealSourceBounds() {
+        String text="Activo\tCargador\tConector\tDesde\tHasta\tDisponible\tOcupado\tCon falla\tFuera de linea\tUptime\n"
+            +"Sede\tCargador\t1\t28-10-2026 08:06:20\t04-11-2026 08:06:20\t9815\t31\t0\t234\t97.68";
+        var row=parser.parse(sheet(text),WEEK).getFirst();
+        assertThat(row.periodStart()).isEqualTo(Instant.parse("2026-10-28T13:06:20Z"));
+        assertThat(row.periodEnd()).isEqualTo(Instant.parse("2026-11-04T13:06:20Z"));
+        assertThat(row.sourceValues()).containsEntry("periodStart","28-10-2026 08:06:20");
+    }
 }

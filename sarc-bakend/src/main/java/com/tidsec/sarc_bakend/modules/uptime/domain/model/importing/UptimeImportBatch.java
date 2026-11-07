@@ -1,6 +1,9 @@
 package com.tidsec.sarc_bakend.modules.uptime.domain.model.importing;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.MeasurementPeriod;
 import java.util.UUID;
 
 import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.MeasurementSource;
@@ -46,6 +49,18 @@ public class UptimeImportBatch extends BaseImportBatch {
 	private UUID exactConfirmedBy;
 	private Instant exactConfirmedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "period_precision", nullable = false, length = 32)
+    private TemporalPrecision temporalPrecision = TemporalPrecision.KNOWN_RANGE;
+    private LocalDate referenceWeek;
+
+    public void useReference(LocalDate week) {
+        MeasurementPeriod.reference(week,"America/Guayaquil");
+        referenceWeek=week;temporalPrecision=TemporalPrecision.REFERENCE_WEEK;
+    }
+    public TemporalPrecision getTemporalPrecision() { return temporalPrecision; }
+    public LocalDate getReferenceWeek() { return referenceWeek; }
+
 	protected UptimeImportBatch() {
 	}
 
@@ -70,6 +85,13 @@ public class UptimeImportBatch extends BaseImportBatch {
 		batch.declaredPeriodEnd = weekEnd;
 		return batch;
 	}
+
+    public static UptimeImportBatch openWeeklyReference(UUID id,MeasurementSource source,LocalDate week,
+            String fileName,String checksum,String originalRef) {
+        var batch=open(id,source,PeriodType.ROLLING_7D,ImportOrigin.FILE,fileName,checksum,originalRef);
+        batch.useReference(week);
+        return batch;
+    }
 
 	public void previewReady(UptimeRowCounts counts) {
 		markReady();

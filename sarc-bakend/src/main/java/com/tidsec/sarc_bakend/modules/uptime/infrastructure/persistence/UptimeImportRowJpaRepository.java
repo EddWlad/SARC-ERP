@@ -13,6 +13,7 @@ import com.tidsec.sarc_bakend.modules.uptime.domain.model.importing.UptimeRowCla
 import com.tidsec.sarc_bakend.modules.uptime.domain.model.importing.UptimeRowOutcome;
 
 interface UptimeImportRowJpaRepository extends JpaRepository<UptimeImportRow, UUID> {
+    List<UptimeImportRow> findByAppliedMeasurementIdAndBatchId(UUID measurementId,UUID batchId);
 
 	List<UptimeImportRow> findByBatchIdAndIdIn(UUID batchId, Collection<UUID> ids);
 
@@ -26,4 +27,6 @@ interface UptimeImportRowJpaRepository extends JpaRepository<UptimeImportRow, UU
 	long countByBatchIdAndOutcome(UUID batchId, UptimeRowOutcome outcome);
 
 	Page<UptimeImportRow> findByOutcome(UptimeRowOutcome outcome, Pageable pageable);
+    boolean existsByBatchIdAndTemporalPrecisionNot(UUID batchId,
+        com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision precision);
 }

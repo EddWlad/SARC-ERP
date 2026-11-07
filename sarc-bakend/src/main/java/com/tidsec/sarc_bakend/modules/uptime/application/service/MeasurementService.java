@@ -6,6 +6,9 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.MeasurementPeriod;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.PeriodType;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -95,8 +98,7 @@ public class MeasurementService {
 				.orElseThrow(() -> new NotFoundException("UPTIME_MEASUREMENT_NOT_FOUND", "Medicion no encontrada."));
 		measurement.requireVersion(command.version());
 		Instant now = clock.instant();
-		PeriodRules.check(measurement.getPeriodStart(), measurement.getPeriodEnd(), command.periodType(),
-				command.exactConfirmed(), now, zone.zone());
+		measurement.getPeriod().validate(command.periodType(),command.exactConfirmed(),now);
 		MeasurementRevision latest = measurements.findRevision(id, measurement.getLatestRevision()).orElseThrow();
 		RevisionData data = correctionData(command, measurement, latest, now);
 		MeasurementRevision revision = measurement.correct(data, latest, now);
@@ -123,12 +125,12 @@ public class MeasurementService {
 				? UptimeBasis.REPORTED_PERCENT : UptimeBasis.STATES;
 		requireAllMinutes(command, basis);
 		// Sin un porcentaje nuevo, la correccion conserva el que informo la fuente.
-		BigDecimal reported = basis == UptimeBasis.REPORTED_PERCENT && command.reportedPercent() == null
+		BigDecimal reported = (basis == UptimeBasis.REPORTED_PERCENT || measurement.getTemporalPrecision()==com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision.REFERENCE_WEEK) && command.reportedPercent() == null
 				? latest.getReportedPercent() : command.reportedPercent();
 		MeasurementRules.Assessment assessment = MeasurementRules.assess(
 				new MeasurementRules.Values(command.availableMinutes(), command.occupiedMinutes(),
 						command.faultMinutes(), command.offlineMinutes(), reported, basis),
-				PeriodRules.durationMinutes(measurement.getPeriodStart(), measurement.getPeriodEnd()),
+				measurement.getPeriod(),
 				command.periodType());
 		return new RevisionData(ReadingClass.MEASURED, command.periodType(), assessment.available(),
 				assessment.occupied(), assessment.fault(), assessment.offline(), reported,
@@ -204,12 +206,11 @@ public class MeasurementService {
 
 	private RegistrationResult registerInTransaction(RegisterMeasurementCommand command) {
 		Instant now = clock.instant();
-		PeriodRules.check(command.periodStart(), command.periodEnd(), command.periodType(), command.exactConfirmed(),
-				now, zone.zone());
+		capturePeriod(command).validate(command.periodType(),command.exactConfirmed(),now);
 		MeasurableConnector connector = measurable(command.connectorId());
 		RevisionData data = revisionData(command, connector, now);
 		return measurements.findByIdentity(command.connectorId(), command.source(), command.periodStart(),
-				command.periodEnd()).map(existing -> compare(existing, data))
+				command.periodEnd()).map(existing -> compare(existing, data, command.referenceWeek()))
 				.orElseGet(() -> create(command, connector, data));
 	}
 
@@ -219,13 +220,13 @@ public class MeasurementService {
 		Measurement existing = measurements.findByIdentity(command.connectorId(), command.source(),
 				command.periodStart(), command.periodEnd()).orElseThrow(() -> new ConflictException(
 						"DATA_INTEGRITY_VIOLATION", "La medición no se pudo registrar."));
-		return compare(existing, data);
+		return compare(existing, data, command.referenceWeek());
 	}
 
 	private RegistrationResult create(RegisterMeasurementCommand command, MeasurableConnector connector,
 			RevisionData data) {
 		Measurement measurement = Measurement.open(connector.connectorId(), connector.equipmentId(), command.source(),
-				command.periodStart(), command.periodEnd(), zone.zone().getId());
+				capturePeriod(command));
 		MeasurementRevision revision = measurement.register(data);
 		measurements.save(measurement);
 		measurements.saveRevision(revision);
@@ -235,7 +236,12 @@ public class MeasurementService {
 		return new RegistrationResult(RegistrationResult.Outcome.CREATED, new MeasurementView(measurement, revision));
 	}
 
-	private RegistrationResult compare(Measurement existing, RevisionData data) {
+	private RegistrationResult compare(Measurement existing, RevisionData data, java.time.LocalDate referenceWeek) {
+        if (!Objects.equals(existing.getReferenceWeek(), referenceWeek))
+            throw new ConflictException("UPTIME_REFERENCE_DIFFERS",
+                "Ese intervalo ya pertenece a otra referencia. Concilia el cambio de forma explicita.",
+                Map.of("id",existing.getId(),"version",existing.getVersion()));
+
 		MeasurementRevision latest = measurements.findRevision(existing.getId(), existing.getLatestRevision())
 				.orElseThrow();
 		if (latest.sameReading(data)) {
@@ -257,11 +263,17 @@ public class MeasurementService {
 		return connector;
 	}
 
+    private MeasurementPeriod capturePeriod(RegisterMeasurementCommand command) {
+        if (command.periodType() == PeriodType.ROLLING_7D && command.referenceWeek() == null)
+            throw new BusinessRuleException("UPTIME_REFERENCE_REQUIRED","Indica la semana de referencia del informe.");
+        return MeasurementPeriod.known(command.periodStart(),command.periodEnd(),zone.zone().getId(),command.referenceWeek());
+    }
+
 	private RevisionData revisionData(RegisterMeasurementCommand command, MeasurableConnector connector, Instant now) {
 		MeasurementRules.Assessment assessment = MeasurementRules.assess(
 				new MeasurementRules.Values(command.availableMinutes(), command.occupiedMinutes(),
 						command.faultMinutes(), command.offlineMinutes(), command.reportedPercent()),
-				PeriodRules.durationMinutes(command.periodStart(), command.periodEnd()), command.periodType());
+				capturePeriod(command), command.periodType());
 		UUID author = actor.id().orElse(null);
 		return new RevisionData(ReadingClass.MEASURED, command.periodType(), assessment.available(),
 				assessment.occupied(), assessment.fault(), assessment.offline(), command.reportedPercent(),

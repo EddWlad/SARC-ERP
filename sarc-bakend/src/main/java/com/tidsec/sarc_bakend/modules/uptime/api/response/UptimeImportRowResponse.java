@@ -1,6 +1,8 @@
 package com.tidsec.sarc_bakend.modules.uptime.api.response;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,17 +28,18 @@ public record UptimeImportRowResponse(UUID id, UUID batchId, int rowNumber,
 		@Schema(nullable = true) String reportedPercent, UptimeRowClassification classification, List<RowIssue> issues,
 		List<Observation> observations, boolean approved, @Schema(nullable = true) String justification,
 		@Schema(nullable = true) UUID existingMeasurementId, @Schema(nullable = true) UptimeRowOutcome outcome,
-		@Schema(nullable = true) UUID appliedMeasurementId, long version) {
+		@Schema(nullable = true) UUID appliedMeasurementId, long version, TemporalPrecision temporalPrecision, @Schema(nullable=true) LocalDate referenceWeek) {
 
 	public static UptimeImportRowResponse from(UptimeImportRow row) {
 		return new UptimeImportRowResponse(row.getId(), row.getBatchId(), row.getRowNumber(), row.getSourceSheet(),
 				row.getSourceRow(), row.getUptimeBasis(), row.getSourceSite(),
 				row.getSourceCharger(), row.getSourceConnector(), row.getEquipmentId(), row.getConnectorId(),
-				row.getSuggestedConnectorId(), row.getPeriodStart(), row.getPeriodEnd(), row.getPeriodType(), row.getAvailableMinutes(),
+				row.getSuggestedConnectorId(),row.getTemporalPrecision()==TemporalPrecision.KNOWN_RANGE?row.getPeriodStart():null,
+                row.getTemporalPrecision()==TemporalPrecision.KNOWN_RANGE?row.getPeriodEnd():null, row.getPeriodType(), row.getAvailableMinutes(),
 				row.getOccupiedMinutes(), row.getFaultMinutes(), row.getOfflineMinutes(),
 				row.getReportedPercent() == null ? null : row.getReportedPercent().toPlainString(),
 				row.getClassification(), row.getIssues(), row.getObservations(), row.isApproved(),
 				row.getJustification(), row.getExistingMeasurementId(), row.getOutcome(), row.getAppliedMeasurementId(),
-				row.getVersion());
+				row.getVersion(),row.getTemporalPrecision(),row.getReferenceWeek());
 	}
 }

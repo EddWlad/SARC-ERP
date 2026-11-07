@@ -31,6 +31,10 @@ class EnerlinkBlockParser implements MeasurementBlockParser {
 	private static final String NUMBER = "(\\d+(?:[.,]\\d+)?)";
 	private static final Pattern PERCENT = Pattern.compile("(?:UPTIME\\s*:?\\s*)?" + NUMBER + "\\s*%");
 	private static final Pattern VALUE = Pattern.compile("[:=]?\\s*" + NUMBER + "\\s*(?:MIN|MINUTOS)?\\.?");
+	/** Como Enerlink lo copia: "163 hrs 35 mins - Disponible", la duracion antes de la etiqueta. */
+	private static final Pattern DURATION_FIRST = Pattern.compile(
+			"(?:(\\d+)\\s*(?:HRS?|HORAS?)(?:\\s*(\\d+)\\s*(?:MINS?|MINUTOS?))?|(\\d+)\\s*(?:MINS?|MINUTOS?))\\s*[-–—]\\s*("
+					+ LABEL.pattern() + ")");
 
 	@Override
 	public Block parse(String text) {
@@ -42,7 +46,9 @@ class EnerlinkBlockParser implements MeasurementBlockParser {
 			percent = decimal(percents.group(1));
 			found++;
 		}
-		Map<String, BigDecimal> values = values(percents.replaceAll(" "));
+		String withoutPercent = percents.replaceAll(" ");
+		Map<String, BigDecimal> values = DURATION_FIRST.matcher(withoutPercent).find() ? durationsFirst(withoutPercent)
+				: values(withoutPercent);
 		if (found > 1) {
 			throw ambiguous(values.keySet());
 		}
@@ -67,6 +73,26 @@ class EnerlinkBlockParser implements MeasurementBlockParser {
 			Matcher value = VALUE.matcher(text.substring(spans.get(index)[0], spans.get(index)[1]).strip());
 			clear &= value.matches() && values.putIfAbsent(detected.get(index), decimal(value.group(1))) == null;
 		}
+		if (!clear || values.size() < LABELS.size()) {
+			throw ambiguous(detected);
+		}
+		return values;
+	}
+
+	/** Cada etiqueta una vez, con su duracion delante; cualquier texto sobrante o faltante se rechaza. */
+	private static Map<String, BigDecimal> durationsFirst(String text) {
+		Matcher durations = DURATION_FIRST.matcher(text);
+		List<String> detected = new ArrayList<>();
+		Map<String, BigDecimal> values = new LinkedHashMap<>();
+		boolean clear = true;
+		while (durations.find()) {
+			BigDecimal minutes = durations.group(1) == null ? new BigDecimal(durations.group(3))
+					: new BigDecimal(durations.group(1)).multiply(BigDecimal.valueOf(60))
+							.add(durations.group(2) == null ? BigDecimal.ZERO : new BigDecimal(durations.group(2)));
+			detected.add(durations.group(4));
+			clear &= values.putIfAbsent(durations.group(4), minutes) == null;
+		}
+		clear &= durations.replaceAll(" ").isBlank();
 		if (!clear || values.size() < LABELS.size()) {
 			throw ambiguous(detected);
 		}

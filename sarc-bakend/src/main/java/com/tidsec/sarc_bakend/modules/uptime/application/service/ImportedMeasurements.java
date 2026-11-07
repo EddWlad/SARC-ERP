@@ -2,6 +2,7 @@ package com.tidsec.sarc_bakend.modules.uptime.application.service;
 
 import java.time.Clock;
 import java.time.Instant;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision;
 import java.util.Map;
 import java.util.UUID;
 
@@ -43,7 +44,7 @@ class ImportedMeasurements {
 
 	/** Solo las filas alineadas y sin observaciones aceptan la confirmacion exacta del lote. */
 	boolean qualifiesAsExact(UptimeImportRow row) {
-		return row.getObservations().isEmpty()
+		return row.getTemporalPrecision()==TemporalPrecision.KNOWN_RANGE && row.getObservations().isEmpty()
 				&& PeriodRules.isAlignedWeek(row.getPeriodStart(), row.getPeriodEnd(), zone.zone());
 	}
 
@@ -69,7 +70,7 @@ class ImportedMeasurements {
 
 	Measurement create(UptimeImportBatch batch, UptimeImportRow row, MeasurableConnector connector, RevisionData data) {
 		Measurement measurement = Measurement.open(connector.connectorId(), connector.equipmentId(), batch.getSource(),
-				row.getPeriodStart(), row.getPeriodEnd(), zone.zone().getId());
+				row.getPeriod(zone.zone().getId()));
 		MeasurementRevision revision = measurement.register(data);
 		measurements.save(measurement);
 		measurements.saveRevision(revision);

@@ -49,4 +49,17 @@ class ReportPublicationTest {
 		assertThatThrownBy(() -> publication(Map.of("connectorId", "no-uuid")))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
+    private Map<String,String> reference() {return new HashMap<>(Map.of("selectionBasis","REFERENCE_WEEK","referenceWeek","2026-10-26",
+        "periodType","ROLLING_7D","periodKind","PROVISIONAL","timeZone",ReportPublication.TIME_ZONE));}
+    @Test void referenceNeedsNoFabricatedBounds() {
+        assertThat(new ReportPublication(ReportContentProfile.OFFICIAL_ONLY,CUT_OFF,reference()).criteria()).doesNotContainKeys("from","to");
+    }
+    @Test void rejectsMixedOrInvalidReferenceCriteria() {
+        for(var change:java.util.List.of(Map.of("from","2026-10-26"),Map.of("referenceWeek","2026-10-27"),
+            Map.of("periodType","EXACT_WEEK"),Map.of("temporalSection","REQUIRES_RECONCILIATION"))) {
+            var values=reference();values.putAll(change);
+            assertThatThrownBy(()->new ReportPublication(ReportContentProfile.OFFICIAL_ONLY,CUT_OFF,values)).isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
 }

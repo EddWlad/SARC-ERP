@@ -1,6 +1,15 @@
 package com.tidsec.sarc_bakend.modules.uptime.api.controller;
 
 import java.time.OffsetDateTime;
+import java.time.LocalDate;
+import java.time.Clock;
+import com.tidsec.sarc_bakend.modules.uptime.application.service.UptimeTemporalTransitionService;
+import com.tidsec.sarc_bakend.modules.uptime.api.request.TemporalTransitionRequest;
+import com.tidsec.sarc_bakend.modules.uptime.api.request.TemporalClassificationRequest;
+import com.tidsec.sarc_bakend.shared.web.VersionRequest;
+import com.tidsec.sarc_bakend.modules.uptime.api.response.TemporalTransitionWorkResponse;
+import org.springframework.web.bind.annotation.RequestHeader;
+import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 import java.util.List;
 import java.util.UUID;
 
@@ -53,14 +62,57 @@ class UptimeMeasurementController {
 	private final MeasurementGridService grid;
 	private final MeasurementValidationService validation;
 	private final MeasurementReadService reads;
+    private final UptimeTemporalTransitionService temporal;
+    private final Clock clock;
+    private final jakarta.validation.Validator temporalValidator;
 
 	UptimeMeasurementController(MeasurementService measurements, MeasurementGridService grid,
-			MeasurementValidationService validation, MeasurementReadService reads) {
+			MeasurementValidationService validation, MeasurementReadService reads,UptimeTemporalTransitionService temporal,Clock clock,jakarta.validation.Validator temporalValidator) {
 		this.measurements = measurements;
 		this.grid = grid;
 		this.validation = validation;
-		this.reads = reads;
+		this.reads = reads;this.temporal=temporal;this.clock=clock;this.temporalValidator=temporalValidator;
 	}
+
+    @PostMapping("/measurements/temporal-transition")
+    ResponseEntity<TemporalTransitionWorkResponse> transition(@RequestHeader(value="Idempotency-Key",required=false) String key,
+            @RequestBody TemporalTransitionRequest request) {
+        validateTemporal(request);
+        UUID requestKey;
+        try {requestKey=UUID.fromString(key);}catch(RuntimeException invalid) {
+            throw new BusinessRuleException("UPTIME_TRANSITION_KEY_INVALID","Indica una clave Idempotency-Key UUID válida.");
+        }
+        var result=temporal.submit(requestKey,request.toItems());
+        var state=result.work().getStatus();
+        boolean terminal=state==com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalTransitionWork.Status.COMPLETED
+            ||state==com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalTransitionWork.Status.FAILED
+            ||state==com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalTransitionWork.Status.INTERRUPTED;
+        return ResponseEntity.status(result.repeated()&&terminal?HttpStatus.OK:HttpStatus.ACCEPTED)
+            .body(TemporalTransitionWorkResponse.from(result.work(),new PageQuery(0,20),clock.instant()));
+    }
+    @GetMapping("/measurements/temporal-transition/{workId}")
+    TemporalTransitionWorkResponse transitionWork(@PathVariable UUID workId,
+            @RequestParam(defaultValue="0") @Min(0) int page,
+            @RequestParam(defaultValue="20") @Min(1) @Max(PageQuery.MAX_SIZE) int size) {
+        return TemporalTransitionWorkResponse.from(temporal.get(workId),new PageQuery(page,size),clock.instant());
+    }
+    @PostMapping("/measurements/temporal-transition/{workId}/retry")
+    ResponseEntity<TemporalTransitionWorkResponse> retryTransition(@PathVariable UUID workId,@Valid @RequestBody VersionRequest request) {
+        return ResponseEntity.accepted().body(TemporalTransitionWorkResponse.from(temporal.retry(workId,request.version()),new PageQuery(0,20),clock.instant()));
+    }
+    @PostMapping("/measurements/{id}/temporal-classification")
+    MeasurementDetailResponse classifyTemporal(@PathVariable UUID id,@RequestBody TemporalClassificationRequest request) {
+        validateTemporal(request);
+        temporal.classify(id,request.version(),request.temporalPrecision(),request.referenceWeek(),
+            request.periodStart()==null?null:request.periodStart().toInstant(),request.periodEnd()==null?null:request.periodEnd().toInstant(),
+            request.justification(),request.evidence());
+        return MeasurementDetailResponse.from(reads.detail(id));
+    }
+
+    private void validateTemporal(Object request) {
+        if(!temporalValidator.validate(request).isEmpty())throw new BusinessRuleException("UPTIME_TEMPORAL_REQUEST_INVALID",
+            "Revisa los campos obligatorios, las versiones y el máximo de 500 mediciones distintas por bloque.");
+    }
 
 	/** Sin estado y sin escribir: la persona revisa los valores antes de guardar. */
 	@PostMapping("/measurements/parse")
@@ -130,12 +182,21 @@ class UptimeMeasurementController {
 
 	/** {@code periodStart} y {@code periodEnd} son instantes exactos: la situacion es por identidad. */
 	@GetMapping("/grid")
-	List<GridRowResponse> grid(@RequestParam OffsetDateTime periodStart, @RequestParam OffsetDateTime periodEnd,
+	List<GridRowResponse> grid(@RequestParam(required=false) OffsetDateTime periodStart, @RequestParam(required=false) OffsetDateTime periodEnd,
+            @RequestParam(required=false) LocalDate referenceWeek,
 			@RequestParam(required = false) ChargingNetwork network,
 			@RequestParam(required = false) InfrastructureType type,
 			@RequestParam(required = false) UUID equipmentId,
 			@RequestParam(defaultValue = "false") boolean showInactive) {
 		ConnectorQuery query = new ConnectorQuery(null, network, type, null, equipmentId);
+        if (referenceWeek!=null) {
+            if (periodStart!=null || periodEnd!=null)
+                throw new BusinessRuleException("UPTIME_PERIOD_INVALID","Elige referencia o limites reales, no ambos.");
+            return grid.gridReference(query,referenceWeek,showInactive).stream().map(GridRowResponse::from).toList();
+        }
+        if (periodStart==null || periodEnd==null || !periodEnd.isAfter(periodStart))
+            throw new BusinessRuleException("UPTIME_PERIOD_INVALID","Indica referencia o ambos limites reales validos.");
+
 		return grid.grid(query, periodStart.toInstant(), periodEnd.toInstant(), showInactive).stream()
 				.map(GridRowResponse::from).toList();
 	}

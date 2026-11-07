@@ -31,12 +31,13 @@ class UptimeSecurityTest extends UptimeApiSupport {
 			"/results/exclusions", "/measurements", "/scope/connectors");
 	private static final List<String> OPERATIONAL_READS = List.of(
 			"/grid?periodStart=2026-10-30T14:00:00-05:00&periodEnd=2026-10-31T14:00:00-05:00",
-			"/measurements?queue=PENDING", "/measurements/%s/revisions");
+			"/measurements?queue=PENDING", "/measurements?queue=TEMPORAL_RECONCILIATION", "/measurements/%s/revisions");
 	private static final List<String> WRITES = List.of("/measurements", "/measurements/classifications",
 			"/measurements/validation", "/measurements/%s/corrections", "/measurements/%s/validate",
 			"/measurements/%s/exclude", "/measurements/%s/restore");
 
-	private String measurementId;
+	@org.springframework.test.context.bean.override.mockito.MockitoBean com.tidsec.sarc_bakend.shared.importing.batch.ImportJobs jobs;
+    private String measurementId;
 
 	@BeforeEach
 	void measurement() throws Exception {
@@ -117,4 +118,21 @@ class UptimeSecurityTest extends UptimeApiSupport {
 	void anonymousIsRejected() throws Exception {
 		assertThat(statusOf(get("/api/v1/uptime/summary"))).isEqualTo(401);
 	}
+    @ParameterizedTest @MethodSource("roleSets")
+    void temporalWorkActionsRespectRoleUnion(Set<Role> roles) throws Exception {
+        Cookie session=session(roles);
+        String body="{\"items\":[{\"id\":\""+measurementId+"\",\"version\":"+version(measurementId)+"}]}";
+        String accepted=mvc.perform(post("/api/v1/uptime/measurements/temporal-transition").cookie(analyst).with(WebSessions.xsrf())
+            .header("Idempotency-Key",UUID.randomUUID().toString()).contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isAccepted()).andReturn().getResponse().getContentAsString();
+        String work=com.jayway.jsonpath.JsonPath.read(accepted,"$.workId");
+        assertThat(statusOf(get("/api/v1/uptime/measurements/temporal-transition/"+work).cookie(session))).isEqualTo(operational(roles)?200:403);
+        jdbc.update("UPDATE upt_temporal_transition_work SET status='FAILED' WHERE id=?::uuid",work);
+        assertThat(statusOf(post("/api/v1/uptime/measurements/temporal-transition/"+work+"/retry").cookie(session).with(WebSessions.xsrf())
+            .contentType(MediaType.APPLICATION_JSON).content("{\"version\":0}"))).isEqualTo(operational(roles)?202:403);
+        assertThat(statusOf(post("/api/v1/uptime/measurements/temporal-transition").cookie(session).with(WebSessions.xsrf())
+            .header("Idempotency-Key",UUID.randomUUID().toString()).contentType(MediaType.APPLICATION_JSON).content(body)))
+            .isEqualTo(operational(roles)?202:403);
+    }
+
 }

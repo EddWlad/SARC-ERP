@@ -108,4 +108,35 @@ class UptimeCalculatorTest {
 
 		assertThat(UptimeCalculator.kpis(units).uptimePercent()).isEqualByComparingTo("99.70");
 	}
+    private static com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.MeasurementFact reference(
+            MeasurableConnector c,String percent,Long occupied,boolean validated) {
+        return com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.MeasurementFact.reference(
+            java.util.UUID.randomUUID(),c.connectorId(),c.equipmentId(),java.time.LocalDate.of(2026,10,26),
+            new BigDecimal(percent),10L,occupied,0L,0L,validated,false);
+    }
+    @Test void referenceMeanIncludesZeroAndExcludesPending() {
+        var units=UptimeCalculator.provisionalUnits(List.of(a1,a2,b1),
+            List.of(reference(a1,"0",null,true),reference(a2,"100",null,true),reference(b1,"99",null,false)));
+        var report=UptimeCalculator.referenceKpis(units,java.time.LocalDate.of(2026,10,26));
+        assertThat(report.uptimePercent()).isEqualByComparingTo("50.00");
+        assertThat(report.connectorsIncluded()).isEqualTo(2);
+        assertThat(report.coverage().byState().get(UptimeCalculator.UnitState.PENDING_REVIEW)).isEqualTo(1);
+        assertThat(UptimeCalculator.ranking(units)).allSatisfy(row->assertThat(row.evaluatedMinutes()).isNull());
+    }
+    @Test void referenceMeanUsesOriginalPrecision() {
+        var units=UptimeCalculator.provisionalUnits(List.of(a1,a2),
+            List.of(reference(a1,"10.0049",null,true),reference(a2,"10.0050",null,true)));
+        assertThat(UptimeCalculator.referenceKpis(units,java.time.LocalDate.of(2026,10,26)).uptimePercent())
+            .isEqualByComparingTo("10.00");
+    }
+    @Test void compositionKeepsPartialZeroDistinctFromAbsence() {
+        var units=UptimeCalculator.provisionalUnits(List.of(a1,a2),
+            List.of(reference(a1,"50",0L,true),reference(a2,"50",null,true)));
+        var c=UptimeCalculator.referenceKpis(units,java.time.LocalDate.of(2026,10,26)).composition();
+        assertThat(c.occupiedMinutes()).isZero();
+        assertThat(c.knownMeasurementsByState().get("occupied")).isEqualTo(1);
+        assertThat(c.selectedMeasurements()).isEqualTo(2);
+        assertThat(c.completeMeasurements()).isEqualTo(1);
+        assertThat(c.isComplete()).isFalse();
+    }
 }

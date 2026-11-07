@@ -32,6 +32,16 @@ class UptimeImportApiTest extends UptimeImportSupport {
 	}
 
 	@Test
+	void parsesTheBlockAsEnerlinkCopiesItWithHoursAndMinutesBeforeEachLabel() throws Exception {
+		send(analyst, "/measurements/parse", "{\"text\":\"163 hrs 35 mins - Disponible\\n0 hrs 31 mins - Ocupado\\n"
+				+ "0 hrs 0 mins - Con falla\\n3 hrs 54 mins - Fuera de línea\"}").andExpect(status().isOk())
+				.andExpect(jsonPath("$.available").value(9815)).andExpect(jsonPath("$.occupied").value(31))
+				.andExpect(jsonPath("$.fault").value(0)).andExpect(jsonPath("$.offline").value(234));
+
+		assertThat(measurements()).isZero();
+	}
+
+	@Test
 	void ambiguousBlockNamesWhatIsMissing() throws Exception {
 		send(analyst, "/measurements/parse", "{\"text\":\"Disponible 1296\"}").andExpect(status().isUnprocessableContent())
 				.andExpect(jsonPath("$.code").value("UPTIME_BLOCK_AMBIGUOUS"))
@@ -76,8 +86,10 @@ class UptimeImportApiTest extends UptimeImportSupport {
 				.param("weekStart", "2026-10-19").cookie(analyst).with(WebSessions.xsrf()))
 				.andExpect(status().isAccepted()).andExpect(jsonPath("$.origin").value("FILE"))
 				.andExpect(jsonPath("$.declaredPeriodType").value("ROLLING_7D"))
-				.andExpect(jsonPath("$.declaredPeriodStart").value("2026-10-19T05:00:00Z"))
-				.andExpect(jsonPath("$.declaredPeriodEnd").value("2026-10-26T05:00:00Z")).andReturn().getResponse()
+				.andExpect(jsonPath("$.referenceWeek").value("2026-10-19"))
+                .andExpect(jsonPath("$.temporalPrecision").value("REFERENCE_WEEK"))
+                .andExpect(jsonPath("$.declaredPeriodStart").doesNotExist())
+				.andExpect(jsonPath("$.declaredPeriodEnd").doesNotExist()).andReturn().getResponse()
 				.getContentAsString();
 		String id = JsonPath.read(body, "$.id");
 		awaitStatus(id, "READY");
@@ -97,8 +109,14 @@ class UptimeImportApiTest extends UptimeImportSupport {
 		assertThat(revision.get("available_minutes")).isEqualTo(9990);
 		assertThat((java.math.BigDecimal) revision.get("reported_percent")).isEqualByComparingTo("99.40");
 		assertThat(revision.get("equipment_label")).isEqualTo(CHARGER);
-		assertThat(jdbc.queryForObject("SELECT period_start FROM upt_measurement", java.sql.Timestamp.class)
-				.toInstant()).hasToString("2026-10-19T05:00:00Z");
+		assertThat(jdbc.queryForObject("SELECT period_start FROM upt_measurement", java.sql.Timestamp.class)).isNull();
+        assertThat(jdbc.queryForObject("SELECT period_precision FROM upt_measurement",String.class)).isEqualTo("REFERENCE_WEEK");
+        assertThat(jdbc.queryForObject("SELECT reference_week::text FROM upt_measurement",String.class)).isEqualTo("2026-10-19");
+        String duplicate=uploadWeekly();
+        awaitStatus(duplicate,"READY");
+        rows(duplicate).andExpect(jsonPath("$.content[0].classification").value("IDENTICAL"));
+        confirm(duplicate,false);
+        assertThat(measurements()).isEqualTo(1);
 
 		// Corregir sin Ocupado conserva el uptime que informo el archivo.
 		String measurement = jdbc.queryForObject("SELECT id::text FROM upt_measurement", String.class);
@@ -304,4 +322,20 @@ class UptimeImportApiTest extends UptimeImportSupport {
 		assertThat(jdbc.queryForObject("SELECT count(*) FROM upt_import_row WHERE batch_id = ?::uuid AND outcome = 'PENDING_LINK'",
 				Integer.class, id)).isEqualTo(1);
 	}
+    private String uploadWeekly() throws Exception {
+        var response=mvc.perform(multipart("/api/v1/uptime/imports")
+            .file(new MockMultipartFile("file","Modelo.xlsx","application/octet-stream",model()))
+            .param("weekStart","2026-10-19").cookie(analyst).with(WebSessions.xsrf()))
+            .andExpect(status().isAccepted()).andReturn().getResponse().getContentAsString();
+        return JsonPath.read(response,"$.id");
+    }
+    @Test void referenceCannotBeConfirmedAsExactAndKeepsPreview() throws Exception {
+        String id=uploadWeekly();awaitStatus(id,"READY");
+        send(analyst,"/imports/"+id+"/confirm",
+            "{\"version\":%d,\"exactConfirmed\":true}".formatted(batchVersion(id)))
+            .andExpect(status().isUnprocessableContent())
+            .andExpect(jsonPath("$.code").value("UPTIME_REAL_RANGE_REQUIRED"));
+        assertThat(jdbc.queryForObject("SELECT status FROM upt_import_batch WHERE id=?::uuid",String.class,id)).isEqualTo("READY");
+        assertThat(measurements()).isZero();
+    }
 }

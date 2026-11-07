@@ -527,7 +527,7 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "enum" : [ "PENDING", "OBSERVED", "VALIDATED", "EXCLUDED" ]
+            "enum" : [ "PENDING", "OBSERVED", "VALIDATED", "TEMPORAL_RECONCILIATION", "EXCLUDED" ]
           }
         }, {
           "name" : "page",
@@ -621,6 +621,43 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/MeasurementResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/measurements/{id}/temporal-classification" : {
+      "post" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "classifyTemporal",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TemporalClassificationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeasurementDetailResponse"
                 }
               }
             }
@@ -760,6 +797,79 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/BatchValidationResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/measurements/temporal-transition" : {
+      "post" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "transition",
+        "parameters" : [ {
+          "name" : "Idempotency-Key",
+          "in" : "header",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TemporalTransitionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TemporalTransitionWorkResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/uptime/measurements/temporal-transition/{workId}/retry" : {
+      "post" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "retryTransition",
+        "parameters" : [ {
+          "name" : "workId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TemporalTransitionWorkResponse"
                 }
               }
             }
@@ -2114,6 +2224,22 @@
             "type" : "string",
             "format" : "uuid"
           }
+        }, {
+          "name" : "referenceWeek",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "temporalSection",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KNOWN_RANGE", "REFERENCE_WEEK", "REQUIRES_RECONCILIATION" ]
+          }
         } ],
         "responses" : {
           "200" : {
@@ -2234,6 +2360,22 @@
             "format" : "uuid"
           }
         }, {
+          "name" : "referenceWeek",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "temporalSection",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KNOWN_RANGE", "REFERENCE_WEEK", "REQUIRES_RECONCILIATION" ]
+          }
+        }, {
           "name" : "page",
           "in" : "query",
           "required" : false,
@@ -2345,6 +2487,22 @@
             "format" : "uuid"
           }
         }, {
+          "name" : "referenceWeek",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "temporalSection",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KNOWN_RANGE", "REFERENCE_WEEK", "REQUIRES_RECONCILIATION" ]
+          }
+        }, {
           "name" : "page",
           "in" : "query",
           "required" : false,
@@ -2454,6 +2612,22 @@
           "schema" : {
             "type" : "string",
             "format" : "uuid"
+          }
+        }, {
+          "name" : "referenceWeek",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "temporalSection",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KNOWN_RANGE", "REFERENCE_WEEK", "REQUIRES_RECONCILIATION" ]
           }
         }, {
           "name" : "page",
@@ -2573,6 +2747,22 @@
           "schema" : {
             "type" : "string",
             "format" : "uuid"
+          }
+        }, {
+          "name" : "referenceWeek",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "temporalSection",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KNOWN_RANGE", "REFERENCE_WEEK", "REQUIRES_RECONCILIATION" ]
           }
         } ],
         "responses" : {
@@ -2706,6 +2896,54 @@
         }
       }
     },
+    "/api/v1/uptime/measurements/temporal-transition/{workId}" : {
+      "get" : {
+        "tags" : [ "uptime-measurement-controller" ],
+        "operationId" : "transitionWork",
+        "parameters" : [ {
+          "name" : "workId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TemporalTransitionWorkResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/uptime/imports/{id}" : {
       "get" : {
         "tags" : [ "uptime-import-controller" ],
@@ -2796,7 +3034,7 @@
         "parameters" : [ {
           "name" : "periodStart",
           "in" : "query",
-          "required" : true,
+          "required" : false,
           "schema" : {
             "type" : "string",
             "format" : "date-time"
@@ -2804,10 +3042,18 @@
         }, {
           "name" : "periodEnd",
           "in" : "query",
-          "required" : true,
+          "required" : false,
           "schema" : {
             "type" : "string",
             "format" : "date-time"
+          }
+        }, {
+          "name" : "referenceWeek",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
           }
         }, {
           "name" : "network",
@@ -3872,9 +4118,17 @@
           "version" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "temporalPrecision" : {
+            "type" : "string",
+            "enum" : [ "KNOWN_RANGE", "REFERENCE_WEEK", "REQUIRES_RECONCILIATION" ]
+          },
+          "referenceWeek" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
           }
         },
-        "required" : [ "approved", "batchId", "classification", "id", "issues", "observations", "rowNumber", "uptimeBasis", "version" ]
+        "required" : [ "approved", "batchId", "classification", "id", "issues", "observations", "rowNumber", "temporalPrecision", "uptimeBasis", "version" ]
       },
       "UpdateConnectorAliasRequest" : {
         "type" : "object",
@@ -4615,6 +4869,10 @@
             "type" : "string",
             "maxLength" : 4000,
             "minLength" : 0
+          },
+          "referenceWeek" : {
+            "type" : "string",
+            "format" : "date"
           }
         },
         "required" : [ "availableMinutes", "connectorId", "faultMinutes", "occupiedMinutes", "offlineMinutes", "origin", "periodEnd", "periodStart", "periodType", "source" ]
@@ -4646,11 +4904,11 @@
             "enum" : [ "ENERLINK" ]
           },
           "periodStart" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time"
           },
           "periodEnd" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time"
           },
           "periodZone" : {
@@ -4665,7 +4923,7 @@
             "enum" : [ "MEASURED", "NO_DATA", "OUT_OF_SCOPE", "RETIRED" ]
           },
           "periodType" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
           },
           "reviewState" : {
@@ -4714,9 +4972,17 @@
           "uptimeBasis" : {
             "type" : "string",
             "enum" : [ "STATES", "REPORTED_PERCENT" ]
+          },
+          "temporalPrecision" : {
+            "type" : "string",
+            "enum" : [ "KNOWN_RANGE", "REFERENCE_WEEK", "REQUIRES_RECONCILIATION" ]
+          },
+          "referenceWeek" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
           }
         },
-        "required" : [ "connectorId", "equipmentId", "excluded", "id", "observations", "periodEnd", "periodStart", "periodType", "periodZone", "readingClass", "result", "reviewState", "revision", "source", "uptimeBasis", "validatable", "version" ]
+        "required" : [ "connectorId", "equipmentId", "excluded", "id", "observations", "periodZone", "readingClass", "result", "reviewState", "revision", "source", "temporalPrecision", "uptimeBasis", "validatable", "version" ]
       },
       "ValidateMeasurementRequest" : {
         "type" : "object",
@@ -4732,6 +4998,173 @@
           }
         },
         "required" : [ "version" ]
+      },
+      "TemporalClassificationRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64",
+            "minimum" : 0
+          },
+          "temporalPrecision" : {
+            "type" : "string",
+            "enum" : [ "KNOWN_RANGE", "REFERENCE_WEEK", "REQUIRES_RECONCILIATION" ]
+          },
+          "referenceWeek" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "periodStart" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "periodEnd" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "justification" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "evidence" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "evidence", "justification", "temporalPrecision", "version" ]
+      },
+      "FactLabel" : {
+        "type" : "object",
+        "properties" : {
+          "equipmentName" : {
+            "type" : "string"
+          },
+          "assignedCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "connectorType" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "connectorType", "equipmentName" ]
+      },
+      "MeasurementDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "connectorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "ordinal" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "equipmentName" : {
+            "type" : "string"
+          },
+          "assignedCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "periodStart" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "periodEnd" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "revision" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "readingClass" : {
+            "type" : "string",
+            "enum" : [ "MEASURED", "NO_DATA", "OUT_OF_SCOPE", "RETIRED" ]
+          },
+          "periodType" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          },
+          "reviewState" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "VALIDATED", "SUPERSEDED" ]
+          },
+          "availableMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "occupiedMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "faultMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "offlineMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "evaluatedMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "uptimePercent" : {
+            "type" : [ "string", "null" ]
+          },
+          "factLabel" : {
+            "$ref" : "#/components/schemas/FactLabel"
+          },
+          "observations" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "type" : "string",
+              "enum" : [ "SUM_BELOW_DURATION", "PERCENT_MISMATCH", "SUM_ABOVE_DURATION", "SUM_ZERO", "PERCENT_OUT_OF_RANGE", "DURATION_INVALID", "WINDOW_DURATION_MISMATCH" ]
+            }
+          },
+          "validatable" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "reportedPercent" : {
+            "type" : [ "string", "null" ]
+          },
+          "justification" : {
+            "type" : [ "string", "null" ]
+          },
+          "excluded" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "effectiveRevision" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "uptimeBasis" : {
+            "type" : "string",
+            "enum" : [ "STATES", "REPORTED_PERCENT" ]
+          },
+          "temporalPrecision" : {
+            "type" : "string",
+            "enum" : [ "KNOWN_RANGE", "REFERENCE_WEEK", "REQUIRES_RECONCILIATION" ]
+          },
+          "referenceWeek" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          }
+        },
+        "required" : [ "connectorId", "equipmentId", "equipmentName", "factLabel", "id", "ordinal", "readingClass", "reviewState", "revision", "temporalPrecision", "uptimeBasis", "version" ]
       },
       "JustifiedVersionRequest" : {
         "type" : "object",
@@ -4846,6 +5279,150 @@
           }
         },
         "required" : [ "id", "reason" ]
+      },
+      "TemporalTransitionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "maxItems" : 500,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "items" ]
+      },
+      "ItemResult" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "outcome" : {
+            "type" : "string",
+            "enum" : [ "APPLIED", "VERIFIED_KNOWN_RANGE", "REQUIRES_RECONCILIATION", "ALREADY_APPLIED", "STALE_VERSION" ]
+          },
+          "eventId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "id", "outcome", "version" ]
+      },
+      "PageResultItemResult" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemResult"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "TemporalTransitionWorkResponse" : {
+        "type" : "object",
+        "properties" : {
+          "workId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "QUEUED", "RUNNING", "COMPLETED", "FAILED", "INTERRUPTED" ]
+          },
+          "policyVersion" : {
+            "type" : "string"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "processed" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "counts" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "attempt" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "requestedBy" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "lastAttemptBy" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "startedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "finishedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "failureCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "cutOff" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "results" : {
+            "$ref" : "#/components/schemas/PageResultItemResult"
+          }
+        },
+        "required" : [ "attempt", "counts", "createdAt", "cutOff", "policyVersion", "processed", "requestedBy", "results", "status", "total", "version", "workId" ]
+      },
+      "VersionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "version" ]
       },
       "ParseBlockRequest" : {
         "type" : "object",
@@ -5028,19 +5605,17 @@
           "version" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "temporalPrecision" : {
+            "type" : "string",
+            "enum" : [ "KNOWN_RANGE", "REFERENCE_WEEK", "REQUIRES_RECONCILIATION" ]
+          },
+          "referenceWeek" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
           }
         },
-        "required" : [ "appliedRows", "checksum", "conflictRows", "createdAt", "declaredPeriodType", "exactConfirmed", "fileName", "id", "identicalRows", "invalidRows", "newRows", "observedRows", "origin", "pendingLinkRows", "source", "status", "totalRows", "version" ]
-      },
-      "VersionRequest" : {
-        "type" : "object",
-        "properties" : {
-          "version" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        },
-        "required" : [ "version" ]
+        "required" : [ "appliedRows", "checksum", "conflictRows", "createdAt", "declaredPeriodType", "exactConfirmed", "fileName", "id", "identicalRows", "invalidRows", "newRows", "observedRows", "origin", "pendingLinkRows", "source", "status", "temporalPrecision", "totalRows", "version" ]
       },
       "ConfirmUptimeImportRequest" : {
         "type" : "object",
@@ -5856,6 +6431,44 @@
         },
         "required" : [ "correctionsPending", "observed", "readyToValidate" ]
       },
+      "ReferenceReport" : {
+        "type" : "object",
+        "properties" : {
+          "referenceWeek" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "uptimePercent" : {
+            "type" : [ "string", "null" ]
+          },
+          "aggregationMethod" : {
+            "type" : "string"
+          },
+          "equipmentEvaluated" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "equipmentWithoutData" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "connectorsIncluded" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "connectorsInScope" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "coverage" : {
+            "$ref" : "#/components/schemas/Coverage"
+          },
+          "composition" : {
+            "$ref" : "#/components/schemas/StateCompositionResponse"
+          }
+        },
+        "required" : [ "aggregationMethod", "composition", "connectorsInScope", "connectorsIncluded", "coverage", "equipmentEvaluated", "equipmentWithoutData", "referenceWeek" ]
+      },
       "ResolvedPeriod" : {
         "type" : "object",
         "properties" : {
@@ -5880,6 +6493,75 @@
           }
         },
         "required" : [ "kind", "timeZone" ]
+      },
+      "Selection" : {
+        "type" : "object",
+        "properties" : {
+          "basis" : {
+            "type" : "string",
+            "enum" : [ "ACTUAL_RANGE", "REFERENCE_WEEK", "NONE" ]
+          },
+          "referenceWeek" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "periodType" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
+          },
+          "timeZone" : {
+            "type" : "string"
+          },
+          "temporalSection" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "KNOWN_RANGE", "REFERENCE_WEEK", "REQUIRES_RECONCILIATION" ]
+          }
+        },
+        "required" : [ "basis", "timeZone" ]
+      },
+      "StateCompositionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "availableMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "occupiedMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "faultMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "offlineMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "totalKnownMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "selectedMeasurements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "completeMeasurements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "knownMeasurementsByState" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "isComplete" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "completeMeasurements", "isComplete", "knownMeasurementsByState", "selectedMeasurements", "totalKnownMinutes" ]
       },
       "Trend" : {
         "type" : "object",
@@ -5909,6 +6591,7 @@
             "$ref" : "#/components/schemas/Kpis"
           },
           "coverage" : {
+            "type" : "null",
             "$ref" : "#/components/schemas/Coverage"
           },
           "trend" : {
@@ -5935,9 +6618,28 @@
           "operations" : {
             "type" : "null",
             "$ref" : "#/components/schemas/Operations"
+          },
+          "selection" : {
+            "$ref" : "#/components/schemas/Selection"
+          },
+          "referenceReport" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/ReferenceReport"
+          },
+          "provisionalCoverage" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/Coverage"
+          },
+          "provisionalComposition" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/StateCompositionResponse"
+          },
+          "temporalReconciliationCount" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         },
-        "required" : [ "coverage", "cutOff", "notices", "resolvedPeriod", "trend" ]
+        "required" : [ "cutOff", "notices", "resolvedPeriod", "selection", "temporalReconciliationCount", "trend" ]
       },
       "ScopeConnectorResponse" : {
         "type" : "object",
@@ -6047,15 +6749,15 @@
             "type" : [ "string", "null" ]
           },
           "evaluatedMinutes" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64"
           },
           "offlineMinutes" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64"
           },
           "faultMinutes" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64"
           },
           "connectorsIncluded" : {
@@ -6065,9 +6767,20 @@
           "connectorsInScope" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "referenceWeek" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "temporalPrecision" : {
+            "type" : "string",
+            "enum" : [ "KNOWN_RANGE", "REFERENCE_WEEK", "REQUIRES_RECONCILIATION" ]
+          },
+          "aggregationMethod" : {
+            "type" : "string"
           }
         },
-        "required" : [ "connectorsInScope", "connectorsIncluded", "equipmentId", "equipmentName", "evaluatedMinutes", "faultMinutes", "network", "offlineMinutes", "type" ]
+        "required" : [ "aggregationMethod", "connectorsInScope", "connectorsIncluded", "equipmentId", "equipmentName", "network", "temporalPrecision", "type" ]
       },
       "PageResultEquipmentResultResponse" : {
         "type" : "object",
@@ -6140,27 +6853,38 @@
             "type" : "string"
           },
           "evaluatedMinutes" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64"
           },
           "offlineMinutes" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64"
           },
           "faultMinutes" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64"
           },
           "from" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time"
           },
           "to" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time"
+          },
+          "referenceWeek" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "temporalPrecision" : {
+            "type" : "string",
+            "enum" : [ "KNOWN_RANGE", "REFERENCE_WEEK", "REQUIRES_RECONCILIATION" ]
+          },
+          "aggregationMethod" : {
+            "type" : "string"
           }
         },
-        "required" : [ "connectorId", "connectorType", "equipmentId", "equipmentName", "evaluatedMinutes", "faultMinutes", "from", "network", "offlineMinutes", "ordinal", "position", "to", "type", "uptimePercent" ]
+        "required" : [ "aggregationMethod", "connectorId", "connectorType", "equipmentId", "equipmentName", "network", "ordinal", "position", "temporalPrecision", "type", "uptimePercent" ]
       },
       "PageResultConnectorResultResponse" : {
         "type" : "object",
@@ -6217,130 +6941,6 @@
           }
         },
         "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
-      },
-      "FactLabel" : {
-        "type" : "object",
-        "properties" : {
-          "equipmentName" : {
-            "type" : "string"
-          },
-          "assignedCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "connectorType" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "connectorType", "equipmentName" ]
-      },
-      "MeasurementDetailResponse" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "version" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "connectorId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "equipmentId" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "ordinal" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "equipmentName" : {
-            "type" : "string"
-          },
-          "assignedCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "periodStart" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "periodEnd" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "revision" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "readingClass" : {
-            "type" : "string",
-            "enum" : [ "MEASURED", "NO_DATA", "OUT_OF_SCOPE", "RETIRED" ]
-          },
-          "periodType" : {
-            "type" : "string",
-            "enum" : [ "ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK" ]
-          },
-          "reviewState" : {
-            "type" : "string",
-            "enum" : [ "PENDING", "VALIDATED", "SUPERSEDED" ]
-          },
-          "availableMinutes" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
-          },
-          "occupiedMinutes" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
-          },
-          "faultMinutes" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
-          },
-          "offlineMinutes" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
-          },
-          "evaluatedMinutes" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
-          },
-          "uptimePercent" : {
-            "type" : [ "string", "null" ]
-          },
-          "factLabel" : {
-            "$ref" : "#/components/schemas/FactLabel"
-          },
-          "observations" : {
-            "type" : [ "array", "null" ],
-            "items" : {
-              "type" : "string",
-              "enum" : [ "SUM_BELOW_DURATION", "PERCENT_MISMATCH", "SUM_ABOVE_DURATION", "SUM_ZERO", "PERCENT_OUT_OF_RANGE", "DURATION_INVALID", "WINDOW_DURATION_MISMATCH" ]
-            }
-          },
-          "validatable" : {
-            "type" : [ "boolean", "null" ]
-          },
-          "reportedPercent" : {
-            "type" : [ "string", "null" ]
-          },
-          "justification" : {
-            "type" : [ "string", "null" ]
-          },
-          "excluded" : {
-            "type" : [ "boolean", "null" ]
-          },
-          "effectiveRevision" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int32"
-          },
-          "uptimeBasis" : {
-            "type" : "string",
-            "enum" : [ "STATES", "REPORTED_PERCENT" ]
-          }
-        },
-        "required" : [ "connectorId", "equipmentId", "equipmentName", "factLabel", "id", "ordinal", "periodEnd", "periodStart", "periodType", "readingClass", "reviewState", "revision", "uptimeBasis", "version" ]
       },
       "PageResultMeasurementDetailResponse" : {
         "type" : "object",
@@ -6405,9 +7005,15 @@
             "items" : {
               "$ref" : "#/components/schemas/Exclusion"
             }
+          },
+          "temporalChanges" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TemporalChange"
+            }
           }
         },
-        "required" : [ "exclusions", "revisions" ]
+        "required" : [ "exclusions", "revisions", "temporalChanges" ]
       },
       "Revision" : {
         "type" : "object",
@@ -6486,6 +7092,45 @@
           }
         },
         "required" : [ "enteredAt", "observations", "origin", "periodType", "readingClass", "reviewState", "revision" ]
+      },
+      "TemporalChange" : {
+        "type" : "object",
+        "properties" : {
+          "eventId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "actorKind" : {
+            "type" : "string"
+          },
+          "actorId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "occurredAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "outcome" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "previousTemporal" : {
+            "type" : "object",
+            "additionalProperties" : { }
+          },
+          "resultTemporal" : {
+            "type" : "object",
+            "additionalProperties" : { }
+          },
+          "evidence" : {
+            "type" : "object",
+            "additionalProperties" : { }
+          }
+        },
+        "required" : [ "actorKind", "eventId", "evidence", "occurredAt", "outcome", "previousTemporal", "reason", "resultTemporal" ]
       },
       "PageResultUptimeImportBatchResponse" : {
         "type" : "object",
@@ -6571,9 +7216,12 @@
           "version" : {
             "type" : [ "integer", "null" ],
             "format" : "int64"
+          },
+          "referenceReportPresent" : {
+            "type" : "boolean"
           }
         },
-        "required" : [ "brand", "connectorActive", "connectorId", "connectorTypeCode", "connectorTypeName", "equipmentId", "equipmentName", "equipmentStatus", "network", "ordinal", "situation", "type" ]
+        "required" : [ "brand", "connectorActive", "connectorId", "connectorTypeCode", "connectorTypeName", "equipmentId", "equipmentName", "equipmentStatus", "network", "ordinal", "referenceReportPresent", "situation", "type" ]
       },
       "PageResultConnectorAliasResponse" : {
         "type" : "object",

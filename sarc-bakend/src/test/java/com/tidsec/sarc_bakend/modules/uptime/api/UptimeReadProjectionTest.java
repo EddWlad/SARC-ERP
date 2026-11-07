@@ -74,6 +74,9 @@ class UptimeReadProjectionTest extends UptimeApiSupport {
 
 		assertThat(body("/summary")).doesNotContain("operations");
 		assertThat(mvc.perform(get("/api/v1/uptime/summary").cookie(analyst)).andReturn().getResponse()
-				.getContentAsString()).contains("\"observed\":1");
+				.getContentAsString()).contains("\"observed\":0");
+        assertThat(mvc.perform(get("/api/v1/uptime/summary").cookie(analyst)
+            .param("from","2026-10-30").param("to","2026-11-01")).andReturn().getResponse()
+            .getContentAsString()).contains("\"observed\":1");
 	}
 }

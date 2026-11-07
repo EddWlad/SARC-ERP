@@ -115,11 +115,14 @@ class UptimeSummaryApiTest extends UptimeApiSupport {
 		jdbc.execute("""
 				INSERT INTO upt_import_row (id, batch_id, row_number, classification, issues, observations, approved, outcome,
 				 version, period_end) VALUES ('00000000-0000-0000-0000-00000000ba02',
-				 '00000000-0000-0000-0000-00000000ba01', 1, 'PENDING_LINK', '[]', '[]', false, 'PENDING_LINK', 0, now())""");
+				 '00000000-0000-0000-0000-00000000ba01', 1, 'PENDING_LINK', '[]', '[]', false, 'PENDING_LINK', 0, timestamptz '2026-11-05T12:00:00Z')""");
 
-		mvc.perform(get(SUMMARY).cookie(manager)).andExpect(jsonPath("$.coverage.pendingLink").value(1));
+		mvc.perform(get(SUMMARY).cookie(manager)).andExpect(jsonPath("$.coverage.pendingLink").value(0));
 		mvc.perform(get(SUMMARY).cookie(manager).param("network", "KIA"))
-				.andExpect(jsonPath("$.coverage.pendingLink").value(1));
+                .andExpect(jsonPath("$.coverage.pendingLink").value(0));
+        mvc.perform(get(SUMMARY).cookie(manager).param("network","KIA")
+            .param("from","2026-11-04").param("to","2026-11-06"))
+            .andExpect(jsonPath("$.coverage.pendingLink").value(1));
 	}
 
 	@Test
@@ -147,4 +150,112 @@ class UptimeSummaryApiTest extends UptimeApiSupport {
 				.andExpect(jsonPath("$[?(@.equipmentId == '%s')]".formatted(Feature005Fixtures.KIA_POINT)).isEmpty())
 				.andExpect(jsonPath("$[?(@.equipmentId == '%s')]".formatted(Feature005Fixtures.JAC_STATION)).isNotEmpty());
 	}
+    private void referenceReading(UUID connector,String week,String percent,boolean validated) {
+        UUID id=UUID.randomUUID();
+        UUID equipment=jdbc.queryForObject("SELECT equipment_id FROM asset_connector WHERE id=?",UUID.class,connector);
+        jdbc.update("""
+            INSERT INTO upt_measurement(id,connector_id,equipment_id,source,period_zone,latest_revision,
+                effective_revision,period_precision,reference_week,reference_period_type,created_at,updated_at,version)
+            VALUES(?,?,?,'ENERLINK','America/Guayaquil',1,?,'REFERENCE_WEEK',?::date,'ROLLING_7D',now(),now(),0)
+            """,id,connector,equipment,validated?1:null,week);
+        jdbc.update("""
+            INSERT INTO upt_measurement_revision(id,measurement_id,revision,reading_class,period_type,
+                available_minutes,occupied_minutes,fault_minutes,offline_minutes,reported_percent,
+                review_state,observations,origin,equipment_label,connector_type_label,entered_at,validated_at,uptime_basis)
+            VALUES(?,?,1,'MEASURED','ROLLING_7D',10,null,0,0,?::numeric,?,'[]','FILE','Nombre fuente','Tipo2',
+                now(),CASE WHEN ? THEN now() END,'REPORTED_PERCENT')
+            """,UUID.randomUUID(),id,percent,validated?"VALIDATED":"PENDING",validated);
+    }
+    @Test void referenceSummarySeparatesMethodsAndStaysOnGlobalLatestWhenFiltered() throws Exception {
+        referenceReading(JAC_1,"2026-10-26","0",true);
+        referenceReading(JAC_2,"2026-10-26","100",true);
+        UUID point=Feature005Fixtures.connectorId(Feature005Fixtures.JAC_POINT,1);
+        referenceReading(point,"2026-10-19","70",true);
+        referenceReading(point,"2026-11-02","90",false);
+        mvc.perform(get(SUMMARY).cookie(manager).param("periodKind","PROVISIONAL").param("periodType","ROLLING_7D"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.selection.referenceWeek").value("2026-10-26"))
+            .andExpect(jsonPath("$.referenceReport.aggregationMethod").value("REPORT_MEAN"))
+            .andExpect(jsonPath("$.referenceReport.uptimePercent").value("50.00"))
+            .andExpect(jsonPath("$.referenceReport.evaluatedMinutes").doesNotExist())
+            .andExpect(jsonPath("$.referenceReport.composition.occupiedMinutes").doesNotExist())
+            .andExpect(jsonPath("$.operations").doesNotExist());
+        mvc.perform(get(SUMMARY).cookie(manager).param("periodKind","PROVISIONAL").param("periodType","ROLLING_7D")
+            .param("equipmentId",Feature005Fixtures.JAC_POINT.toString()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.selection.referenceWeek").value("2026-10-26"))
+            .andExpect(jsonPath("$.referenceReport.uptimePercent").doesNotExist());
+        mvc.perform(get("/api/v1/uptime/results/connectors").cookie(manager).param("referenceWeek","2026-10-26")
+            .param("temporalSection","REFERENCE_WEEK").param("size","1"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2))
+            .andExpect(jsonPath("$.content[0].evaluatedMinutes").doesNotExist());
+    }
+    @Test void referenceOpeningHasNoArbitraryHistoricalCutoff() throws Exception {
+        referenceReading(JAC_1,"2020-10-26","20",true);
+        mvc.perform(get(SUMMARY).cookie(manager).param("periodKind","PROVISIONAL").param("periodType","ROLLING_7D"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.selection.referenceWeek").value("2020-10-26"))
+            .andExpect(jsonPath("$.referenceReport.uptimePercent").value("20.00"));
+        mvc.perform(get(SUMMARY).cookie(manager).param("referenceWeek","2020-11-02"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.selection.referenceWeek").value("2020-11-02"))
+            .andExpect(jsonPath("$.referenceReport.uptimePercent").doesNotExist())
+            .andExpect(jsonPath("$.coverage.pendingLink").doesNotExist());
+    }
+    @Test void requiresSectionAndRejectsMixedSelections() throws Exception {
+        referenceReading(JAC_1,"2026-10-26","20",true);
+        mvc.perform(get("/api/v1/uptime/results/connectors").cookie(manager).param("referenceWeek","2026-10-26"))
+            .andExpect(status().isUnprocessableContent()).andExpect(jsonPath("$.code").value("UPTIME_SECTION_REQUIRED"));
+        mvc.perform(get(SUMMARY).cookie(manager).param("referenceWeek","2026-10-26")
+            .param("from","2026-10-26").param("to","2026-11-02")).andExpect(status().isUnprocessableContent());
+    }
+
+    private void candidate(UUID connector,String target) {
+        UUID id=UUID.randomUUID();
+        UUID equipment=jdbc.queryForObject("SELECT equipment_id FROM asset_connector WHERE id=?",UUID.class,connector);
+        jdbc.update("""
+            INSERT INTO upt_measurement(id,connector_id,equipment_id,source,period_zone,latest_revision,
+                period_precision,reference_week,reference_period_type,created_at,updated_at,version)
+            VALUES(?,?,?,'ENERLINK','America/Guayaquil',1,'REQUIRES_RECONCILIATION','2026-10-26','ROLLING_7D',now(),now(),0)
+            """,id,connector,equipment);
+        jdbc.update("""
+            INSERT INTO upt_measurement_revision(id,measurement_id,revision,reading_class,period_type,
+                review_state,observations,origin,equipment_label,connector_type_label,entered_at,uptime_basis)
+            VALUES(?,?,1,'MEASURED','ROLLING_7D','PENDING','[]','FILE','Fuente','Tipo2',now(),'STATES')
+            """,UUID.randomUUID(),id);
+        jdbc.update("""
+            INSERT INTO upt_measurement_temporal_change(id,measurement_id,policy_version,expected_measurement_version,
+                outcome,previous_temporal,result_temporal,evidence,actor_kind,occurred_at,reason)
+            VALUES(?,?,'006-1',0,'REQUIRES_RECONCILIATION','{}',?::jsonb,'{}','SYSTEM',now(),'Prueba de evidencia parcial')
+            """,UUID.randomUUID(),id,target==null?"{}":"{\"targetPrecision\":\""+target+"\"}");
+    }
+
+    @Test void reconciliationNeverChoosesAWinnerOrDistributesUnknownSectionTwice() throws Exception {
+        referenceReading(JAC_1,"2026-10-26","50",true);
+        candidate(JAC_1,"REFERENCE_WEEK");candidate(JAC_2,null);
+        mvc.perform(get(SUMMARY).cookie(manager).param("referenceWeek","2026-10-26"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.referenceReport.uptimePercent").doesNotExist())
+            .andExpect(jsonPath("$.referenceReport.coverage.byState.pendingReview").value(1))
+            .andExpect(jsonPath("$.provisionalCoverage.byState.pendingReview").value(0))
+            .andExpect(jsonPath("$.temporalReconciliationCount").value(1))
+            .andExpect(jsonPath("$.operations").doesNotExist());
+    }
+
+    @Test void pendingLinkUsesOnlyChosenReferenceAndSectionBeforeAttributionFilters() throws Exception {
+        UUID batch=UUID.randomUUID();
+        jdbc.update("""
+            INSERT INTO upt_import_batch(id,source,origin,file_name,checksum,original_ref,status,
+                declared_period_type,created_at,updated_at,version)
+            VALUES(?,'ENERLINK','FILE','prueba.xlsx','checksum','privado','COMPLETED','ROLLING_7D',now(),now(),0)
+            """,batch);
+        for(String week:java.util.List.of("2026-10-26","2026-10-19")) {
+            jdbc.update("""
+                INSERT INTO upt_import_row(id,batch_id,row_number,classification,issues,observations,approved,
+                    outcome,version,period_precision,reference_week,reference_period_type)
+                VALUES(?,?,?,'PENDING_LINK','[]','[]',false,'PENDING_LINK',0,'REFERENCE_WEEK',?::date,'ROLLING_7D')
+                """,UUID.randomUUID(),batch,week.equals("2026-10-26")?1:2,week);
+        }
+        mvc.perform(get(SUMMARY).cookie(manager).param("referenceWeek","2026-10-26").param("network","KIA"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.referenceReport.coverage.pendingLink").value(1))
+            .andExpect(jsonPath("$.provisionalCoverage.pendingLink").value(0));
+        mvc.perform(get(SUMMARY).cookie(manager).param("referenceWeek","2026-11-02"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.referenceReport.coverage.pendingLink").value(0));
+    }
+
 }

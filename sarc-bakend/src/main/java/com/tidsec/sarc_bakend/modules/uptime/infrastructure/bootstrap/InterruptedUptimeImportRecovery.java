@@ -17,14 +17,17 @@ class InterruptedUptimeImportRecovery {
 	private static final Logger log = LoggerFactory.getLogger(InterruptedUptimeImportRecovery.class);
 
 	private final UptimeImportRepository imports;
+    private final com.tidsec.sarc_bakend.modules.uptime.domain.repository.TemporalTransitionWorkRepository temporal;
+    private final java.time.Clock clock;
 
-	InterruptedUptimeImportRecovery(UptimeImportRepository imports) {
-		this.imports = imports;
+	InterruptedUptimeImportRecovery(UptimeImportRepository imports,com.tidsec.sarc_bakend.modules.uptime.domain.repository.TemporalTransitionWorkRepository temporal,java.time.Clock clock) {
+		this.imports = imports;this.temporal=temporal;this.clock=clock;
 	}
 
 	@EventListener(ApplicationReadyEvent.class)
 	@Transactional
 	void markInterrupted() {
+        for (var work:temporal.findInProgress()) {work.interrupt(clock.instant());temporal.save(work);}
 		for (UptimeImportBatch batch : imports.findBatchesInProgress()) {
 			batch.failBecauseInterrupted();
 			imports.saveBatch(batch);

@@ -68,7 +68,7 @@ class UptimeValidationApiTest extends UptimeApiSupport {
 	@Test
 	void alignedWindowBecomesExactWeekOnlyByCorrection() throws Exception {
 		String register = measurement(JAC_1, "10080", "0").replace(START, WEEK_START).replace(END, WEEK_END)
-				.replace("ROLLING_24H", "ROLLING_7D");
+				.replace("ROLLING_24H", "ROLLING_7D").replace("\"source\":", "\"referenceWeek\":\"2026-10-12\",\"source\":");
 		String created = send(analyst, "/measurements", register).andExpect(status().isCreated())
 				.andExpect(jsonPath("$.periodType").value("ROLLING_7D")).andReturn().getResponse().getContentAsString();
 		String id = com.jayway.jsonpath.JsonPath.read(created, "$.id");

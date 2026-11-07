@@ -43,6 +43,18 @@ class UptimeImportRepositoryAdapter implements UptimeImportRepository {
 		this.aliases = aliases;
 	}
 
+    @Override
+    public Optional<Original> findOriginal(UUID batchId) {
+        var values=entityManager.createNativeQuery("SELECT original_ref,checksum FROM upt_import_batch WHERE id=?",Object[].class)
+            .setParameter(1,batchId).getResultList();
+        if(values.isEmpty())return Optional.empty();
+        Object[] value=(Object[])values.getFirst();return Optional.of(new Original((String)value[0],(String)value[1]));
+    }
+    @Override
+    public List<UptimeImportRow> findProvenanceRows(UUID measurementId,UUID batchId) {
+        return rows.findByAppliedMeasurementIdAndBatchId(measurementId,batchId);
+    }
+
 	@Override
 	public UptimeImportBatch saveBatch(UptimeImportBatch batch) {
 		return batches.saveAndFlush(batch);
@@ -141,4 +153,8 @@ class UptimeImportRepositoryAdapter implements UptimeImportRepository {
 		return new PageResult<>(page.getContent(), page.getNumber(), page.getSize(), page.getTotalElements(),
 				page.getTotalPages());
 	}
+    @Override public boolean hasRowsWithoutKnownRange(UUID batchId) {
+        return rows.existsByBatchIdAndTemporalPrecisionNot(batchId,
+            com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision.KNOWN_RANGE);
+    }
 }

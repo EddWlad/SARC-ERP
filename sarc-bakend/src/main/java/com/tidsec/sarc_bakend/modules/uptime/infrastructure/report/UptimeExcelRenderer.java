@@ -70,7 +70,15 @@ class UptimeExcelRenderer implements UptimeReportRenderer {
 			rows.add(List.of("Ventana provisional", UptimeLabels.of(report.provisional().periodType())));
 			rows.addAll(block("provisional", "provisionales", report.provisional().kpis()));
 		}
-		rows.add(List.of("Cobertura (%)", value(report.coverage().percent())));
+		rows.add(List.of("Cobertura (%)", value(report.coverage()==null?null:report.coverage().percent())));
+        if(report.referenceReport()!=null) {
+            var r=report.referenceReport();
+            rows.add(List.of("Semana de referencia",r.referenceWeek().toString()));
+            rows.add(List.of("Precisión","Informe sin horario real"));rows.add(List.of("Método","REPORT_MEAN"));
+            rows.add(List.of("Promedio del informe (%)",value(r.uptimePercent())));
+            rows.add(List.of("Cobertura del informe (%)",value(r.coverage().percent())));
+            rows.add(List.of("Conciliaciones sin apartado",report.temporalReconciliationCount()));
+        }
 		rows.add(List.of("Metodología", UptimeLabels.FORMULA));
 		rows.add(List.of("Promedio por equipo", UptimeLabels.EQUIPMENT_NOTE));
 		return rows;
@@ -109,14 +117,15 @@ class UptimeExcelRenderer implements UptimeReportRenderer {
 		if (report.provisional() != null) {
 			report.provisional().connectors().forEach(item -> rows.add(connector(PROVISIONAL, item)));
 		}
+        report.referenceConnectors().forEach(item->rows.add(connector("Informe sin horario real / "+report.referenceReport().referenceWeek()+" / REPORT_MEAN",item)));
 		return rows;
 	}
 
 	private static List<Object> connector(String period, UptimeCalculator.ConnectorResult item) {
 		return List.of(period, item.position(), item.connector().equipmentName(), UptimeLabels.code(item.connector()),
 				item.connector().network().name(), DomainLabels.of(item.connector().type()),
-				UptimeLabels.connector(item.connector()), value(item.uptimePercent()), item.offlineMinutes(),
-				item.faultMinutes(), item.evaluatedMinutes());
+				UptimeLabels.connector(item.connector()), value(item.uptimePercent()), known(item.offlineMinutes()),
+                known(item.faultMinutes()), known(item.evaluatedMinutes()));
 	}
 
 	private static List<List<Object>> equipment(UptimeReport report) {
@@ -127,20 +136,27 @@ class UptimeExcelRenderer implements UptimeReportRenderer {
 		if (report.provisional() != null) {
 			report.provisional().equipment().forEach(item -> rows.add(equipment(PROVISIONAL, item)));
 		}
+        report.referenceEquipment().forEach(item->rows.add(equipment("Informe sin horario real / "+report.referenceReport().referenceWeek()+" / REPORT_MEAN",item)));
 		return rows;
 	}
 
 	private static List<Object> equipment(String period, UptimeCalculator.EquipmentResult item) {
 		return List.of(period, item.sample().equipmentName(), UptimeLabels.code(item.sample()),
 				item.sample().network().name(), DomainLabels.of(item.sample().type()), value(item.uptimePercent()),
-				item.connectorsIncluded(), item.connectorsInScope(), item.offlineMinutes(), item.faultMinutes());
+				item.connectorsIncluded(), item.connectorsInScope(), known(item.offlineMinutes()), known(item.faultMinutes()));
 	}
 
 	private static List<List<Object>> coverage(UptimeReport report) {
 		List<List<Object>> rows = new ArrayList<>();
 		rows.add(List.of("Pendientes de vincular (sin atribuir)", report.pendingLink(), "", "", ""));
-		UptimeLabels.STATES.forEach(state -> rows.add(List.of(UptimeLabels.of(state),
+		if(report.coverage()!=null) UptimeLabels.STATES.forEach(state -> rows.add(List.of(UptimeLabels.of(state),
 				report.coverage().byState().getOrDefault(state, 0), "", "", "")));
+        report.referenceExclusions().forEach(item->rows.add(List.of("Informe sin horario / "+UptimeLabels.of(item.state()),"",item.connector().equipmentName(),UptimeLabels.code(item.connector()),UptimeLabels.connector(item.connector()))));
+        if(report.referenceReport()!=null) {
+            rows.add(List.of("Informe sin horario / pendientes de vincular",report.referencePendingLink(),"","",""));
+            UptimeLabels.STATES.forEach(state->rows.add(List.of("Informe sin horario / "+UptimeLabels.of(state),
+                report.referenceReport().coverage().byState().getOrDefault(state,0),"","","")));
+        }
 		report.exclusions().forEach(item -> rows.add(List.of(UptimeLabels.of(item.state()), "",
 				item.connector().equipmentName(), UptimeLabels.code(item.connector()),
 				UptimeLabels.connector(item.connector()))));
@@ -157,6 +173,7 @@ class UptimeExcelRenderer implements UptimeReportRenderer {
 				.map(UptimeView.TrendPoint::weekStart).map(UptimePdfCharts.WEEK::format).toList(), values));
 	}
 
+    private static Object known(Long value){return value==null?"No informado":value;}
 	private static Object value(BigDecimal value) {
 		return value == null ? UptimeLabels.NO_DATA : value;
 	}

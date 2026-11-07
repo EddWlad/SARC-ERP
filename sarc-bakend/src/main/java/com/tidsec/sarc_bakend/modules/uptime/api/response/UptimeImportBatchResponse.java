@@ -1,6 +1,8 @@
 package com.tidsec.sarc_bakend.modules.uptime.api.response;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision;
 import java.util.UUID;
 
 import com.tidsec.sarc_bakend.modules.uptime.domain.model.importing.UptimeImportBatch;
@@ -18,14 +20,15 @@ public record UptimeImportBatchResponse(UUID id, MeasurementSource source, Perio
 		@Schema(nullable = true) String failureCode, @Schema(nullable = true) String failureMessage, int totalRows,
 		int newRows, int identicalRows, int conflictRows, int invalidRows, int pendingLinkRows, int observedRows,
 		int appliedRows, boolean exactConfirmed, Instant createdAt, @Schema(nullable = true) Instant confirmedAt,
-		long version) {
+		long version, TemporalPrecision temporalPrecision, @Schema(nullable=true) LocalDate referenceWeek) {
 
 	public static UptimeImportBatchResponse from(UptimeImportBatch batch) {
 		UptimeRowCounts counts = batch.getCounts();
 		return new UptimeImportBatchResponse(batch.getId(), batch.getSource(), batch.getDeclaredPeriodType(),
-				batch.getDeclaredPeriodStart(), batch.getDeclaredPeriodEnd(), batch.getOrigin(), batch.getFileName(), batch.getChecksum(), batch.getStatus(), batch.getFailureCode(),
+				batch.getTemporalPrecision()==TemporalPrecision.KNOWN_RANGE?batch.getDeclaredPeriodStart():null,
+                batch.getTemporalPrecision()==TemporalPrecision.KNOWN_RANGE?batch.getDeclaredPeriodEnd():null, batch.getOrigin(), batch.getFileName(), batch.getChecksum(), batch.getStatus(), batch.getFailureCode(),
 				batch.getFailureMessage(), counts.total(), counts.newRows(), counts.identical(), counts.conflict(),
 				counts.invalid(), counts.pendingLink(), counts.observed(), batch.getAppliedRows(),
-				batch.isExactConfirmed(), batch.getCreatedAt(), batch.getConfirmedAt(), batch.getVersion());
+				batch.isExactConfirmed(), batch.getCreatedAt(), batch.getConfirmedAt(), batch.getVersion(),batch.getTemporalPrecision(),batch.getReferenceWeek());
 	}
 }

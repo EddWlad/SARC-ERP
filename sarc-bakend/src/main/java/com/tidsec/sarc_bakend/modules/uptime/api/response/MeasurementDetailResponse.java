@@ -2,6 +2,8 @@ package com.tidsec.sarc_bakend.modules.uptime.api.response;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,15 +26,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record MeasurementDetailResponse(UUID id, long version, UUID connectorId, UUID equipmentId, int ordinal,
-		String equipmentName, @Schema(nullable = true) String assignedCode, Instant periodStart, Instant periodEnd,
-		int revision, ReadingClass readingClass, PeriodType periodType, ReviewState reviewState,
+		String equipmentName, @Schema(nullable = true) String assignedCode, @Schema(nullable = true) Instant periodStart, @Schema(nullable = true) Instant periodEnd,
+		int revision, ReadingClass readingClass, @Schema(nullable=true) PeriodType periodType, ReviewState reviewState,
 		@Schema(nullable = true) Integer availableMinutes, @Schema(nullable = true) Integer occupiedMinutes,
 		@Schema(nullable = true) Integer faultMinutes, @Schema(nullable = true) Integer offlineMinutes,
 		@Schema(nullable = true) Long evaluatedMinutes, @Schema(nullable = true) String uptimePercent, FactLabel factLabel,
 		@Schema(nullable = true) List<Observation> observations, @Schema(nullable = true) Boolean validatable,
 		@Schema(nullable = true) String reportedPercent, @Schema(nullable = true) String justification,
 		@Schema(nullable = true) Boolean excluded, @Schema(nullable = true) Integer effectiveRevision,
-		UptimeBasis uptimeBasis) {
+		UptimeBasis uptimeBasis, TemporalPrecision temporalPrecision,
+        @Schema(nullable=true) LocalDate referenceWeek) {
 
 	public record FactLabel(String equipmentName, @Schema(nullable = true) String assignedCode, String connectorType) {
 	}
@@ -42,18 +45,19 @@ public record MeasurementDetailResponse(UUID id, long version, UUID connectorId,
 		MeasurementRevision revision = detail.view().revision();
 		MeasurableConnector connector = detail.connector();
 		boolean operational = detail.operational();
-		BigDecimal uptime = revision.uptimePercent();
+		BigDecimal uptime = MeasurementResponse.uptime(measurement,revision);
 		return new MeasurementDetailResponse(measurement.getId(), measurement.getVersion(), measurement.getConnectorId(),
 				measurement.getEquipmentId(), connector.ordinal(), connector.equipmentName(), connector.assignedCode(),
-				measurement.getPeriodStart(), measurement.getPeriodEnd(), revision.getRevision(),
-				revision.getReadingClass(), revision.getPeriodType(), revision.getReviewState(),
+				measurement.getTemporalPrecision()==TemporalPrecision.KNOWN_RANGE?measurement.getPeriodStart():null,
+                measurement.getTemporalPrecision()==TemporalPrecision.KNOWN_RANGE?measurement.getPeriodEnd():null, revision.getRevision(),
+				revision.getReadingClass(), measurement.effectivePeriodType(revision.getPeriodType()), revision.getReviewState(),
 				revision.getAvailableMinutes(), revision.getOccupiedMinutes(), revision.getFaultMinutes(),
-				revision.getOfflineMinutes(), revision.evaluatedMinutes(), uptime == null ? null : uptime.toPlainString(),
+				revision.getOfflineMinutes(), measurement.getTemporalPrecision()==TemporalPrecision.KNOWN_RANGE?revision.evaluatedMinutes():null, uptime == null ? null : uptime.toPlainString(),
 				new FactLabel(revision.getEquipmentLabel(), revision.getEquipmentCode(), revision.getConnectorTypeLabel()),
 				operational ? revision.getObservations() : null, operational ? revision.isValidatable() : null,
 				operational && revision.getReportedPercent() != null
 						? revision.getReportedPercent().stripTrailingZeros().toPlainString() : null,
 				operational ? revision.getJustification() : null, operational ? measurement.isExcluded() : null,
-				operational ? measurement.getEffectiveRevision() : null, revision.getUptimeBasis());
+				operational ? measurement.getEffectiveRevision() : null, revision.getUptimeBasis(), measurement.getTemporalPrecision(), measurement.getReferenceWeek());
 	}
 }

@@ -2,6 +2,7 @@ package com.tidsec.sarc_bakend.modules.uptime.api.request;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import com.tidsec.sarc_bakend.modules.uptime.application.command.RegisterMeasurementCommand;
@@ -17,11 +18,11 @@ public record RegisterMeasurementRequest(@NotNull UUID connectorId, @NotNull Mea
 		@NotNull OffsetDateTime periodStart, @NotNull OffsetDateTime periodEnd, @NotNull PeriodType periodType,
 		boolean exactConfirmed, @NotNull BigDecimal availableMinutes, @NotNull BigDecimal occupiedMinutes,
 		@NotNull BigDecimal faultMinutes, @NotNull BigDecimal offlineMinutes, BigDecimal reportedPercent,
-		@NotNull MeasurementOrigin origin, @Size(max = 4000) String sourceText) {
+		@NotNull MeasurementOrigin origin, @Size(max = 4000) String sourceText, LocalDate referenceWeek) {
 
 	public RegisterMeasurementCommand toCommand() {
 		return new RegisterMeasurementCommand(connectorId, source, periodStart.toInstant(), periodEnd.toInstant(),
 				periodType, exactConfirmed, availableMinutes, occupiedMinutes, faultMinutes, offlineMinutes,
-				reportedPercent, origin, sourceText);
+				reportedPercent, origin, sourceText, referenceWeek);
 	}
 }

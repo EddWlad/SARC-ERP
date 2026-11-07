@@ -26,7 +26,7 @@ class InterruptedUptimeImportRecoveryTest {
 				PeriodType.ROLLING_24H, ImportOrigin.PASTE, "pegado.txt", "sha", "ref");
 		when(imports.findBatchesInProgress()).thenReturn(List.of(batch));
 
-		new InterruptedUptimeImportRecovery(imports).markInterrupted();
+		new InterruptedUptimeImportRecovery(imports,mock(com.tidsec.sarc_bakend.modules.uptime.domain.repository.TemporalTransitionWorkRepository.class),java.time.Clock.systemUTC()).markInterrupted();
 
 		assertThat(batch.getStatus()).isEqualTo(ImportStatus.FAILED);
 		verify(imports).saveBatch(batch);

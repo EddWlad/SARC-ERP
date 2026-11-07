@@ -1,6 +1,10 @@
 package com.tidsec.sarc_bakend.modules.uptime.application.service;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Set;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.MeasurementPeriod;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -57,6 +61,26 @@ public class MeasurementGridService {
 					measurement.getId(), measurement.getVersion());
 		}).toList();
 	}
+
+    public List<GridRow> gridReference(ConnectorQuery query,LocalDate week,boolean showInactive) {
+        MeasurementPeriod.reference(week,"America/Guayaquil");
+        var scope=connectors.search(query).stream()
+            .filter(c->UptimeScope.includes(c.network(),c.type()))
+            .filter(c->showInactive || isActive(c)).toList();
+        var ids=scope.stream().map(MeasurableConnector::connectorId).toList();
+        var known=measurements.findByReferenceWeek(ids,MeasurementSource.ENERLINK,week,TemporalPrecision.KNOWN_RANGE);
+        var revisions=measurements.findLatestRevisions(known).stream()
+            .collect(Collectors.toMap(MeasurementRevision::getMeasurementId,Function.identity()));
+        Map<UUID,Measurement> byConnector=known.stream().filter(m->revisions.get(m.getId()).getPeriodType()==com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.PeriodType.ROLLING_7D).collect(Collectors.toMap(Measurement::getConnectorId,
+            Function.identity(),(first,later)->first));
+        Set<UUID> reports=measurements.findByReferenceWeek(ids,MeasurementSource.ENERLINK,week,TemporalPrecision.REFERENCE_WEEK)
+            .stream().map(Measurement::getConnectorId).collect(Collectors.toSet());
+        return scope.stream().map(c->{
+            var m=byConnector.get(c.connectorId());
+            return new GridRow(c,m==null?GridRow.Situation.NONE:situation(m,revisions.get(m.getId())),
+                m==null?null:m.getId(),m==null?null:m.getVersion(),reports.contains(c.connectorId()));
+        }).toList();
+    }
 
 	private static boolean isActive(MeasurableConnector connector) {
 		return connector.connectorActive() && connector.equipmentStatus() == AdministrativeStatus.ACTIVE;

@@ -68,4 +68,21 @@ class UptimeRankingTest {
 	void connectorWithoutMeasurementIsNotRanked() {
 		assertThat(rank(List.of(alfa, beta), List.of(week(alfa, WEEK_1, 1000, 0)))).hasSize(1);
 	}
+    @Test void referenceTiesUsePresentedSourcePercentAndNameWithoutNominalWeights() {
+        var monday=java.time.LocalDate.of(2026,10,26);
+        var facts=List.of(
+            MeasurementFact.reference(UUID.randomUUID(),beta.connectorId(),beta.equipmentId(),monday,
+                new java.math.BigDecimal("97.2949"),100L,null,0L,0L,true,false),
+            MeasurementFact.reference(UUID.randomUUID(),alfa.connectorId(),alfa.equipmentId(),monday,
+                new java.math.BigDecimal("97.2901"),1000L,null,0L,0L,true,false),
+            MeasurementFact.reference(UUID.randomUUID(),gamma.connectorId(),gamma.equipmentId(),monday,
+                new java.math.BigDecimal("0"),100L,null,0L,0L,true,true));
+        var units=UptimeCalculator.provisionalUnits(List.of(beta,alfa,gamma),facts);
+        var ranking=UptimeCalculator.ranking(units);
+        assertThat(ranking).extracting(UptimeCalculator.ConnectorResult::position).containsExactly(1,1);
+        assertThat(ranking).extracting(item->item.connector().equipmentName()).containsExactly("Alfa","Beta");
+        assertThat(ranking).allSatisfy(item->assertThat(item.evaluatedMinutes()).isNull());
+        assertThat(UptimeCalculator.coverage(units).byState().get(UptimeCalculator.UnitState.EXCLUDED)).isEqualTo(1);
+    }
+
 }

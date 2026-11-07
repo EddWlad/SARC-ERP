@@ -53,7 +53,8 @@ class UptimeClosureRegressionTest extends UptimeReportSupport {
 
 	@Test
 	void bothReportsIncludeUnattributedCount() throws Exception {
-		pending("2026-10-20T05:00:00Z");
+        validate(registered(JAC_1,"1401","39").get("id").toString());
+		pending("2026-10-31T19:00:00Z");
 		StringBuilder text = new StringBuilder();
 		try (PdfReader reader = new PdfReader(report(manager, "PDF"))) {
 			PdfTextExtractor extractor = new PdfTextExtractor(reader);

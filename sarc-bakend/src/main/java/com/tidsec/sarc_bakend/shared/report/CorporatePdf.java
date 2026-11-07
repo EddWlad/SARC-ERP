@@ -173,8 +173,14 @@ public final class CorporatePdf {
 	}
 
 	public CorporatePdf note(String text) {
+        return note(text, 0);
+    }
+
+    /** Espacio explícito cuando una nota precede tarjetas o tablas compactas. */
+    public CorporatePdf note(String text, float spacingAfter) {
 		Paragraph paragraph = new Paragraph(text, NOTE);
 		paragraph.setSpacingBefore(4);
+        paragraph.setSpacingAfter(spacingAfter);
 		document.add(paragraph);
 		return this;
 	}

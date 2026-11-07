@@ -1,6 +1,7 @@
 package com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
@@ -27,14 +28,22 @@ public class Measurement extends BaseAuditableEntity {
 	@Column(nullable = false, updatable = false, length = 20)
 	private MeasurementSource source;
 
-	@Column(nullable = false, updatable = false)
+	@Column
 	private Instant periodStart;
 
-	@Column(nullable = false, updatable = false)
+	@Column
 	private Instant periodEnd;
 
 	@Column(nullable = false, updatable = false, length = 40)
 	private String periodZone;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "period_precision", nullable = false, length = 32)
+    private TemporalPrecision temporalPrecision = TemporalPrecision.KNOWN_RANGE;
+    private LocalDate referenceWeek;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private PeriodType referencePeriodType;
 
 	@Column(nullable = false)
 	private int latestRevision;
@@ -63,6 +72,29 @@ public class Measurement extends BaseAuditableEntity {
 		return new Measurement(connectorId, equipmentId, source, periodStart, periodEnd, periodZone);
 	}
 
+    public static Measurement open(UUID connectorId, UUID equipmentId, MeasurementSource source,
+            MeasurementPeriod period) {
+        Measurement value = new Measurement(connectorId,equipmentId,source,period.start(),period.end(),period.zone());
+        value.changePeriod(period);
+        return value;
+    }
+
+    /** Cambia solo metadata temporal. Las revisiones, punteros y exclusiones no se reinician. */
+    public void changePeriod(MeasurementPeriod period) {
+        if (!periodZone.equals(period.zone()))
+            throw new BusinessRuleException("UPTIME_PERIOD_INVALID","La zona operativa no puede cambiar.");
+        temporalPrecision = period.precision();
+        periodStart = period.start(); periodEnd = period.end();
+        referenceWeek = period.referenceWeek(); referencePeriodType = period.referencePeriodType();
+    }
+    public MeasurementPeriod getPeriod() {
+        return new MeasurementPeriod(temporalPrecision,periodStart,periodEnd,periodZone,referenceWeek,referencePeriodType);
+    }
+    public TemporalPrecision getTemporalPrecision() { return temporalPrecision; }
+    public LocalDate getReferenceWeek() { return referenceWeek; }
+    public PeriodType getReferencePeriodType() { return referencePeriodType; }
+    public PeriodType effectivePeriodType(PeriodType original) { return getPeriod().effectiveType(original); }
+
 	/** Registra la primera revision, siempre pendiente. */
 	public MeasurementRevision register(RevisionData data) {
 		latestRevision = 1;
@@ -81,6 +113,9 @@ public class Measurement extends BaseAuditableEntity {
 	/** Valida la ultima revision. La vigente anterior deja de computar en este momento. */
 	public void validate(MeasurementRevision latest, MeasurementRevision effective, UUID actor, Instant at,
 			String justification) {
+        if (temporalPrecision == TemporalPrecision.REQUIRES_RECONCILIATION)
+            throw new BusinessRuleException("UPTIME_TEMPORAL_RECONCILIATION_REQUIRED",
+                "Concilia el periodo antes de validar la medicion.");
 		if (latest.getReviewState() != ReviewState.PENDING) {
 			throw new BusinessRuleException("UPTIME_NOTHING_TO_VALIDATE", "No hay una revision pendiente de validar.");
 		}

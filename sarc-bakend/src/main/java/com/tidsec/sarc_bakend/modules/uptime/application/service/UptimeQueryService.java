@@ -1,6 +1,7 @@
 package com.tidsec.sarc_bakend.modules.uptime.application.service;
 
 import java.time.Clock;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
@@ -76,12 +77,15 @@ public class UptimeQueryService {
 		List<MeasurableConnector> scope = connectorsOf(filter);
 		Set<UUID> ids = scope.stream().map(MeasurableConnector::connectorId).collect(Collectors.toSet());
 		boolean chosen = filter.from() != null;
+        boolean weekly = filter.referenceWeek()!=null || !chosen && filter.periodKind()==Kind.PROVISIONAL
+            && filter.periodType()==PeriodType.ROLLING_7D;
+        if (weekly) return referenceView(filter,scope,now);
 		Instant from = chosen ? zone.startOf(filter.from()) : now.minus(LOOKBACK);
 		Instant to = chosen ? zone.startOf(filter.to()) : now;
 		List<MeasurementFact> unfilteredFacts = measurements.findFacts(from, to);
 		List<MeasurementFact> facts = unfilteredFacts.stream()
 				.filter(fact -> ids.contains(fact.connectorId())).toList();
-		List<Window> windows = facts.stream().filter(MeasurementFact::included)
+		List<Window> windows = unfilteredFacts.stream().filter(MeasurementFact::included)
 				.map(fact -> new Window(fact.periodType(), fact.periodStart(), fact.periodEnd())).distinct().toList();
 
 		List<Instant> weeks = filter.periodKind() == Kind.PROVISIONAL ? List.of() : officialWeeks(filter, windows, now);
@@ -90,8 +94,11 @@ public class UptimeQueryService {
 				: provisionalUnits(filter, scope, facts, windows);
 		Kpis official = published(officialUnits);
 		Kpis provisional = published(provisionalUnits);
+        if (!chosen && filter.periodKind()==null && windows.stream().noneMatch(w->w.type().isExact()) && measurements.latestIncludedReference().isPresent())
+            return referenceView(filter,scope,now);
 
 		Kind kind = headline(filter, official, provisional);
+        if(kind==Kind.NONE && !chosen && filter.periodKind()==null)kind=OpeningPeriodPolicy.resolve(windows).kind();
 		List<Unit> units = switch (kind) {
 			case OFFICIAL -> officialUnits;
 			case PROVISIONAL -> provisionalUnits;
@@ -102,25 +109,68 @@ public class UptimeQueryService {
 		boolean operational = access.canReadOperational();
 		return new UptimeView(resolved, official, provisional, coverage, units,
 				trend(scope, facts, trendWeeks(from, to, now, chosen)), notices(official, coverage, facts, chosen, from, to, now),
-				pendingLink(filter, from, to, unfilteredFacts), measurements.lastValidatedAt(), now, operational ? operations(facts) : null, officialUnits,
+				kind==Kind.NONE && !chosen?0:pendingLink(filter, from, to, unfilteredFacts), measurements.lastValidatedAt(), now, operational ? operations(selectedOperationalFacts(filter,resolved,facts)) : null, officialUnits,
 				provisionalUnits);
 	}
 
 	/** Paginado sobre el calculo completo: el orden y las posiciones son del ranking. */
 	@Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 	public PageResult<UptimeCalculator.ConnectorResult> connectorResults(UptimeFilter filter, PageQuery page) {
-		return page(UptimeCalculator.ranking(view(filter).units()), page);
+		UptimeView view=resultsView(filter);
+        return page(UptimeCalculator.ranking(view.units()), page);
 	}
 
 	@Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 	public PageResult<UptimeCalculator.EquipmentResult> equipmentResults(UptimeFilter filter, PageQuery page) {
-		return page(UptimeCalculator.equipment(view(filter).units()), page);
+		UptimeView view=resultsView(filter);
+        return page(view.selection().basis()==UptimeView.SelectionBasis.REFERENCE_WEEK
+                && filter.temporalSection()==TemporalPrecision.REFERENCE_WEEK
+            ? UptimeCalculator.referenceEquipment(view.units(),view.selection().referenceWeek())
+            : UptimeCalculator.equipment(view.units()), page);
 	}
 
 	@Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 	public PageResult<UptimeCalculator.Exclusion> exclusions(UptimeFilter filter, PageQuery page) {
-		return page(UptimeCalculator.exclusions(view(filter).units(), access.canReadOperational()), page);
+		return page(UptimeCalculator.exclusions(resultsView(filter).units(), access.canReadOperational()), page);
 	}
+
+    private UptimeView resultsView(UptimeFilter filter) {
+        UptimeView view=view(filter);
+        if (view.selection().basis()==UptimeView.SelectionBasis.REFERENCE_WEEK && filter.temporalSection()==null)
+            throw new BusinessRuleException("UPTIME_SECTION_REQUIRED","Elige el apartado temporal de los resultados.");
+        return view;
+    }
+
+    private UptimeView referenceView(UptimeFilter filter,List<MeasurableConnector> scope,Instant now) {
+        LocalDate week=filter.referenceWeek()!=null?filter.referenceWeek():measurements.latestIncludedReference().orElse(null);
+        var resolved=new UptimeView.ResolvedPeriod(week==null?Kind.NONE:Kind.PROVISIONAL,
+            PeriodType.ROLLING_7D,null,null,zone.zone().getId());
+        var selection=new UptimeView.Selection(week==null?UptimeView.SelectionBasis.NONE:UptimeView.SelectionBasis.REFERENCE_WEEK,
+            week,PeriodType.ROLLING_7D,zone.zone().getId(),filter.temporalSection());
+        List<MeasurementFact> facts=week==null?List.of():measurements.findReferenceFacts(week,
+            scope.stream().map(MeasurableConnector::connectorId).toList());
+        List<MeasurementFact> known=facts.stream().filter(f->f.belongsTo(TemporalPrecision.KNOWN_RANGE))
+            .filter(f->f.periodType()==PeriodType.ROLLING_7D).toList();
+        List<MeasurementFact> reference=facts.stream().filter(f->f.belongsTo(TemporalPrecision.REFERENCE_WEEK)).toList();
+        List<Unit> knownUnits=week==null?List.of():UptimeCalculator.provisionalUnits(scope,known);
+        List<Unit> referenceUnits=week==null?List.of():UptimeCalculator.provisionalUnits(scope,reference);
+        var knownCoverage=week==null?null:UptimeCalculator.coverage(knownUnits);
+        var report=week==null?null:UptimeCalculator.referenceKpis(referenceUnits,week);
+        boolean refSelected=filter.temporalSection()==TemporalPrecision.REFERENCE_WEEK;
+        List<Unit> selected=refSelected?referenceUnits:knownUnits;
+        long pendingKnown=measurements.countPendingLinksByReference(week,TemporalPrecision.KNOWN_RANGE);
+        long pendingReference=measurements.countPendingLinksByReference(week,TemporalPrecision.REFERENCE_WEEK);
+        // La cabecera pertenece al bloque con horario; un informe no hereda su denominador.
+        boolean knownPresent=!known.isEmpty() || filter.temporalSection()==TemporalPrecision.KNOWN_RANGE;
+        long unattributed=facts.stream().filter(f->f.temporalPrecision()==TemporalPrecision.REQUIRES_RECONCILIATION
+            && f.pendingSection()==null && !f.excluded()).count();
+        List<MeasurementFact> operationFacts=filter.temporalSection()==null?facts:refSelected?reference:known;
+        return new UptimeView(resolved,null,published(knownUnits),knownPresent?knownCoverage:null,selected,List.of(),
+            List.of(UptimeView.Notice.NO_OFFICIAL_WEEK),refSelected?pendingReference:pendingKnown,
+            measurements.lastValidatedAt(),now,access.canReadOperational()?operations(operationFacts):null,
+            List.of(),knownUnits,selection,report,referenceUnits,knownCoverage,
+            week==null?null:UptimeCalculator.composition(knownUnits),pendingReference,unattributed);
+    }
 
 	public List<MeasurableConnector> scope(String text) {
 		return connectors.search(new ConnectorQuery(text, null, null, null, null)).stream().filter(UptimeQueryService::evaluable)
@@ -128,6 +178,13 @@ public class UptimeQueryService {
 	}
 
 	private void check(UptimeFilter filter) {
+        if (filter.referenceWeek()!=null && (filter.referenceWeek().getDayOfWeek()!=DayOfWeek.MONDAY
+            || filter.from()!=null || filter.to()!=null || filter.periodKind()==Kind.OFFICIAL
+            || filter.periodType()!=null && filter.periodType()!=PeriodType.ROLLING_7D)
+            || filter.temporalSection()==TemporalPrecision.REQUIRES_RECONCILIATION
+            || filter.temporalSection()!=null && filter.referenceWeek()==null
+                && !(filter.periodKind()==Kind.PROVISIONAL && filter.periodType()==PeriodType.ROLLING_7D && filter.from()==null))
+            throw new BusinessRuleException("UPTIME_SELECTION_INVALID","La referencia semanal y el rango real son selecciones distintas.");
 		if ((filter.from() == null) != (filter.to() == null)
 				|| filter.from() != null && !filter.from().isBefore(filter.to())) {
 			throw new BusinessRuleException("UPTIME_PERIOD_INVALID", "Indica un rango valido.");
@@ -205,7 +262,7 @@ public class UptimeQueryService {
 			List<Window> windows) {
 		String timeZone = zone.zone().getId();
 		return switch (kind) {
-			case NONE -> new UptimeView.ResolvedPeriod(Kind.NONE, null, null, null, timeZone);
+			case NONE -> new UptimeView.ResolvedPeriod(Kind.NONE, null, filter.from()==null?null:zone.startOf(filter.from()), filter.to()==null?null:zone.startOf(filter.to()), timeZone);
 			case OFFICIAL -> new UptimeView.ResolvedPeriod(Kind.OFFICIAL, PeriodType.EXACT_WEEK,
 					weeks.isEmpty() ? null : weeks.getFirst(),
 					weeks.isEmpty() ? null : weeks.getLast().plus(PeriodType.EXACT_WEEK.nominal()), timeZone);
@@ -285,12 +342,22 @@ public class UptimeQueryService {
 				opening.to() == null ? to : opening.to());
 	}
 
+    private List<MeasurementFact> selectedOperationalFacts(UptimeFilter filter,UptimeView.ResolvedPeriod resolved,
+            List<MeasurementFact> facts) {
+        if (filter.from()!=null) return facts.stream()
+            .filter(f->filter.periodType()==null || f.periodType()==filter.periodType())
+            .filter(f->filter.periodKind()!=Kind.OFFICIAL || f.periodType().isExact()).toList();
+        if (resolved.kind()==Kind.NONE || resolved.from()==null || resolved.to()==null) return List.of();
+        return facts.stream().filter(f->f.periodType()==resolved.periodType())
+            .filter(f->!f.periodEnd().isBefore(resolved.from()) && !f.periodEnd().isAfter(resolved.to())).toList();
+    }
+
 	private static UptimeView.Operations operations(List<MeasurementFact> facts) {
 		int observed = 0;
 		int ready = 0;
 		int corrections = 0;
 		for (MeasurementFact fact : facts) {
-			if (fact.latestPending()) {
+			if (fact.temporalPrecision()!=TemporalPrecision.REQUIRES_RECONCILIATION && fact.latestPending()) {
 				if (fact.latestObserved()) {
 					observed++;
 				}
@@ -306,7 +373,7 @@ public class UptimeQueryService {
 	}
 
 	private static <T> PageResult<T> page(List<T> items, PageQuery page) {
-		int start = Math.min(page.page() * page.size(), items.size());
+		int start = (int)Math.min((long)page.page() * page.size(), items.size());
 		int end = Math.min(start + page.size(), items.size());
 		int totalPages = (int) Math.ceil((double) items.size() / page.size());
 		return new PageResult<>(items.subList(start, end), page.page(), page.size(), items.size(), totalPages);

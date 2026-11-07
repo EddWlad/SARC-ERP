@@ -88,7 +88,7 @@ public class PendingLinkService {
 	private void attach(UptimeImportBatch batch, UptimeImportRow row, MeasurableConnector connector) {
 		RevisionData data = imported.data(batch, row, connector, actor.id().orElse(null), null);
 		Optional<Measurement> existing = measurements.findByIdentity(connector.connectorId(), batch.getSource(),
-				row.getPeriodStart(), row.getPeriodEnd());
+				row.getPeriod("America/Guayaquil"));
 		if (existing.isEmpty()) {
 			row.classify(UptimeRowClassification.NEW, connector.equipmentId(), connector.connectorId(), null, null,
 					List.of());

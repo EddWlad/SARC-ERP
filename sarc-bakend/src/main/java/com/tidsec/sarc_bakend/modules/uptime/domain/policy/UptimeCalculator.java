@@ -3,6 +3,10 @@ package com.tidsec.sarc_bakend.modules.uptime.domain.policy;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.LocalDate;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.ReferenceReportKpis;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.StateComposition;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -55,12 +59,23 @@ public final class UptimeCalculator {
 	}
 
 	public record ConnectorResult(int position, MeasurableConnector connector, BigDecimal uptimePercent,
-			long evaluatedMinutes, long offlineMinutes, long faultMinutes, Instant from, Instant to) {
-	}
+			Long evaluatedMinutes, Long offlineMinutes, Long faultMinutes, Instant from, Instant to,
+            LocalDate referenceWeek,TemporalPrecision temporalPrecision,String aggregationMethod) {
+        public ConnectorResult(int position,MeasurableConnector connector,BigDecimal percent,long evaluated,
+                long offline,long fault,Instant from,Instant to) {
+            this(position,connector,percent,evaluated,offline,fault,from,to,null,
+                TemporalPrecision.KNOWN_RANGE,"WEIGHTED_MINUTES");
+        }
+    }
 
-	public record EquipmentResult(MeasurableConnector sample, BigDecimal uptimePercent, long evaluatedMinutes,
-			long offlineMinutes, long faultMinutes, int connectorsIncluded, int connectorsInScope) {
-	}
+	public record EquipmentResult(MeasurableConnector sample, BigDecimal uptimePercent, Long evaluatedMinutes,
+            Long offlineMinutes, Long faultMinutes, int connectorsIncluded, int connectorsInScope,
+            LocalDate referenceWeek,TemporalPrecision temporalPrecision,String aggregationMethod) {
+        public EquipmentResult(MeasurableConnector sample,BigDecimal percent,long evaluated,long offline,long fault,
+                int included,int inScope) {
+            this(sample,percent,evaluated,offline,fault,included,inScope,null,TemporalPrecision.KNOWN_RANGE,"WEIGHTED_MINUTES");
+        }
+    }
 
 	public record Exclusion(MeasurableConnector connector, UnitState state) {
 	}
@@ -75,7 +90,7 @@ public final class UptimeCalculator {
 		for (Instant week : weeks) {
 			for (MeasurableConnector connector : connectors) {
 				List<MeasurementFact> ofWeek = byConnector.getOrDefault(connector.connectorId(), List.of()).stream()
-						.filter(fact -> fact.periodType().isExact() && fact.periodStart().equals(week)).toList();
+						.filter(fact -> fact.temporalPrecision()==TemporalPrecision.KNOWN_RANGE && fact.periodType().isExact() && fact.periodStart().equals(week)).toList();
 				unit(connector, week, ofWeek).ifPresent(units::add);
 			}
 		}
@@ -97,8 +112,12 @@ public final class UptimeCalculator {
 
 	/** La mas reciente incluida define la unidad; sin ella, la precedencia de FR-017. */
 	private static Optional<Unit> unit(MeasurableConnector connector, Instant week, List<MeasurementFact> facts) {
-		Optional<MeasurementFact> included = facts.stream().filter(MeasurementFact::included)
-				.max(Comparator.comparing(MeasurementFact::periodEnd));
+		// Una colision acreditada no elige una lectura ganadora por fecha o por validacion previa.
+        if (facts.stream().anyMatch(f->f.temporalPrecision()==TemporalPrecision.REQUIRES_RECONCILIATION && !f.excluded()))
+            return Optional.of(new Unit(connector,week,UnitState.PENDING_REVIEW,null));
+        Optional<MeasurementFact> included = facts.stream().filter(MeasurementFact::included)
+            .max(Comparator.comparing(MeasurementFact::periodEnd,Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparing(MeasurementFact::periodStart,Comparator.nullsFirst(Comparator.naturalOrder())));
 		if (included.isPresent()) {
 			return Optional.of(new Unit(connector, week, UnitState.VALIDATED, included.get()));
 		}
@@ -135,6 +154,8 @@ public final class UptimeCalculator {
 
 	public static Kpis kpis(Collection<Unit> units) {
 		List<MeasurementFact> included = included(units);
+        if (included.stream().anyMatch(f->f.temporalPrecision()!=TemporalPrecision.KNOWN_RANGE))
+            throw new IllegalArgumentException("El informe sin horario usa referenceKpis, no ponderacion.");
 		long evaluated = sum(included, MeasurementFact::evaluatedMinutes);
 		long offline = sum(included, MeasurementFact::offlineMinutes);
 		long fault = sum(included, MeasurementFact::faultMinutes);
@@ -187,12 +208,17 @@ public final class UptimeCalculator {
 			boolean tied = index > 0 && item.uptimePercent().compareTo(ranked.get(index - 1).uptimePercent()) == 0;
 			int position = tied ? ranked.get(index - 1).position() : index + 1;
 			ranked.add(new ConnectorResult(position, item.connector(), item.uptimePercent(), item.evaluatedMinutes(),
-					item.offlineMinutes(), item.faultMinutes(), item.from(), item.to()));
+					item.offlineMinutes(), item.faultMinutes(), item.from(), item.to(),item.referenceWeek(),item.temporalPrecision(),item.aggregationMethod()));
 		}
 		return ranked;
 	}
 
 	private static ConnectorResult result(MeasurableConnector connector, List<MeasurementFact> facts) {
+        if (!facts.isEmpty() && facts.getFirst().temporalPrecision()==TemporalPrecision.REFERENCE_WEEK) {
+            StateComposition c=StateComposition.from(facts);
+            return new ConnectorResult(0,connector,reportMean(facts),null,c.offlineMinutes(),c.faultMinutes(),
+                null,null,facts.getFirst().referenceWeek(),TemporalPrecision.REFERENCE_WEEK,"REPORT_MEAN");
+        }
 		long evaluated = sum(facts, MeasurementFact::evaluatedMinutes);
 		long offline = sum(facts, MeasurementFact::offlineMinutes);
 		return new ConnectorResult(0, connector, UptimeFormula.percent(evaluated, down(facts)), evaluated, offline,
@@ -210,12 +236,50 @@ public final class UptimeCalculator {
 	}
 
 	private static EquipmentResult equipmentResult(List<Unit> units) {
+        List<MeasurementFact> reference = included(units);
+        if (reference.stream().anyMatch(f->f.temporalPrecision()==TemporalPrecision.REFERENCE_WEEK)) {
+            StateComposition c=StateComposition.from(reference);
+            return new EquipmentResult(units.getFirst().connector(),reportMean(reference),null,
+                c.offlineMinutes(),c.faultMinutes(),reference.size(),denominator(units),
+                reference.getFirst().referenceWeek(),TemporalPrecision.REFERENCE_WEEK,"REPORT_MEAN");
+        }
+
 		List<MeasurementFact> included = included(units);
 		long evaluated = sum(included, MeasurementFact::evaluatedMinutes);
 		long offline = sum(included, MeasurementFact::offlineMinutes);
 		return new EquipmentResult(units.getFirst().connector(), UptimeFormula.percent(evaluated, down(included)), evaluated,
 				offline, sum(included, MeasurementFact::faultMinutes), included.size(), denominator(units));
 	}
+
+    public static List<EquipmentResult> referenceEquipment(Collection<Unit> units,LocalDate week) {
+        var grouped=units.stream().collect(Collectors.groupingBy(u->u.connector().equipmentId(),
+            LinkedHashMap::new,Collectors.toList()));
+        return grouped.values().stream().map(list->{
+            var facts=included(list);var c=StateComposition.from(facts);
+            return new EquipmentResult(list.getFirst().connector(),reportMean(facts),null,c.offlineMinutes(),
+                c.faultMinutes(),facts.size(),denominator(list),week,TemporalPrecision.REFERENCE_WEEK,"REPORT_MEAN");
+        }).sorted(Comparator.comparing(r->r.sample().equipmentName())).toList();
+    }
+
+    public static ReferenceReportKpis referenceKpis(Collection<Unit> units,LocalDate referenceWeek) {
+        var included=included(units);
+        var grouped=units.stream().collect(Collectors.groupingBy(u->u.connector().equipmentId()));
+        int evaluated=(int)grouped.values().stream().filter(list->list.stream().anyMatch(u->u.fact()!=null)).count();
+        int missing=(int)grouped.values().stream().filter(list->list.stream().noneMatch(u->u.fact()!=null)
+            &&list.stream().anyMatch(UptimeCalculator::lacksData)).count();
+        return new ReferenceReportKpis(referenceWeek,reportMean(included),evaluated,missing,
+            included.size(),denominator(units),coverage(units),StateComposition.from(included));
+    }
+    private static BigDecimal reportMean(Collection<MeasurementFact> facts) {
+        if (facts.isEmpty()) return null;
+        if (facts.stream().anyMatch(f->f.temporalPrecision()!=TemporalPrecision.REFERENCE_WEEK))
+            throw new IllegalArgumentException("No mezclar hechos de distinto metodo.");
+        return facts.stream().map(MeasurementFact::reportedPercent).reduce(BigDecimal.ZERO,BigDecimal::add)
+            .divide(BigDecimal.valueOf(facts.size()),2,RoundingMode.HALF_UP);
+    }
+    public static StateComposition composition(Collection<Unit> units) {
+        return StateComposition.from(included(units));
+    }
 
 	/** Un renglon por conector y estado; las excluidas solo para roles operativos. */
 	public static List<Exclusion> exclusions(Collection<Unit> units, boolean operational) {

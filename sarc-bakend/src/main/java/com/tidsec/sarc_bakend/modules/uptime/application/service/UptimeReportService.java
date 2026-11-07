@@ -35,6 +35,7 @@ import com.tidsec.sarc_bakend.modules.uptime.domain.policy.UptimeCalculator;
 import com.tidsec.sarc_bakend.modules.uptime.domain.policy.UptimeCalculator.Unit;
 import com.tidsec.sarc_bakend.shared.catalog.ReportArchive;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
+import com.tidsec.sarc_bakend.shared.report.DomainLabels;
 import com.tidsec.sarc_bakend.shared.report.ReportContentProfile;
 import com.tidsec.sarc_bakend.shared.report.ReportFile;
 import com.tidsec.sarc_bakend.shared.report.ReportFormat;
@@ -87,16 +88,23 @@ public class UptimeReportService {
 		ReportFile file = new ReportFile("uptime-" + FILE_STAMP.format(report.cutOff()) + "." + format.extension(), format,
 				renderer.render(report));
 		UUID issuedId = archive.archive(new ReportArchive.IssuedReportFile(KIND, report.scope(), file,
-				Map.of("connectors", String.valueOf(report.coverage().included())), publication(report, filter)));
+				Map.of("connectors", String.valueOf(report.coverage()==null?0:report.coverage().included())), publication(report, filter)));
 		return new GeneratedReport(file, issuedId, report.cutOff());
 	}
 
 	private UptimeReport read(UptimeFilter filter) {
 		UptimeView view = queries.view(filter);
-		return new UptimeReport(describe(view, filter), Instant.now(clock), view.resolved(),
-				section(view.officialUnits(), view.official()), section(view.provisionalUnits(), view.provisional()),
-				withGaps(view.trend()), weeks(view.officialUnits()), view.coverage(),
-				UptimeCalculator.exclusions(view.units(), false), view.pendingLink());
+        if(view.selection().basis()==UptimeView.SelectionBasis.NONE && filter.from()==null
+            && filter.periodKind()==OpeningPeriodPolicy.Kind.PROVISIONAL && filter.periodType()==PeriodType.ROLLING_7D)
+            throw new BusinessRuleException("UPTIME_REPORT_SELECTION_REQUIRED","Elige una semana de referencia para emitir este informe.");
+        boolean known=filter.temporalSection()!=com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision.REFERENCE_WEEK;
+        boolean reference=filter.temporalSection()!=com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision.KNOWN_RANGE;
+		return new UptimeReport(describe(view, filter), view.cutOff(), view.resolved(),
+				section(view.officialUnits(), view.official()), known?section(view.provisionalUnits(), view.provisional()):null,
+				withGaps(view.trend()), weeks(view.officialUnits()), known?view.coverage():null,
+				UptimeCalculator.exclusions(view.units(), false), view.pendingLink(),view.selection(),reference?view.referenceReport():null,
+                reference?UptimeCalculator.ranking(view.referenceUnits()):List.of(),reference?UptimeCalculator.referenceEquipment(view.referenceUnits(),view.selection().referenceWeek()):List.of(),
+                reference?UptimeCalculator.exclusions(view.referenceUnits(),false):List.of(),reference?view.referencePendingLink():0,view.temporalReconciliationCount());
 	}
 
 	private static UptimeReport.Section section(List<Unit> units, UptimeCalculator.Kpis kpis) {
@@ -136,10 +144,15 @@ public class UptimeReportService {
 		Map<String, String> criteria = new HashMap<>();
 		UptimeView.ResolvedPeriod period = report.period();
 		LocalDate today = zone.dateOf(report.cutOff());
+        if(report.selection()!=null && report.selection().basis()==UptimeView.SelectionBasis.REFERENCE_WEEK) {
+            criteria.put("selectionBasis","REFERENCE_WEEK");criteria.put("referenceWeek",report.selection().referenceWeek().toString());
+            if(filter.temporalSection()!=null)criteria.put("temporalSection",filter.temporalSection().name());
+        } else {
 		criteria.put("from", (filter.from() != null ? filter.from()
 				: period.from() != null ? zone.dateOf(period.from()) : today).toString());
 		criteria.put("to", (filter.to() != null ? filter.to()
 				: period.to() != null ? zone.dateOf(period.to().minusNanos(1)).plusDays(1) : today.plusDays(1)).toString());
+        }
 		criteria.put("timeZone", ReportPublication.TIME_ZONE);
 		criteria.put("periodKind", period.kind().name());
 		if (period.periodType() != null) {
@@ -166,11 +179,12 @@ public class UptimeReportService {
 	/** Alcance legible: periodo real y filtros; se imprime en el encabezado y se audita. */
 	private String describe(UptimeView view, UptimeFilter filter) {
 		UptimeView.ResolvedPeriod period = view.resolved();
-		String range = period.kind() == OpeningPeriodPolicy.Kind.NONE || period.from() == null ? "Sin período con datos"
+		String range = view.selection().basis()==UptimeView.SelectionBasis.REFERENCE_WEEK
+            ? "Semana de referencia "+view.selection().referenceWeek()+"; horarios por conector o no informados" : period.kind() == OpeningPeriodPolicy.Kind.NONE || period.from() == null ? "Sin período con datos"
 				: label(period.periodType()) + " del " + moment.format(period.from()) + " al " + moment.format(period.to())
 						+ " (hora de Ecuador)";
 		String filters = Stream.of(filter.network() == null ? null : "red " + filter.network(),
-				filter.type() == null ? null : "tipo " + filter.type(),
+				filter.type() == null ? null : "tipo " + DomainLabels.of(filter.type()),
 				filter.brand() == null || filter.brand().isBlank() ? null : "marca " + filter.brand(),
 				filter.equipmentId() == null ? null : "equipo " + equipmentName(view, filter),
 				filter.connectorId() == null ? null : "un conector").filter(Objects::nonNull)
@@ -187,6 +201,6 @@ public class UptimeReportService {
 				.filter(connector -> connector.equipmentId().equals(filter.equipmentId())).findFirst()
 				.map(connector -> connector.assignedCode() == null ? connector.equipmentName()
 						: connector.equipmentName() + " (" + connector.assignedCode() + ")")
-				.orElse(filter.equipmentId().toString());
+				.orElse("no disponible");
 	}
 }

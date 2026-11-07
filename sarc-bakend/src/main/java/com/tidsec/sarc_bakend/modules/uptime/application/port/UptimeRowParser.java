@@ -1,6 +1,7 @@
 package com.tidsec.sarc_bakend.modules.uptime.application.port;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -24,10 +25,12 @@ public interface UptimeRowParser {
 		}
 	}
 
-	/** Periodo elegido al cargar; manda sobre las columnas Desde y Hasta. */
-	record DeclaredPeriod(Instant start, Instant end) {
+	/** Contexto elegido al cargar; nunca sustituye los limites de la fuente. */
+	record DeclaredPeriod(LocalDate referenceWeek) {
 	}
 
 	/** {@code period} es nulo cuando cada fila trae su periodo. */
 	List<ParsedRow> parse(List<TabularSheet> sheets, DeclaredPeriod period);
+    /** Inspeccion de procedencia: permite fuente sin limites y sin contexto supuesto. */
+    List<ParsedRow> inspectSource(List<TabularSheet> sheets);
 }

@@ -16,7 +16,15 @@ import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.ReviewStat
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /** Historial operativo completo de una medicion. */
-public record MeasurementHistoryResponse(List<Revision> revisions, List<Exclusion> exclusions) {
+public record MeasurementHistoryResponse(List<Revision> revisions, List<Exclusion> exclusions,List<TemporalChange> temporalChanges) {
+    public record TemporalChange(UUID eventId,String actorKind,@Schema(nullable=true) UUID actorId,Instant occurredAt,
+        String outcome,String reason,java.util.Map<String,Object> previousTemporal,java.util.Map<String,Object> resultTemporal,
+        java.util.Map<String,Object> evidence) {
+        static TemporalChange from(com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.MeasurementTemporalChange e) {
+            return new TemporalChange(e.getId(),e.getActorKind(),e.getActorId(),e.getOccurredAt(),e.getOutcome().name(),e.getReason(),
+                e.getPreviousTemporal(),e.getResultTemporal(),e.getEvidence());
+        }
+    }
 
 	public record Revision(int revision, ReadingClass readingClass, PeriodType periodType, ReviewState reviewState,
 			@Schema(nullable = true) Integer availableMinutes, @Schema(nullable = true) Integer occupiedMinutes,
@@ -47,6 +55,6 @@ public record MeasurementHistoryResponse(List<Revision> revisions, List<Exclusio
 
 	public static MeasurementHistoryResponse from(MeasurementHistory history) {
 		return new MeasurementHistoryResponse(history.revisions().stream().map(Revision::from).toList(),
-				history.exclusions().stream().map(Exclusion::from).toList());
+				history.exclusions().stream().map(Exclusion::from).toList(),history.temporalChanges().stream().map(TemporalChange::from).toList());
 	}
 }

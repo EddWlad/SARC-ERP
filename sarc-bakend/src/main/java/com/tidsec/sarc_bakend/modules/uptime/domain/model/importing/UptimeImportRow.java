@@ -2,6 +2,9 @@ package com.tidsec.sarc_bakend.modules.uptime.domain.model.importing;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.MeasurementPeriod;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -119,6 +122,25 @@ public class UptimeImportRow {
 
 	@Version
 	private long version;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "period_precision", nullable = false, length = 32)
+    private TemporalPrecision temporalPrecision = TemporalPrecision.KNOWN_RANGE;
+    private LocalDate referenceWeek;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private PeriodType referencePeriodType;
+
+    public void usePeriod(MeasurementPeriod period) {
+        temporalPrecision = period.precision(); referenceWeek=period.referenceWeek();
+        referencePeriodType=period.referencePeriodType(); periodStart=period.start(); periodEnd=period.end();
+    }
+    public MeasurementPeriod getPeriod(String zone) {
+        return new MeasurementPeriod(temporalPrecision,periodStart,periodEnd,zone,referenceWeek,referencePeriodType);
+    }
+    public PeriodType getReferencePeriodType() { return referencePeriodType; }
+    public TemporalPrecision getTemporalPrecision() { return temporalPrecision; }
+    public LocalDate getReferenceWeek() { return referenceWeek; }
 
 	protected UptimeImportRow() {
 	}

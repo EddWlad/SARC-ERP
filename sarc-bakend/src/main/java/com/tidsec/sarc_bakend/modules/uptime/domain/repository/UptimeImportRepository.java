@@ -16,6 +16,10 @@ import com.tidsec.sarc_bakend.shared.pagination.PageResult;
 /** Puerto de persistencia de lotes, filas y alias de uptime. */
 public interface UptimeImportRepository {
 
+    record Original(String reference,String checksum) {}
+    Optional<Original> findOriginal(UUID batchId);
+    List<UptimeImportRow> findProvenanceRows(UUID measurementId,UUID batchId);
+
 	UptimeImportBatch saveBatch(UptimeImportBatch batch);
 
 	Optional<UptimeImportBatch> findBatch(UUID id);
@@ -51,4 +55,5 @@ public interface UptimeImportRepository {
 
 	/** Sin equipo, todos; ordenados por etiqueta. */
 	PageResult<ConnectorAlias> searchAliases(UUID equipmentId, PageQuery page);
+    boolean hasRowsWithoutKnownRange(UUID batchId);
 }

@@ -88,6 +88,28 @@ class EnerlinkBlockParserTest {
 		assertAmbiguous("Disponible 90 %\nOcupado 7 %\nCon falla 0\nFuera de línea 39");
 	}
 
+    @Test void readsTheActualEnerlinkHoursAndMinutesCopiedBeforeEachLabel() {
+        var block=parser.parse("163 hrs 35 mins - Disponible\n0 hrs 31 mins - Ocupado\n0 hrs 0 mins - Con falla\n3 hrs 54 mins - Fuera de línea");
+        assertThat(block.available()).isEqualByComparingTo("9815");
+        assertThat(block.occupied()).isEqualByComparingTo("31");
+        assertThat(block.fault()).isEqualByComparingTo("0");
+        assertThat(block.offline()).isEqualByComparingTo("234");
+        assertThat(block.reportedPercent()).isNull();
+    }
+    @Test void readsActualMinuteOnlyCopyAndOptionalSourcePercentage() {
+        var block=parser.parse("97,36 %\n1371 mins - Disponible\n31 mins - Ocupado\n0 mins - Con falla\n38 mins - Fuera de línea");
+        assertThat(block.available()).isEqualByComparingTo("1371");
+        assertThat(block.offline()).isEqualByComparingTo("38");
+        assertThat(block.reportedPercent()).isEqualByComparingTo("97.36");
+    }
+    @Test void copiedDurationsRejectDuplicatesMissingLabelsAndUnaccountedText() {
+        String complete="1 hrs 0 mins - Disponible 0 hrs 1 mins - Ocupado 0 hrs 0 mins - Con falla 0 hrs 2 mins - Fuera de línea";
+        assertAmbiguous(complete+" 5 mins - Disponible");
+        assertAmbiguous(complete+" 42 desconocido");
+        assertAmbiguous(complete.replace("0 hrs 0 mins - Con falla", ""));
+        assertAmbiguous(complete.replace("1 hrs", "-1 hrs"));
+    }
+
 	private void assertAmbiguous(String text) {
 		assertThatThrownBy(() -> parser.parse(text)).isInstanceOfSatisfying(BusinessRuleException.class,
 				ex -> assertThat(ex.code()).isEqualTo("UPTIME_BLOCK_AMBIGUOUS"));

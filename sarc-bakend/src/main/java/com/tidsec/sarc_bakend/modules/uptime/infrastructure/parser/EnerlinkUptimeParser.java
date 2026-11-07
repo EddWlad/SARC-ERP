@@ -30,8 +30,7 @@ import com.tidsec.sarc_bakend.shared.time.OperatingZone;
  * Reporte "Uptime y Uso" de Enerlink y el informe semanal que se envia por correo, armado con sus
  * columnas: una hoja por grupo (Electrolineras, Puntos de carga), sin Activo ni Cargando (D09,
  * excepcion de la Constitucion 1.2.0). Sin la columna Ocupado/Cargando el uptime es el que informa el
- * archivo ({@link UptimeBasis#REPORTED_PERCENT}). El periodo es el elegido al cargar o, si no hay, el
- * de las columnas Desde y Hasta. Una columna rotulada en horas se lleva al minuto mas cercano y el valor
+ * archivo ({@link UptimeBasis#REPORTED_PERCENT}). El contexto del informe no sustituye los limites de Desde y Hasta. Una columna rotulada en horas se lleva al minuto mas cercano y el valor
  * original queda en {@code sourceValues}; en minutos, una cifra fraccionaria pasa tal cual y la observa
  * {@code MeasurementRules}.
  */
@@ -73,20 +72,27 @@ class EnerlinkUptimeParser implements UptimeRowParser {
 
 	@Override
 	public List<ParsedRow> parse(List<TabularSheet> sheets, DeclaredPeriod period) {
+        return parseSource(sheets,period,false);
+    }
+    @Override
+    public List<ParsedRow> inspectSource(List<TabularSheet> sheets) {
+        return parseSource(sheets,null,true);
+    }
+    private List<ParsedRow> parseSource(List<TabularSheet> sheets,DeclaredPeriod period,boolean inspection) {
 		List<TabularSheet> used = sheets.stream().filter(sheet -> !sheet.rows().isEmpty()).toList();
 		boolean several = used.size() > 1;
 		List<ParsedRow> parsed = new ArrayList<>();
 		for (int index = 0; index < used.size(); index++) {
 			TabularSheet sheet = used.get(index);
 			HeaderLayout layout = layout(sheet);
-			if (period == null && !(layout.has(START) && layout.has(END))) {
+			if (!inspection && period == null && !(layout.has(START) && layout.has(END))) {
 				throw new BusinessRuleException("UPTIME_PERIOD_MISSING",
 						"El archivo no indica el período: elige la semana del informe o agrega las columnas Desde y Hasta.");
 			}
 			int offset = several ? (index + 1) * SHEET_STRIDE : 0;
 			String name = sheet.name().isBlank() ? null : sheet.name();
 			layout.dataRows().stream().filter(row -> !row.isBlank())
-					.forEach(row -> parsed.add(parseRow(layout, row, offset, name, period)));
+					.forEach(row -> parsed.add(parseRow(layout, row, offset, name, period, inspection)));
 		}
 		return parsed;
 	}
@@ -104,13 +110,17 @@ class EnerlinkUptimeParser implements UptimeRowParser {
 		}
 	}
 
-	private ParsedRow parseRow(HeaderLayout layout, TabularRow row, int offset, String sheet, DeclaredPeriod period) {
+	private ParsedRow parseRow(HeaderLayout layout, TabularRow row, int offset, String sheet, DeclaredPeriod period, boolean inspection) {
 		List<RowIssue> issues = new ArrayList<>();
 		String site = text(layout, row, SITE, issues);
 		String charger = text(layout, row, CHARGER, issues);
 		String connector = text(layout, row, CONNECTOR, issues);
-		Instant start = period != null ? period.start() : date(layout, row, START, "Desde", issues);
-		Instant end = period != null ? period.end() : date(layout, row, END, "Hasta", issues);
+		boolean startProvided = layout.has(START) && !layout.value(row,START).isBlank();
+        boolean endProvided = layout.has(END) && !layout.value(row,END).isBlank();
+        Instant start = startProvided ? date(layout,row,START,"Desde",issues) : null;
+		Instant end = endProvided ? date(layout,row,END,"Hasta",issues) : null;
+        if (!inspection && period==null && !startProvided && !endProvided)
+            issues.add(new RowIssue("UPTIME_PERIOD_MISSING","Indica los limites reales o la referencia del informe."));
 		Map<String, Object> source = new HashMap<>();
 		boolean states = layout.has(OCCUPIED);
 		BigDecimal available = duration(layout, row, AVAILABLE, "Disponible", source, issues);
@@ -122,10 +132,10 @@ class EnerlinkUptimeParser implements UptimeRowParser {
 				: read("Uptime", () -> DecimalText.parse(rawPercent, DECIMAL_SEPARATOR), issues);
 
 		source.put("reportedPercent", rawPercent);
-		if (period == null) {
-			source.put("periodStart", layout.value(row, START));
-			source.put("periodEnd", layout.value(row, END));
-		}
+		source.put("sourcePeriodStartPresent",startProvided);
+        source.put("sourcePeriodEndPresent",endProvided);
+        if (layout.has(START)) source.put("periodStart",layout.value(row,START));
+        if (layout.has(END)) source.put("periodEnd",layout.value(row,END));
 		return new ParsedRow(offset + row.number(), sheet, row.number(), site, charger, connector, start, end,
 				new MeasurementRules.Values(available, occupied, fault, offline, percent,
 						states ? UptimeBasis.STATES : UptimeBasis.REPORTED_PERCENT),

@@ -2,6 +2,8 @@ package com.tidsec.sarc_bakend.modules.uptime.domain.policy;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.MeasurementPeriod;
+import com.tidsec.sarc_bakend.modules.uptime.domain.model.measurement.TemporalPrecision;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,6 +59,21 @@ public final class MeasurementRules {
 		}
 	}
 
+    /** Entrada por precision; una referencia nunca recibe minutos nominales como peso real. */
+    public static Assessment assess(Values values, MeasurementPeriod period, PeriodType type) {
+        if (period.precision() == TemporalPrecision.KNOWN_RANGE)
+            return assess(values, PeriodRules.durationMinutes(period.start(),period.end()),type);
+        if (period.precision() != TemporalPrecision.REFERENCE_WEEK)
+            throw new BusinessRuleException("UPTIME_TEMPORAL_RECONCILIATION_REQUIRED",
+                "Concilia el periodo antes de evaluar esta medicion.");
+        if (values.reportedPercent() == null)
+            throw new BusinessRuleException("UPTIME_PERCENT_REQUIRED","Indica el porcentaje de la fuente para un informe sin horario.");
+        if (values.reportedPercent().abs().compareTo(MAX_PERCENT) > 0 || values.reportedPercent().scale() > 4)
+            throw new BusinessRuleException("UPTIME_PERCENT_TOO_LARGE","El porcentaje informado no se puede registrar.");
+        // null es ausencia de intervalo, no duracion cero.
+        return assessReported(values,null,type);
+    }
+
 	public static Assessment assess(Values values, long durationMinutes, PeriodType type) {
 		BigDecimal reported = values.reportedPercent();
 		if (reported != null && (reported.abs().compareTo(MAX_PERCENT) > 0 || reported.scale() > 4)) {
@@ -110,28 +127,29 @@ public final class MeasurementRules {
 	 * Informe semanal sin Ocupado: el porcentaje de la fuente es el valor. Los tres estados que llegan no
 	 * pueden pasar de la duracion; no se compara el porcentaje porque sin Ocupado no hay tiempo evaluado.
 	 */
-	private static Assessment assessReported(Values values, long durationMinutes, PeriodType type) {
+	private static Assessment assessReported(Values values, Long durationMinutes, PeriodType type) {
 		BigDecimal reported = values.reportedPercent();
 		if (reported == null) {
 			throw new BusinessRuleException("UPTIME_PERCENT_REQUIRED",
 					"Sin la columna Cargando, el uptime informado es obligatorio.");
 		}
 		Integer available = minutes(values.available());
+        Integer occupied = values.basis()==UptimeBasis.STATES?minutes(values.occupied()):null;
 		Integer fault = minutes(values.fault());
 		Integer offline = minutes(values.offline());
 		List<Observation> observations = new ArrayList<>();
-		if (!type.isExact() && Math.abs(durationMinutes - type.nominal().toMinutes()) > TOLERANCE_MINUTES) {
+		if (durationMinutes != null && !type.isExact() && Math.abs(durationMinutes - type.nominal().toMinutes()) > TOLERANCE_MINUTES) {
 			observations.add(Observation.WINDOW_DURATION_MISMATCH);
 		}
-		if (available == null || fault == null || offline == null) {
+		if (available == null || fault == null || offline == null || values.basis()==UptimeBasis.STATES && occupied==null) {
 			observations.add(Observation.DURATION_INVALID);
 		}
 		else {
-			long sum = (long) available + fault + offline;
+			long sum = (long) available + fault + offline + (occupied==null?0:occupied);
 			if (sum == 0) {
 				observations.add(Observation.SUM_ZERO);
 			}
-			else if (sum > durationMinutes + sumTolerance(durationMinutes)) {
+			else if (durationMinutes != null && sum > durationMinutes + sumTolerance(durationMinutes)) {
 				observations.add(Observation.SUM_ABOVE_DURATION);
 			}
 		}
@@ -139,8 +157,8 @@ public final class MeasurementRules {
 			observations.add(Observation.PERCENT_OUT_OF_RANGE);
 		}
 		boolean presentable = observations.stream().allMatch(Observation::validatable);
-		return new Assessment(available, null, fault, offline, List.copyOf(observations),
-				presentable ? reported.setScale(2, RoundingMode.HALF_UP) : null, UptimeBasis.REPORTED_PERCENT);
+		return new Assessment(available, occupied, fault, offline, List.copyOf(observations),
+                presentable ? reported.setScale(2, RoundingMode.HALF_UP) : null, values.basis());
 	}
 
 	/** En periodos largos el redondeo de las horas de Enerlink se acumula: se admite el 0,02 %. */

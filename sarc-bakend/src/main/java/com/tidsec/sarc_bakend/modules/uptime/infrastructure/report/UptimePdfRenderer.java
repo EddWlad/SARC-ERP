@@ -42,11 +42,11 @@ class UptimePdfRenderer implements UptimeReportRenderer {
 			pdf.note(UptimeLabels.NO_OFFICIAL);
 		}
 		else {
-			pdf.note(range(report.official())).kpis(kpis(report.official().kpis()));
+			pdf.note(range(report.official()), 8).kpis(kpis(report.official().kpis()));
 		}
 		if (report.provisional() != null) {
 			pdf.section("PROVISIONAL · " + UptimeLabels.of(report.provisional().periodType()))
-					.note(range(report.provisional()) + ". Ventana móvil: no es una semana oficial.")
+					.note(range(report.provisional()) + ". Ventana móvil: no es una semana oficial.", 8)
 					.kpis(kpis(report.provisional().kpis()));
 		}
 		pdf.ensureSpace(UptimePdfCharts.TREND_SPACE).section("Tendencia de semanas oficiales");
@@ -61,8 +61,31 @@ class UptimePdfRenderer implements UptimeReportRenderer {
 		}
 		results(pdf, "oficial", report.official());
 		results(pdf, "provisional", report.provisional());
-		coverage(pdf, report);
-		return pdf.section("Notas de metodología").note(UptimeLabels.FORMULA).note(UptimeLabels.EQUIPMENT_NOTE).finish();
+        coverage(pdf, report);
+        if(report.referenceReport()!=null) {
+            var reference=report.referenceReport();
+            pdf.section("Informe sin horario real · "+reference.referenceWeek())
+                .note("Promedio del informe: media de porcentajes fuente validados. Método REPORT_MEAN; sin duración real ni ponderación de 168 horas.", 8)
+                .kpis(List.of(new Kpi("Promedio del informe",UptimeLabels.percent(reference.uptimePercent())),
+                    new Kpi("Cobertura",UptimeLabels.percent(reference.coverage().percent())),
+                    new Kpi("Conectores",reference.connectorsIncluded()+" de "+reference.connectorsInScope()),
+                    new Kpi("Sin atribuir",String.valueOf(report.referencePendingLink()))));
+            pdf.table(List.of("#","Equipo","Código","Conector","Promedio del informe","Fuera de línea (h)","Con falla (h)"),
+                report.referenceConnectors().stream().map(UptimePdfRenderer::connector).toList(),CONNECTOR_WIDTHS);
+            pdf.table(List.of("Equipo","Código","Red","Promedio del informe","Conectores","Fuera de línea (h)"),
+                report.referenceEquipment().stream().map(UptimePdfRenderer::equipment).toList(),EQUIPMENT_WIDTHS);
+            pdf.table(List.of("Estado del informe","Cantidad"),UptimeLabels.STATES.stream().map(state->List.of(UptimeLabels.of(state),
+                String.valueOf(reference.coverage().byState().getOrDefault(state,0)))).toList(),new float[]{3,1});
+        }
+        if(!report.referenceExclusions().isEmpty())pdf.table(List.of("Equipo sin cifra del informe","Conector","Estado"),
+            report.referenceExclusions().stream().map(item->List.of(item.connector().equipmentName(),UptimeLabels.connector(item.connector()),UptimeLabels.of(item.state()))).toList(),new float[]{4,2,2});
+        if(report.temporalReconciliationCount()>0)pdf.note(report.temporalReconciliationCount()+" mediciones con apartado temporal por conciliar; fuera de ambos cálculos.");
+		pdf.section("Notas de metodología");
+        if(report.official()!=null || report.provisional()!=null)
+            pdf.note(UptimeLabels.FORMULA).note(UptimeLabels.EQUIPMENT_NOTE);
+        if(report.referenceReport()!=null)
+            pdf.note("REPORT_MEAN: promedio de porcentajes fuente validados, incluidos ceros. No se calcula duración evaluada ni se pondera por horas supuestas.");
+        return pdf.finish();
 	}
 
 	private String range(UptimeReport.Section section) {
@@ -120,7 +143,8 @@ class UptimePdfRenderer implements UptimeReportRenderer {
 
 	private static void coverage(CorporatePdf pdf, UptimeReport report) {
 		UptimeCalculator.Coverage coverage = report.coverage();
-		pdf.section("Cobertura y exclusiones")
+        if(coverage==null)return;
+		pdf.ensureSpace(150).section("Cobertura y exclusiones")
 				.kpis(List.of(new Kpi("Cobertura", UptimeLabels.percent(coverage.percent())),
 						new Kpi("Incluidas", String.valueOf(coverage.included())),
 						new Kpi("Evaluables", String.valueOf(coverage.denominator())),

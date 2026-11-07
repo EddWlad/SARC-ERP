@@ -57,10 +57,10 @@ class UptimeMigrationTest {
 
 	@Test
 	void declaresIdentityAndNamedIndexes() {
-		assertThat(constraints("upt_measurement")).contains("uq_upt_measurement_identity",
+		assertThat(constraints("upt_measurement")).contains(
 				"ck_upt_measurement_period", "ck_upt_measurement_effective");
 		assertThat(constraints("upt_connector_alias")).contains("uq_upt_connector_alias");
-		assertThat(indexes()).contains("ix_upt_measurement_connector_end", "ix_upt_measurement_period_end",
+		assertThat(indexes()).contains("uq_upt_measurement_identity", "ix_upt_measurement_connector_end", "ix_upt_measurement_period_end",
 				"ix_upt_import_row_pending");
 		assertThat(jdbc.queryForObject("""
 				SELECT indexdef FROM pg_indexes WHERE indexname = 'ix_upt_import_row_pending'
@@ -134,6 +134,91 @@ class UptimeMigrationTest {
 				"ck_upt_revision_origin", "ck_upt_revision_minutes", "ck_upt_revision_special",
 				"ck_upt_revision_exact", "ck_upt_revision_validated", "ck_upt_revision_observations");
 	}
+
+    @Test
+    void temporalPrecisionUsesConditionalBoundsAndLocalDurableWork() {
+        assertThat(tables()).contains("upt_measurement_temporal_change", "upt_temporal_transition_work");
+        assertThat(jdbc.queryForObject("SELECT is_nullable FROM information_schema.columns WHERE table_name='upt_measurement' AND column_name='period_start'",String.class)).isEqualTo("YES");
+        assertThat(indexes()).contains("uq_upt_measurement_reference");
+        assertThat(constraints("upt_measurement")).contains("ck_upt_measurement_precision","ck_upt_measurement_temporal");
+        assertThat(constraints("upt_temporal_transition_work")).contains("uq_upt_temporal_work_request","ck_upt_temporal_work_status","ck_upt_temporal_work_items");
+    }
+
+    @Test
+    void upgradeFromV015PreservesRevisionsExclusionAndArchivedPublication() {
+        try (var db = new org.testcontainers.postgresql.PostgreSQLContainer("postgres:18")) {
+            db.start();
+            var oldFlyway = org.flywaydb.core.Flyway.configure()
+                .dataSource(db.getJdbcUrl(),db.getUsername(),db.getPassword())
+                .locations("classpath:db/migration").target("015").load();
+            oldFlyway.migrate();
+            var legacy = new JdbcTemplate(new org.springframework.jdbc.datasource.DriverManagerDataSource(
+                db.getJdbcUrl(),db.getUsername(),db.getPassword()));
+            com.tidsec.sarc_bakend.support.Feature005Fixtures.seedInventory(legacy);
+            UUID batch=UUID.randomUUID(), measurement=UUID.randomUUID(), report=UUID.randomUUID();
+            UUID connector=com.tidsec.sarc_bakend.support.Feature006Fixtures.CONNECTOR_1;
+            UUID equipment=com.tidsec.sarc_bakend.support.Feature005Fixtures.JAC_STATION;
+            legacy.update("""
+                INSERT INTO upt_import_batch(id,source,origin,checksum,original_ref,status,declared_period_type,
+                    declared_period_start,declared_period_end,created_at,updated_at,version)
+                VALUES(?,'ENERLINK','FILE','original-sha','qa006/original','COMPLETED','ROLLING_7D',
+                    '2026-10-19T05:00:00Z','2026-10-26T05:00:00Z',now(),now(),3)
+                """,batch);
+            legacy.update("""
+                INSERT INTO upt_measurement(id,connector_id,equipment_id,source,period_start,period_end,
+                    period_zone,latest_revision,effective_revision,excluded,created_at,updated_at,version)
+                VALUES(?,?,?,'ENERLINK','2026-10-19T05:00:00Z','2026-10-26T05:00:00Z',
+                    'America/Guayaquil',2,1,true,now(),now(),7)
+                """,measurement,connector,equipment);
+            for (int revision=1;revision<=2;revision++) {
+                legacy.update("""
+                    INSERT INTO upt_measurement_revision(id,measurement_id,revision,reading_class,period_type,
+                        available_minutes,occupied_minutes,fault_minutes,offline_minutes,reported_percent,
+                        review_state,observations,origin,import_batch_id,source_values,equipment_label,
+                        connector_type_label,exact_confirmed_at,entered_at,validated_at,uptime_basis)
+                    VALUES(?,?,?,'MEASURED','EXACT_WEEK',9815,null,0,234,97.6800,?,'[]',
+                        'FILE',?,'{"availableHours":"163.5833"}','Nombre historico','Tipo2',
+                        now(),now(),CASE WHEN ?=1 THEN now() END,'REPORTED_PERCENT')
+                    """,UUID.randomUUID(),measurement,revision,revision==1?"VALIDATED":"PENDING",batch,revision);
+            }
+            legacy.update("""
+                INSERT INTO report_issued(id,kind,format,file_name,scope,checksum,size_bytes,file_ref,
+                    created_at,updated_at,version,content_profile,cut_off,criteria)
+                VALUES(?,'UPTIME','PDF','anterior.pdf','historico','hash-antes',42,'qa006/archivado',
+                    now(),now(),0,'OFFICIAL_ONLY',now(),'{"from":"2026-10-19","to":"2026-10-26"}')
+                """,report);
+            var before = legacy.queryForList("SELECT row_to_json(x)::text FROM upt_measurement_revision x ORDER BY revision",String.class);
+            String archiveBefore=legacy.queryForObject("SELECT row_to_json(x)::text FROM report_issued x WHERE id=?",String.class,report);
+            org.flywaydb.core.Flyway.configure().dataSource(db.getJdbcUrl(),db.getUsername(),db.getPassword())
+                .locations("classpath:db/migration").load().migrate();
+            assertThat(legacy.queryForObject("SELECT period_precision FROM upt_measurement WHERE id=?",String.class,measurement))
+                .isEqualTo("REQUIRES_RECONCILIATION");
+            assertThat(legacy.queryForObject("SELECT reference_week FROM upt_measurement WHERE id=?",java.time.LocalDate.class,measurement)).isNull();
+            assertThat(legacy.queryForMap("SELECT latest_revision,effective_revision,excluded,version FROM upt_measurement WHERE id=?",measurement))
+                .containsEntry("latest_revision",2).containsEntry("effective_revision",1).containsEntry("excluded",true).containsEntry("version",7L);
+            assertThat(legacy.queryForList("SELECT row_to_json(x)::text FROM upt_measurement_revision x ORDER BY revision",String.class)).isEqualTo(before);
+            assertThat(legacy.queryForObject("SELECT row_to_json(x)::text FROM report_issued x WHERE id=?",String.class,report)).isEqualTo(archiveBefore);
+            // Candidatos fuera de claves canonicas, sin elegir ni borrar un ganador.
+            legacy.update("""
+                INSERT INTO upt_measurement(id,connector_id,equipment_id,source,period_start,period_end,
+                    period_zone,latest_revision,created_at,updated_at,version,period_precision,
+                    reference_week,reference_period_type)
+                VALUES(?,?,?,'ENERLINK',null,null,'America/Guayaquil',1,now(),now(),0,
+                    'REFERENCE_WEEK','2026-10-19','ROLLING_7D')
+                """,UUID.randomUUID(),connector,equipment);
+            assertThatThrownBy(()->legacy.update("""
+                INSERT INTO upt_measurement(id,connector_id,equipment_id,source,period_start,period_end,
+                    period_zone,latest_revision,created_at,updated_at,version,period_precision,
+                    reference_week,reference_period_type)
+                VALUES(?,?,?,'ENERLINK',null,null,'America/Guayaquil',1,now(),now(),0,
+                    'REFERENCE_WEEK','2026-10-19','ROLLING_7D')
+                """,UUID.randomUUID(),connector,equipment)).isInstanceOf(DataIntegrityViolationException.class);
+            assertThatThrownBy(()->legacy.update("UPDATE upt_measurement SET period_start=now() WHERE period_precision='REFERENCE_WEEK'"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+            assertThatThrownBy(()->legacy.update("UPDATE upt_measurement SET reference_week='2026-10-20' WHERE period_precision='REFERENCE_WEEK'"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        }
+    }
 
 	private void assertRejected(String sql, Object... args) {
 		assertThatThrownBy(() -> jdbc.update(sql, args)).isInstanceOf(DataIntegrityViolationException.class);
