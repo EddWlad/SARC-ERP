@@ -46,13 +46,14 @@ class HealthReadinessTest {
 
 	@Test
 	@Order(0)
-	void freshProductionStartsWithOnlyTheAdministratorAndRoles() {
+	void freshProductionStartsWithAdministratorRolesAndStandardConnectorTypes() {
 		assertThat(jdbc.sql("select email from auth_user").query(String.class).list())
 				.containsExactly("admin-qa@example.invalid");
 		assertThat(jdbc.sql("select role_code from auth_user_role").query(String.class).list())
 				.containsExactly("ADMINISTRADOR");
 		assertThat(jdbc.sql("select count(*) from auth_role").query(Long.class).single()).isEqualTo(5L);
-		assertThat(jdbc.sql("select count(*) from asset_connector_type").query(Long.class).single()).isZero();
+		assertThat(jdbc.sql("select code from asset_connector_type").query(String.class).list())
+				.containsExactlyInAnyOrder("TYPE2", "CCS2", "CHADEMO", "GBT_AC", "GBT_DC", "TYPE1");
 		assertThat(jdbc.sql("select count(*) from asset_equipment").query(Long.class).single()).isZero();
 	}
 

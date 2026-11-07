@@ -42,6 +42,8 @@ Resultado esperado: cualquier fallo de la tabla notifica a las dos personas por 
 
 La publicación **no** se permite sin una prueba de recepción vigente: `sarc-deploy` falla con el código **18** en el paso 2b si `/var/lib/sarc/prueba-recepcion.ok` no existe, su huella no coincide con `/etc/sarc/avisos.conf` o falta la confirmación de alguna persona.
 
+El 2026-11-07, EddWlad confirmó por escrito la recepción de los dos correos de ensayo de Healthchecks.io, por fallo explícito y por falta de latido. El proveedor detectó ambos fallos y las dos comprobaciones de ensayo quedaron pausadas. Siguen pendientes la prueba del canal de GitHub, el registro formal conjunto y la instalación del comprobante en el VPS.
+
 Se hace antes de la primera publicación y cada vez que cambian los destinatarios o los canales:
 
 1. Abrir un *issue* `prueba-recepcion` en el repositorio y mencionar a los destinatarios vigentes.
