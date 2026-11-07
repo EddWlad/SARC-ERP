@@ -1,0 +1,21 @@
+# Reglas de gitleaks para SARC (FR-005, SC-005). Se amplían las reglas por omisión.
+# El repositorio es público: cada permiso lleva su motivo y se limita a rutas concretas. Nunca se permite un
+# valor real; un hallazgo nuevo debe corregirse (revocar y rotar el secreto), no añadirse aquí.
+title = "SARC"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Contraseña ficticia de las pruebas de integración del backend (no es un secreto)"
+condition = "AND"
+paths = ['''sarc-bakend/src/test/java/com/tidsec/sarc_bakend/modules/.+Test\.java''']
+regexes = ['''clave-de-prueba-123''']
+
+[[allowlists]]
+description = "Sumas SHA-256 de migraciones guardadas como evidencia de las features 004 y 006 (hexadecimal, no tokens)"
+paths = ['''specs/00[46]-[^/]+/evidence/baseline[^/]*''']
+
+[[allowlists]]
+description = "Valores ficticios de las pruebas de los scripts de despliegue (cabeceras y cookies de prueba)"
+paths = ['''deploy/tests/.+\.bats''']
