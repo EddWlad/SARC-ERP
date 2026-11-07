@@ -1,0 +1,77 @@
+[
+  {
+    "file": "V001__init_roles_usuarios.sql",
+    "sha256_git": "ccef1a4b1de3c7de5394d731b02890de9f35904d1fe0be33612fee54f278b0e3",
+    "unchanged": true
+  },
+  {
+    "file": "V002__auditoria.sql",
+    "sha256_git": "74157c76512b7ec81b9fca18fea5473557693300ee065dd2bb6d5742138d5e00",
+    "unchanged": true
+  },
+  {
+    "file": "V003__spring_session.sql",
+    "sha256_git": "aedaf7e519a92d39a29d8c42991224a65332bba6fe3c228d3b6d43233382a5dd",
+    "unchanged": true
+  },
+  {
+    "file": "V004__inventario_equipos.sql",
+    "sha256_git": "774e8127c25f1ca0d790795a500fae2dd6837ab3f2db38b6fb221d43032a6a11",
+    "unchanged": true
+  },
+  {
+    "file": "V005__consumo_energia.sql",
+    "sha256_git": "3e802a889d549b0945b891954cae7ca5139e0dc73232c167bc8d6182b5759059",
+    "unchanged": true
+  },
+  {
+    "file": "V006__importacion_equipos.sql",
+    "sha256_git": "84b5dca7b89ea96a90f6061547ff446d50ab6b8aeecb171ea32cce2eca2f47a9",
+    "unchanged": true
+  },
+  {
+    "file": "V007__correcciones_qa.sql",
+    "sha256_git": "1fb6d16792deed9249e7b6ce60382dbe02a7330e7f1e1097c35ba76e2f6a618a",
+    "unchanged": true
+  },
+  {
+    "file": "V008__codigo_kia_segun_uso.sql",
+    "sha256_git": "3ff27c0da7e916353dc5512f0f6d728137f69fd3a0e5103802986dfd30c57337",
+    "unchanged": true
+  },
+  {
+    "file": "V009__vinculacion_enerlink_sesiones.sql",
+    "sha256_git": "17a8b94d19e7a01bc14b5b9ae1ad4569bddf3ebecf176db215b4246176354e44",
+    "unchanged": true
+  },
+  {
+    "file": "V010__revision_energia.sql",
+    "sha256_git": "49ae985d2611476738973c8d07e94899f6156ed36595e021c1ef7ebb5a168ada",
+    "unchanged": true
+  },
+  {
+    "file": "V011__visibilidad_reportes.sql",
+    "sha256_git": "0a4a324c2e266f53350e95b04806b6d49f61889cca6864c3f267a61aa9520bd3",
+    "unchanged": true
+  },
+  {
+    "file": "V012__indice_sesiones_recientes.sql",
+    "sha256_git": "b8ba5a009f33a6156a95e70da40ca8bbcb8f638b08bec8d1c85a053e7fde18c4",
+    "unchanged": true
+  },
+  {
+    "file": "V013__uptime_disponibilidad.sql",
+    "sha256_git": "961f7302dfd991242d2f26c5f32542e0da59a509908adeb477c2bf4dbb33cca0",
+    "unchanged": true
+  },
+  {
+    "file": "V014__uptime_informe_semanal.sql",
+    "sha256_git": "6a84f6b5a240d726b7a78dfa67c1900ad0d241b7597176b910c5c2670bf566e6",
+    "unchanged": true
+  },
+  {
+    "file": "V015__uptime_conector_propuesto.sql",
+    "sha256_git": "beef638460c4157ffd3bcd172ab553c89c622975de4b7c4799b5cd1128a9bfc3",
+    "unchanged": true
+  }
+]

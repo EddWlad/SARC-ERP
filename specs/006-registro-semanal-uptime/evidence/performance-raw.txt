@@ -1,0 +1,66 @@
+## 300 conectores, 124800 mediciones (siembra 6 s)
+Referencia semanal, apertura global: p50 184 ms, p95 239 ms, max 766 ms (20 rondas)
+Ranking de informe: p50 102 ms, p95 134 ms, max 218 ms (20 rondas)
+Reporte semanal PDF: p50 656 ms, p95 1679 ms, max 1679 ms (5 rondas)
+Reporte semanal Excel: p50 445 ms, p95 2809 ms, max 2809 ms (5 rondas)
+EXPLAIN representativo de la proyección semanal (no sustituye las mediciones HTTP):
+Nested Loop  (cost=6.07..1409.38 rows=1 width=39) (actual time=0.143..2.258 rows=300.00 loops=1)
+  Buffers: shared hit=1505
+  ->  Bitmap Heap Scan on upt_measurement m  (cost=5.65..424.58 rows=120 width=24) (actual time=0.127..0.639 rows=300.00 loops=1)
+        Recheck Cond: ((reference_week = '2026-10-26'::date) AND ((period_precision)::text = 'REFERENCE_WEEK'::text))
+        Heap Blocks: exact=300
+        Buffers: shared hit=305
+        ->  Bitmap Index Scan on ix_upt_measurement_reference  (cost=0.00..5.62 rows=120 width=0) (actual time=0.066..0.067 rows=300.00 loops=1)
+              Index Cond: ((reference_week = '2026-10-26'::date) AND ((period_precision)::text = 'REFERENCE_WEEK'::text))
+              Index Searches: 1
+              Buffers: shared hit=5
+  ->  Index Scan using uq_upt_measurement_revision on upt_measurement_revision r  (cost=0.42..8.21 rows=1 width=43) (actual time=0.005..0.005 rows=1.00 loops=300)
+        Index Cond: ((measurement_id = m.id) AND (revision = COALESCE(m.effective_revision, m.latest_revision)))
+        Index Searches: 300
+        Buffers: shared hit=1200
+Planning:
+  Buffers: shared hit=16
+Planning Time: 0.488 ms
+Execution Time: 2.307 ms
+Dashboard resumen, apertura: p50 1349 ms, p95 1671 ms, max 1699 ms (20 rondas)
+Dashboard resumen, red: p50 1290 ms, p95 1473 ms, max 1541 ms (20 rondas)
+Ranking por conector: p50 1292 ms, p95 1471 ms, max 1516 ms (20 rondas)
+Resumen por equipo: p50 1281 ms, p95 1465 ms, max 1467 ms (20 rondas)
+Grilla de captura: p50 65 ms, p95 81 ms, max 169 ms (20 rondas)
+Reporte PDF: p50 1747 ms, p95 2089 ms, max 2089 ms (5 rondas)
+Reporte Excel: p50 1467 ms, p95 2188 ms, max 2188 ms (5 rondas)
+## 1000 conectores, 447200 mediciones (siembra 17 s)
+Referencia semanal, apertura global: p50 494 ms, p95 581 ms, max 677 ms (20 rondas)
+Ranking de informe: p50 173 ms, p95 197 ms, max 220 ms (20 rondas)
+Reporte semanal PDF: p50 852 ms, p95 872 ms, max 872 ms (5 rondas)
+Reporte semanal Excel: p50 600 ms, p95 629 ms, max 629 ms (5 rondas)
+EXPLAIN representativo de la proyección semanal (no sustituye las mediciones HTTP):
+Nested Loop  (cost=12.81..4524.33 rows=2 width=39) (actual time=0.346..5.362 rows=1000.00 loops=1)
+  Buffers: shared hit=5012
+  ->  Bitmap Heap Scan on upt_measurement m  (cost=12.39..1361.08 rows=387 width=24) (actual time=0.333..1.367 rows=1000.00 loops=1)
+        Recheck Cond: ((reference_week = '2026-10-26'::date) AND ((period_precision)::text = 'REFERENCE_WEEK'::text))
+        Heap Blocks: exact=1000
+        Buffers: shared hit=1012
+        ->  Bitmap Index Scan on ix_upt_measurement_reference  (cost=0.00..12.29 rows=387 width=0) (actual time=0.131..0.132 rows=1000.00 loops=1)
+              Index Cond: ((reference_week = '2026-10-26'::date) AND ((period_precision)::text = 'REFERENCE_WEEK'::text))
+              Index Searches: 1
+              Buffers: shared hit=12
+  ->  Index Scan using uq_upt_measurement_revision on upt_measurement_revision r  (cost=0.42..8.17 rows=1 width=43) (actual time=0.004..0.004 rows=1.00 loops=1000)
+        Index Cond: ((measurement_id = m.id) AND (revision = COALESCE(m.effective_revision, m.latest_revision)))
+        Index Searches: 1000
+        Buffers: shared hit=4000
+Planning:
+  Buffers: shared hit=18
+Planning Time: 0.316 ms
+Execution Time: 5.434 ms
+Dashboard resumen, apertura: p50 4609 ms, p95 5879 ms, max 5992 ms (20 rondas)
+Dashboard resumen, red: p50 5738 ms, p95 30777 ms, max 34415 ms (20 rondas)
+Ranking por conector: p50 6089 ms, p95 7348 ms, max 8123 ms (20 rondas)
+Resumen por equipo: p50 3910 ms, p95 6067 ms, max 6169 ms (20 rondas)
+Grilla de captura: p50 113 ms, p95 137 ms, max 144 ms (20 rondas)
+Reporte PDF: p50 4702 ms, p95 5138 ms, max 5138 ms (5 rondas)
+Reporte Excel: p50 4872 ms, p95 5250 ms, max 5250 ms (5 rondas)
+## Importación de 2000 filas
+Vista previa: 7866 ms
+Confirmación: 59447 ms, 2000 mediciones creadas
+30 solicitudes simultáneas (misma sesión QA, no 30 personas distintas): p95 2424 ms, max 2455 ms

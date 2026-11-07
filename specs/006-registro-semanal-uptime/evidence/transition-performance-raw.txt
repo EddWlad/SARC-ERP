@@ -1,0 +1,2 @@
+3 bloques de 500 candidatos sin original acreditado, 1500 decisiones conservadoras reales. Ejecución síncrona QA de ImportJobs, BD18 desechable. Sin IO de proveedor.
+Duraciones ms: [18484, 19298, 24355]; p95 observado (3 muestras, máximo): 24355 ms
