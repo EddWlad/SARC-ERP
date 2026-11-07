@@ -18,6 +18,13 @@
   font-size: var(--mat-sys-body-small-size);
 }
 
+// Boton de texto compacto bajo el nombre del archivo; no cambia la altura de la fila.
+.fingerprint-toggle {
+  --mat-button-text-container-height: 28px;
+
+  margin-inline-start: calc(var(--sarc-space-2) * -1);
+}
+
 .scope {
   overflow-wrap: anywhere;
 }

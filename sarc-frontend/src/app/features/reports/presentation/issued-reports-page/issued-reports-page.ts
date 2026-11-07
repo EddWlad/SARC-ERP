@@ -69,6 +69,8 @@ export class IssuedReportsPage {
   protected readonly pageSizeOptions = [10, 20, 50];
   /** Reporte cuya descarga se esta pidiendo. */
   protected readonly downloading = signal<string | null>(null);
+  /** Reportes cuya huella SHA-256 la persona pidio ver; por defecto no se muestra. */
+  private readonly shownFingerprints = signal<ReadonlySet<string>>(new Set());
 
   protected onKind(kind: ReportKind | ''): void {
     this.facade.filterKind(kind);
@@ -87,6 +89,20 @@ export class IssuedReportsPage {
     return bytes < 1024 * 1024
       ? `${this.quantities.count(Math.max(1, Math.round(bytes / 1024)))} KB`
       : `${this.quantities.kwh(bytes / (1024 * 1024))} MB`;
+  }
+
+  protected fingerprintShown(report: IssuedReport): boolean {
+    return this.shownFingerprints().has(report.id);
+  }
+
+  protected toggleFingerprint(report: IssuedReport): void {
+    this.shownFingerprints.update((shown) => {
+      const next = new Set(shown);
+      if (!next.delete(report.id)) {
+        next.add(report.id);
+      }
+      return next;
+    });
   }
 
   protected restricted(report: IssuedReport): boolean {
@@ -117,7 +133,7 @@ export class IssuedReportsPage {
       .subscribe((issued) => {
         if (issued) {
           const cutOff = issued.cutOff ? this.cutOffFormat.format(new Date(issued.cutOff)) : '—';
-          this.notifier.success(`Informe ${issued.id ?? ''} emitido con corte ${cutOff}`);
+          this.notifier.success(`Informe gerencial emitido con corte ${cutOff}`);
         }
       });
   }

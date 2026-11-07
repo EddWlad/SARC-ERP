@@ -176,8 +176,9 @@ export class ManagerialReportDialog {
     try {
       this.equipmentLabel.set(this.equipmentName(await this.facade.findEquipment(id)));
     } catch {
-      // Equipo ya no consultable: el filtro exacto sigue vigente y se identifica por su UUID.
-      this.equipmentLabel.set(id);
+      // Equipo ya no consultable: el filtro exacto sigue vigente, pero el identificador interno
+      // no se muestra a la persona.
+      this.equipmentLabel.set('Equipo no disponible');
     }
   }
 }

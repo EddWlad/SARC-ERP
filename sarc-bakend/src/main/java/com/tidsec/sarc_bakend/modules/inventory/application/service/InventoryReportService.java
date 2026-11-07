@@ -25,6 +25,7 @@ import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentRepos
 import com.tidsec.sarc_bakend.modules.inventory.domain.repository.EquipmentSearchCriteria;
 import com.tidsec.sarc_bakend.shared.catalog.ReportArchive;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
+import com.tidsec.sarc_bakend.shared.report.DomainLabels;
 import com.tidsec.sarc_bakend.shared.report.ReportFile;
 import com.tidsec.sarc_bakend.shared.report.ReportFormat;
 
@@ -95,7 +96,7 @@ public class InventoryReportService {
 		String filters = Stream.of(
 				criteria.text() == null || criteria.text().isBlank() ? null : "texto \"" + criteria.text().strip() + "\"",
 				criteria.network() == null ? null : "red " + criteria.network(),
-				criteria.type() == null ? null : "tipo " + criteria.type(),
+				criteria.type() == null ? null : "tipo " + DomainLabels.of(criteria.type()),
 				criteria.brand() == null ? null : "marca " + criteria.brand(),
 				criteria.adminStatus() == null ? null : "estado " + criteria.adminStatus(),
 				criteria.usageStatus() == null ? null : "uso " + criteria.usageStatus())

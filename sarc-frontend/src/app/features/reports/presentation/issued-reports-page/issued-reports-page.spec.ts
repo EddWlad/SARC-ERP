@@ -67,6 +67,20 @@ describe('IssuedReportsPage', () => {
     expect(dialog.open).not.toHaveBeenCalled();
   });
 
+  it('hides the SHA-256 fingerprint until the person asks for it', () => {
+    const { fixture, button } = setup(REPORT);
+    const text = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text()).not.toContain(REPORT.checksum);
+
+    button('Ver huella')?.click();
+    fixture.detectChanges();
+    expect(text()).toContain(REPORT.checksum);
+
+    button('Ocultar huella')?.click();
+    fixture.detectChanges();
+    expect(text()).not.toContain(REPORT.checksum);
+  });
+
   it('explains a restricted original and offers a new issue instead of the download', () => {
     const { fixture, dialog, button } = setup({
       ...REPORT,

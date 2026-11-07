@@ -38,7 +38,7 @@ class InventoryExcelRenderer implements InventoryReportRenderer {
 						List.of("Dimensión", "Categoría", "Equipos"), summaryRows(report.summary()))
 				.sheet("Equipos", "Inventario de infraestructura de carga - detalle",
 						List.of("Nombre", "Código asignado", "Serie", "Red", "Tipo", "Marca", "Estado", "Estado de uso",
-								"Conectores", "Cantidad de conectores", "Ubicación", "Id interno"),
+								"Conectores", "Cantidad de conectores", "Ubicación"),
 						report.equipment().stream().map(InventoryExcelRenderer::row).toList())
 				.finish();
 	}
@@ -66,6 +66,6 @@ class InventoryExcelRenderer implements InventoryReportRenderer {
 				DomainLabels.of(equipment.type()), InventoryLabels.of(equipment.brand()),
 				InventoryLabels.of(equipment.adminStatus()), InventoryLabels.of(equipment.usageStatus()),
 				InventoryLabels.connectorCodes(equipment.connectors()), equipment.connectors().size(),
-				equipment.location() == null ? "" : equipment.location(), equipment.id().toString());
+				equipment.location() == null ? "" : equipment.location());
 	}
 }

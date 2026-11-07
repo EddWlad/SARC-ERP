@@ -63,7 +63,7 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 										energy(day.energyKwh())))
 								.toList())
 				.sheet("Por equipo", "Consumo por equipo", List.of("#", "Equipo", "Código", "Red", "Tipo", "Sesiones",
-						"kWh", "Id interno"), ranking(report.ranking()))
+						"kWh"), ranking(report.ranking()))
 				.sheet("Transacciones", "Transacciones validadas", SESSION_HEADERS,
 						report.official().stream().map(view -> session(view, false, report.energyJustifications())).toList());
 		if (report.operationalAllowed()) {
@@ -117,7 +117,7 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 			rows.add(List.of(item.position(), ConsumptionLabels.name(item.equipment()),
 					ConsumptionLabels.code(item.equipment()), ConsumptionLabels.network(item.equipment()),
 					item.equipment() == null ? "" : DomainLabels.of(item.equipment().type()), item.sessions(),
-					item.energyKwh(), item.equipment() == null ? "" : item.equipment().id().toString()));
+					item.energyKwh()));
 		}
 		return rows;
 	}

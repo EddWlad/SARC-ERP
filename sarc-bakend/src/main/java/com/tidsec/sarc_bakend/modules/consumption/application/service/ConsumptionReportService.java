@@ -37,6 +37,7 @@ import com.tidsec.sarc_bakend.shared.catalog.EquipmentDirectory;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentReference;
 import com.tidsec.sarc_bakend.shared.catalog.ReportArchive;
 import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
+import com.tidsec.sarc_bakend.shared.report.DomainLabels;
 import com.tidsec.sarc_bakend.shared.report.ReportContentProfile;
 import com.tidsec.sarc_bakend.shared.report.ReportFile;
 import com.tidsec.sarc_bakend.shared.report.ReportFormat;
@@ -165,7 +166,7 @@ public class ConsumptionReportService {
 		String period = "Periodo " + DAY.format(criteria.from()) + " al " + DAY.format(criteria.to().minusDays(1));
 		String filters = Stream.of(
 				criteria.network() == null ? null : "red " + criteria.network(),
-				criteria.type() == null ? null : "tipo " + criteria.type(),
+				criteria.type() == null ? null : "tipo " + DomainLabels.of(criteria.type()),
 				criteria.source() == null ? null : "fuente " + criteria.source(),
 				criteria.equipmentId() == null ? null : "equipo " + equipmentName(criteria.equipmentId(), equipment))
 				.filter(Objects::nonNull).collect(Collectors.joining(", "));
@@ -176,7 +177,8 @@ public class ConsumptionReportService {
 		EquipmentReference reference = loaded.containsKey(id) ? loaded.get(id)
 				: directory.findByIds(List.of(id)).get(id);
 		if (reference == null) {
-			return id.toString();
+			// Un identificador interno no se muestra: el equipo ya no es consultable.
+			return "no disponible";
 		}
 		return reference.assignedCode() == null ? reference.name()
 				: reference.name() + " (" + reference.assignedCode() + ")";
