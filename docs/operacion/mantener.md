@@ -18,11 +18,14 @@ Los scripts y plantillas del repositorio se instalan con estos nombres (sin exte
 | `deploy/nginx/maintenance.html` | `/opt/sarc/maintenance/maintenance.html` | root:root 0644 |
 | `deploy/nginx/sarc.conf.template` | `/etc/nginx/conf.d/sarc.conf` (renderizado con la IP) | root:root 0644 |
 | `deploy/systemd/*.service`, `*.timer` | `/etc/systemd/system/` | root:root 0644 |
+| `deploy/systemd/nginx-sarc.conf` | `/etc/systemd/system/nginx.service.d/sarc.conf` | root:root 0644 |
 | `deploy/env/*.example` | `/etc/sarc/sarc.env` y `/etc/sarc/verificacion.env` (con valores reales) | `sarc.env` 0640 root:sarc; `verificacion.env` 0600 root |
 
 Paquetes necesarios: Nginx, Docker Engine con Compose, Temurin 25, `age`, `jq`, `unzip`, `openssl`, `curl`, Certbot ≥ 5.4 (snap), `fail2ban` y `unattended-upgrades`. Tras instalar unidades: `sudo systemctl daemon-reload` y habilitar con `sudo systemctl enable --now sarc-heartbeat.timer sarc-check-disk.timer sarc-check-cert.timer`. El temporizador `sarc-backup.timer` se activa antes de la segunda publicación (`publicar.md`).
 
-Las rutas de scripts, el volumen `sarc_pgdata` (`sudo docker volume create sarc_pgdata`) y `/var/lib/sarc` (`sarc:sarc`, 0750) y `/var/backups/sarc` (root, 0750, grupo `sarc-backup` de solo lectura) se crean una sola vez.
+Las rutas de scripts, el volumen `sarc_pgdata` (`sudo docker volume create sarc_pgdata`) y `/var/backups/sarc` (root, 0750, grupo `sarc-backup` de solo lectura) se crean una sola vez. Crear el estado operativo con `sudo install -d -o root -g root -m 0711 /var/lib/sarc`. Nginx puede comprobar el indicador de mantenimiento y solo root puede modificar el estado, la prueba de avisos y los registros de publicación.
+
+Habilitar `docker.service` y `nginx.service` durante la preparación. Después de la primera instalación verificada, habilitar `sarc.service` con `sudo systemctl enable sarc.service`. Al arrancar, este servicio ordena el inicio del PostgreSQL persistente y espera su comprobación de salud. El backend y Nginx tienen reinicio automático ante salidas no solicitadas. Un `systemctl stop` deliberado sigue siendo efectivo para mantenimiento.
 
 Resultado esperado de una actualización: `sudo systemctl list-timers | grep sarc` lista los temporizadores y `shellcheck` del repositorio está limpio.
 
@@ -33,6 +36,8 @@ Resultado esperado de una actualización: `sudo systemctl list-timers | grep sar
 3. **PostgreSQL**: solo actualizaciones **menores** de la imagen `postgres:18` (el volumen se conserva). Una versión mayor exige un procedimiento propio con copia previa y ensayo de restauración: no se hace sin decisión del responsable del producto.
 4. **Dependencias de la aplicación**: entran por el flujo normal (CI → versión candidata → publicación).
 5. **Verificación posterior**: tras cualquier actualización, `sudo /usr/local/sbin/sarc-post-checks <versión actual>` debe dar `COMPLETADA`.
+
+Nginx sirve el frontend desde `/opt/sarc/current/frontend` y carga la configuración propia en `/etc/nginx/conf.d/sarc.conf`. El paquete gestiona su página de bienvenida en un directorio aparte. Si se actualiza Nginx, validar `nginx -t`, comprobar el sitio por su IP pública y ejecutar las comprobaciones posteriores. Ensayar primero en Ubuntu desechable el arranque del VPS, la caída del proceso Java, la recuperación de PostgreSQL y la actualización de Nginx. Registrar el tiempo hasta que readiness y la página vuelvan a responder, junto con un conteo o lectura de los datos de prueba. En un único VPS el reinicio del anfitrión interrumpe el acceso durante el arranque.
 
 **Si fallan**: no borrar nada; seguir `recuperar.md`. Un servicio que no arranca tras actualizar Java o Docker se revierte con el gestor de paquetes (versión anterior) o se corrige hacia adelante.
 

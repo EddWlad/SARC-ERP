@@ -5,7 +5,7 @@ SARC se publica por **IP pública** con HTTPS. El certificado lo emite Let's Enc
 **Responsable**: responsable técnico. **Requisitos previos**:
 
 - VPS con IP pública fija y puertos 80 y 443 alcanzables desde Internet.
-- Nginx instalado con `deploy/nginx/sarc.conf.template` (carpeta `/var/www/certbot` para el desafío).
+- Nginx instalado con `deploy/nginx/sarc-http.conf.template` para la primera emisión. El desafío se sirve desde `/var/www/certbot`.
 - Certbot **5.4 o superior** instalado con `snap` (las versiones anteriores no emiten certificados para IP).
 - `sarc-check-cert` y `certbot-deploy-hook` instalados en `/usr/local/sbin/` (root, 0755).
 
@@ -13,28 +13,36 @@ No se asume que el flujo habitual para dominios funcione igual con una IP: se pr
 
 ## Emisión
 
-1. Primero en pruebas (certificado no reconocido, sin límites estrictos):
+1. Instalar la plantilla solo HTTP y comprobar el desafío antes de emitir. Si ya existe una configuración TLS activa, conservarla y usar su ubicación ACME.
 
 ```bash
-sudo certbot certonly --webroot -w /var/www/certbot --ip-address <IP_PUBLICA> --preferred-profile shortlived --staging
+sudo install -d -m 0755 /var/www/certbot/.well-known/acme-challenge
+sed 's/<IP_PUBLICA>/<IP real>/g' deploy/nginx/sarc-http.conf.template | sudo tee /etc/nginx/conf.d/sarc.conf >/dev/null
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
-   Resultado esperado: certificado en `/etc/letsencrypt/live/<IP_PUBLICA>/`. Si falla, ver «Si falla» abajo; no se continúa a producción.
-
-2. Cuando la emisión de pruebas funcione, el certificado reconocido:
+2. Probar emisión con Let's Encrypt de ensayo. Usar un nombre de certificado distinto para que el certificado real tenga su propia ruta.
 
 ```bash
-sudo certbot certonly --webroot -w /var/www/certbot --ip-address <IP_PUBLICA> --preferred-profile shortlived --force-renewal
+sudo certbot certonly --webroot -w /var/www/certbot --ip-address <IP_PUBLICA> --cert-name sarc-ip-ensayo --preferred-profile shortlived --staging
 ```
 
-3. Renderizar Nginx con la IP y recargar:
+   Resultado esperado: certificado de ensayo en `/etc/letsencrypt/live/sarc-ip-ensayo/`. Al verificar la emisión, eliminar exclusivamente esa inscripción con `sudo certbot delete --cert-name sarc-ip-ensayo` para que el temporizador no renueve un certificado que no se usará.
+
+3. Cuando la emisión de pruebas funcione, emitir el certificado reconocido:
+
+```bash
+sudo certbot certonly --webroot -w /var/www/certbot --ip-address <IP_PUBLICA> --cert-name <IP_PUBLICA> --preferred-profile shortlived
+```
+
+4. Renderizar la plantilla TLS con la IP y recargar:
 
 ```bash
 sed 's/<IP_PUBLICA>/<IP real>/g' deploy/nginx/sarc.conf.template | sudo tee /etc/nginx/conf.d/sarc.conf >/dev/null
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-4. Comprobar desde otro equipo que la conexión es segura y sin advertencias en navegadores actuales (resultado esperado: candado, certificado emitido para la IP).
+5. Comprobar desde otro equipo que la conexión es segura y sin advertencias en navegadores actuales (resultado esperado: certificado emitido para la IP).
 
 ## Renovación automática
 
@@ -43,7 +51,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ```bash
 sudo install -m 0755 deploy/scripts/certbot-deploy-hook.sh /usr/local/sbin/certbot-deploy-hook
-sudo certbot reconfigure --deploy-hook /usr/local/sbin/certbot-deploy-hook
+sudo certbot reconfigure --cert-name <IP_PUBLICA> --deploy-hook /usr/local/sbin/certbot-deploy-hook
 ```
 
 - Probar la renovación sin cambiar nada: `sudo certbot renew --dry-run`. Forzar una renovación real una vez para comprobar todo el camino: `sudo certbot renew --force-renewal`.

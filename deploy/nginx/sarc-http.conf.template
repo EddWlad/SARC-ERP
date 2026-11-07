@@ -1,0 +1,15 @@
+# Primera emisión del certificado. Reemplazar esta configuración por sarc.conf.template al habilitar TLS.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name <IP_PUBLICA>;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        default_type text/plain;
+    }
+
+    location / {
+        return 503;
+    }
+}

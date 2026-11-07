@@ -124,7 +124,7 @@ psql_sarc() {
 wait_database() {
 	local i
 	for ((i = 0; i < 30; i++)); do
-		if compose exec -T postgres pg_isready -U sarc -d sarc >/dev/null 2>&1; then
+		if compose exec -T postgres pg_isready -h 127.0.0.1 -U sarc -d sarc >/dev/null 2>&1; then
 			return 0
 		fi
 		sleep 2
@@ -151,6 +151,9 @@ if [[ "$mode" == "verificar" ]]; then
 	fi
 	if [[ "$(basename "$(readlink -f "$current_link" 2>/dev/null || echo)")" != "$version" ]]; then
 		die 10 "0-estado" "la versión enlazada en current no es la que se quiere verificar"
+	fi
+	if ! sarc-alerts-gate verificar; then
+		die 18 "2b-avisos" "se requiere una prueba de recepción vigente para cerrar la primera instalación"
 	fi
 else
 	if [[ "$last_result" == "EN_CURSO" ]]; then
@@ -185,7 +188,9 @@ fi
 step="1-sumas"
 base_url="${SARC_RELEASE_BASE_URL:-}"
 if [[ -z "$base_url" ]]; then
-	require_env SARC_GITHUB_REPO
+	if [[ ! "${SARC_GITHUB_REPO:-}" =~ ^[A-Za-z0-9-]+/[A-Za-z0-9_.-]+$ ]]; then
+		fail 12 "2-configuracion" "definir SARC_GITHUB_REPO como propietario/repositorio"
+	fi
 	base_url="https://github.com/${SARC_GITHUB_REPO}/releases/download"
 fi
 jar_name="sarc-backend-${version}.jar"
@@ -234,7 +239,7 @@ pre_checks+=("2-configuracion:ok")
 
 # ---------- Paso 2b: prueba de recepción de avisos vigente ----------
 step="2b-prueba-de-recepcion"
-if ! sarc-alerts-gate; then
+if ! sarc-alerts-gate "$mode"; then
 	fail 18 "2b-prueba-de-recepcion" "no hay una prueba de recepción de avisos vigente"
 fi
 pre_checks+=("2b-prueba-de-recepcion:ok")
@@ -248,7 +253,7 @@ pre_checks+=("3-certificado:ok")
 
 # ---------- Pasos 4 a 6: copia local, esquema y copia previa (la primera instalación no los necesita) ----------
 step="5-esquema"
-if ! compose up -d postgres >/dev/null 2>&1 || ! wait_database; then
+if ! compose up -d --no-recreate postgres >/dev/null 2>&1 || ! wait_database; then
 	fail 15 "5-esquema" "la base de datos no está disponible"
 fi
 if [[ "$mode" == "primera" ]]; then

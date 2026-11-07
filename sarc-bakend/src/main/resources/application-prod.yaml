@@ -16,6 +16,7 @@ sarc:
       root-folder: ${SARC_STORAGE_CLOUDINARY_ROOT_FOLDER:sarc-prod}
 
 server:
+  address: 127.0.0.1
   forward-headers-strategy: native
 
 # Salud publica minima (FR-035): Nginx solo expone /actuator/health/readiness y devuelve UP o DOWN sin
