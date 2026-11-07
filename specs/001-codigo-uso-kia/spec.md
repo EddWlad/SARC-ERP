@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-29
 
-**Status**: Draft
+**Status**: Cerrada el 2026-11-07: entregada y en producción con datos reales; cierre confirmado por el responsable del producto. Los cambios nuevos se gestionan desde Feature 008.
 
 **Input**: User description: "Feature 001 — Código asignado según estado de uso KIA.
 LIBRE: Código asignado opcional. BLOQUEADO: obligatorio. Conservar el código al pasar de

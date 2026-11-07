@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-30
 
-**Status**: Draft — revisión documental completa; pendiente de aprobación funcional y planificación.
+**Status**: Cerrada el 2026-11-07: entregada y en producción con datos reales; cierre confirmado por el responsable del producto. Los cambios nuevos se gestionan desde Feature 008.
 
 **Input**: Feature 002 solicitada por el responsable de SARC: registrar identidades Enerlink desde la carga masiva de inventario, vincular sesiones por coincidencia única verificada y admitir sesiones iniciadas sin energía o término informados, conservando unicidad, trazabilidad e históricos.
 

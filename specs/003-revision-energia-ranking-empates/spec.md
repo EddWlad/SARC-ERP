@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-30
 
-**Status**: Draft — pendiente de aprobación funcional y planificación.
+**Status**: Cerrada el 2026-11-07: entregada y en producción con datos reales; cierre confirmado por el responsable del producto. Los cambios nuevos se gestionan desde Feature 008.
 
 **Input**: Corregir dos diferencias entre consumo y la constitución de SARC. D10: una energía superior a 1.000 kWh por sesión debe ser observación revisable con decisión humana trazada, justificación y aprobación antes de computarse, no rechazo definitivo; aplica a Enerlink y Wallbox. D14: el ranking Top 5 por energía debe incluir todos los equipos empatados con el quinto lugar, indicarlo en la presentación y no usar el UUID para excluir un empatado.
 

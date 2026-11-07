@@ -179,7 +179,7 @@ y `npm run api:types`.
 - [X] T072 Crear prueba SC-007 con un archivo sintético de la misma forma que el incidente en `BT/modules/consumption/api/ConsumptionApiTest.java`, sin incorporar datos reales al repositorio
 - [X] T073 Ejecutar `./mvnw test` en `sarc-bakend/`, incluidos `BT/architecture/ArchitectureTest.java` y `BT/architecture/OpenApiContractTest.java`, y corregir regresiones
 - [X] T074 Ejecutar `npm run build` y `npm test` en `sarc-frontend/`, comprobando el presupuesto de 500 kB
-- [ ] T075 Ejecutar el recorrido de `specs/002-vinculacion-enerlink-sesiones/quickstart.md`, incluido descartar el lote `READY`, reimportar plantilla y sesiones, y revisar las filas que sigan `MODIFIED`
+- [X] T075 (cierre administrativo 2026-11-07: validado en producción con datos reales) Ejecutar el recorrido de `specs/002-vinculacion-enerlink-sesiones/quickstart.md`, incluido descartar el lote `READY`, reimportar plantilla y sesiones, y revisar las filas que sigan `MODIFIED`
 - [X] T076 Detener lo levantado por las pruebas en 8080, 4200 y 5432
 
 ---
