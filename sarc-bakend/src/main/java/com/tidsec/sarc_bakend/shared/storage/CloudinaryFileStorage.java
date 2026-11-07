@@ -37,6 +37,7 @@ class CloudinaryFileStorage implements FileStorage {
 
 	private final Cloudinary cloudinary;
 	private final String rootFolder;
+	private final boolean backupUploads;
 	private final HttpClient documentClient;
 
 	CloudinaryFileStorage(StorageProperties properties) {
@@ -51,17 +52,13 @@ class CloudinaryFileStorage implements FileStorage {
 				"api_secret", properties.apiSecret(),
 				"secure", true));
 		this.rootFolder = properties.rootFolder();
+		this.backupUploads = properties.backupUploads();
 	}
 
 	@Override
 	public String store(String folder, byte[] content) {
 		try {
-			Map<?, ?> result = cloudinary.uploader().upload(content, ObjectUtils.asMap(
-					"type", DELIVERY_TYPE,
-					"resource_type", "image",
-					"folder", rootFolder + "/" + folder,
-					"unique_filename", true,
-					"overwrite", false));
+			Map<?, ?> result = cloudinary.uploader().upload(content, uploadOptions(folder, "image"));
 			return (String) result.get("public_id");
 		}
 		catch (IOException | RuntimeException ex) {
@@ -73,20 +70,29 @@ class CloudinaryFileStorage implements FileStorage {
 	@Override
 	public String storeDocument(String folder, String filename, byte[] content) {
 		try {
-			Map<?, ?> result = cloudinary.uploader().upload(content, ObjectUtils.asMap(
-					"type", DELIVERY_TYPE,
-					"resource_type", "raw",
-					"folder", rootFolder + "/" + folder,
-					"filename_override", filename,
-					"use_filename", true,
-					"unique_filename", true,
-					"overwrite", false));
+			var options = uploadOptions(folder, "raw");
+			options.put("filename_override", filename);
+			options.put("use_filename", true);
+			Map<?, ?> result = cloudinary.uploader().upload(content, options);
 			return (String) result.get("public_id");
 		}
 		catch (IOException | RuntimeException ex) {
 			log.error("No se pudo subir el documento a Cloudinary", ex);
 			throw unavailable();
 		}
+	}
+
+	private Map<String, Object> uploadOptions(String folder, String resourceType) {
+		Map<String, Object> options = ObjectUtils.asMap(
+				"type", DELIVERY_TYPE,
+				"resource_type", resourceType,
+				"folder", rootFolder + "/" + folder,
+				"unique_filename", true,
+				"overwrite", false);
+		if (backupUploads) {
+			options.put("backup", true);
+		}
+		return options;
 	}
 
 	@Override

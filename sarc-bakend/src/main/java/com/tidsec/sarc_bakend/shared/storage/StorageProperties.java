@@ -16,7 +16,8 @@ record StorageProperties(
 		@DefaultValue("") String apiKey,
 		@DefaultValue("") String apiSecret,
 		@DefaultValue("sarc") String rootFolder,
-		@DefaultValue("false") boolean required) {
+		@DefaultValue("false") boolean required,
+		@DefaultValue("false") boolean backupUploads) {
 
 	boolean isConfigured() {
 		return !cloudName.isBlank() && !apiKey.isBlank() && !apiSecret.isBlank();

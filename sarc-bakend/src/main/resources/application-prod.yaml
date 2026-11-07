@@ -14,6 +14,7 @@ sarc:
       required: true
       # Carpeta propia del entorno de produccion (sarc-prod); SARC_STORAGE_CLOUDINARY_ROOT_FOLDER la redefine.
       root-folder: ${SARC_STORAGE_CLOUDINARY_ROOT_FOLDER:sarc-prod}
+      backup-uploads: ${SARC_STORAGE_CLOUDINARY_BACKUP_UPLOADS:false}
 
 server:
   address: 127.0.0.1
