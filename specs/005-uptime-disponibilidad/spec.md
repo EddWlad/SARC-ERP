@@ -6,7 +6,7 @@
 
 **Created**: 2026-11-01
 
-**Status**: Entrega técnica de Feature-005 en cierre; validación humana T124 pendiente. Los ajustes del registro semanal y pasteles se tramitan aparte como Feature-006.
+**Status**: Cerrada el 2026-11-07: entregada y en producción con datos reales; cierre confirmado por el responsable del producto. Los cambios nuevos se gestionan desde Feature 008. Los ajustes del registro semanal y pasteles se entregaron como Feature 006.
 
 **Input**: Incorporar RF-004 del PRD, Uptime y disponibilidad de puntos de carga y electrolineras, reutilizando equipos, conectores y redes del inventario: registro por conector, período real, ventanas móviles provisionales frente a períodos calendario exactos, minutos por estado, estados especiales, duplicados, historial, validación, dashboards y reportes PDF/Excel. Mejorar la presentación de la información secundaria del dashboard de Consumo con referencia a Inventario, conservar «Fuera de los indicadores oficiales» para Administrador y Analista, y retirar «Aprobadas sobre umbral (incluidas en oficiales)» del PDF de los roles de consulta. No definir tablas, migraciones, endpoints ni estructura de código.
 

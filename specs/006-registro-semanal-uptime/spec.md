@@ -3,7 +3,7 @@
 **Feature**: `006-registro-semanal-uptime`
 **Feature Branch**: `codex/006-registro-semanal-uptime`
 **Created**: 2026-11-04
-**Status**: Especificación funcional aclarada y plan técnico elaborado el 2026-11-04. Pendientes tasks y analyze antes de implementar. Sin implementación.
+**Status**: Cerrada el 2026-11-07: entregada y en producción con datos reales; cierre confirmado por el responsable del producto. Los cambios nuevos se gestionan desde Feature 008.
 **Baseline**: Feature-005 integrada en main, commit `9739aca`. Esta feature modifica únicamente el registro/consulta semanal de uptime y añade la composición visual de estados; no vuelve a implementar 005 ni incorpora sus ajustes de Consumo.
 **Input**: Registrar cada lunes los «Últimos 7 días» que Enerlink muestra por conector, mediante copiar/pegar o el Excel semanal de dos hojas. Conservar los rangos reales cuando existen y declarar el horario desconocido cuando faltan, con semana de referencia independiente. Añadir pastel en detalle y dashboard, manteniendo el diseño y la arquitectura de SARC.
 

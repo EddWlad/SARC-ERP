@@ -2,7 +2,15 @@
 
 Cómo preparar una publicación, verificarla, reconocer un fallo y recuperar el servicio. Está escrita para una persona que **no participó** en el desarrollo. Todo se describe sin valores reales: el repositorio es público.
 
-**Estado**: la guía está completa para lo que puede ensayarse sin servidor. La puesta en producción real (VPS, certificados, cuentas) está **pendiente de autorización** del responsable del producto: ver `decisiones-previas.md` y `pendientes-recursos-reales.md`.
+**Estado**: SARC está **en producción** desde el 2026-11-07 (primera publicación verificada). Los controles operativos que siguen abiertos (renovación real del certificado, recibos diarios de copia, Auto Backup, caída total del VPS) están en `pendientes-recursos-reales.md`.
+
+## Flujo de trabajo desde ahora
+
+1. **Desarrollar en local** (base `pg_sarc`, perfil `dev`), con pruebas del backend y del frontend.
+2. **Integrar por GitHub**: rama o PR hacia `main`; el CI (`ci.yml`) debe quedar verde.
+3. Cada integración en `main` con CI verde genera una **versión candidata** inmutable (`version-candidata.yml`).
+4. **Publicar** con el flujo `Publicar` y la aprobación del entorno `production` (`publicar.md`); después **verificar** el resultado.
+5. Los cambios de esquema entran como migración nueva (`V0xx`); nunca se edita una aplicada.
 
 ## Entornos
 

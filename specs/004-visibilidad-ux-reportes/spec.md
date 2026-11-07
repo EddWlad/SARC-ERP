@@ -6,7 +6,7 @@
 
 **Created**: 2026-10-31
 
-**Status**: Draft — aclaración completada; preparada para planificación, sin implementación.
+**Status**: Cerrada el 2026-11-07: entregada y en producción con datos reales; cierre confirmado por el responsable del producto. Los cambios nuevos se gestionan desde Feature 008.
 
 **Input**: Restringir la información de «Fuera de los indicadores oficiales» a Administrador y Analista de Monitoreo, también en consultas y exportaciones, conservando los resultados gerenciales autorizados. Corregir superposiciones de «Nuevo tipo de conector» y defectos visuales confirmados en las pantallas existentes. Incorporar gráficos gerenciales en PDF y evaluar gráficos en Excel, preservando identidad corporativa, WCAG 2.2 AA, temas claro/oscuro, rendimiento y experiencia responsive. No definir tablas, migraciones, endpoints ni soluciones de implementación.
 
