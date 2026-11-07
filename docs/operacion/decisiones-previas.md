@@ -4,7 +4,7 @@
 
 Registro de las decisiones que el responsable del producto debe tomar **antes** de cualquier acción sobre recursos reales. Mientras una decisión figure como *pendiente*, la etapa E7 (VPS real) no se inicia.
 
-Estado de este registro: **decisiones parciales registradas**. Se rellena con fecha y nombre al aprobarse cada una. No escribir aquí valores secretos, direcciones de correo ni IP.
+Estado de este registro: **decisiones registradas y habilitación de E7 pendiente**. Se rellena con fecha y nombre al aprobarse cada una. No escribir aquí valores secretos, direcciones de correo ni IP.
 
 ## Aprobación para iniciar E7
 
@@ -14,7 +14,7 @@ Estado de este registro: **decisiones parciales registradas**. Se rellena con fe
 | Fecha | — |
 | Quién aprueba | — |
 
-Sin esta aprobación no se ejecuta ninguna tarea de producción real (contratar, configurar GitHub, tocar el VPS, Healthchecks.io o Cloudinary).
+La aprobación habilita la configuración de producción en GitHub y en el VPS. Las pruebas de proveedor autorizadas por el titular quedan como evidencia previa para E0.
 
 ## Decisiones
 
@@ -23,11 +23,11 @@ Sin esta aprobación no se ejecuta ninguna tarea de producción real (contratar,
 | 1 | Repositorio público o privado (R11) | Mantener público. Los avisos, registros y Releases excluyen datos sensibles. | Decidida | EddWlad / 2026-11-07 |
 | 2 | Computador local designado | Este PC Windows, con copias cifradas. Comprobar cifrado del destino, acceso restringido, espacio y disponibilidad diaria antes de registrar la tarea. | Decidida | EddWlad / 2026-11-07 |
 | 3 | Responsable y suplente | Responsable `EddWlad`. Suplente por designar. Excepción temporal para primera instalación y su verificación: EddWlad confirma la recepción de todos los avisos. Para publicaciones normales se exige suplente y nueva prueba de recepción de ambos. | Decidida | EddWlad / 2026-11-07 |
-| 4 | Cuenta de Healthchecks.io | Confirmar que el plan elegido permite el uso comercial. Verificar los destinatarios de correo según la decisión 3. | *Pendiente* | — |
+| 4 | Cuenta de Healthchecks.io | Cuenta gratuita del titular. Ocho comprobaciones de SARC configuradas con el correo del titular. Se verificó la recepción de las dos alertas de ensayo. La prueba de GitHub se registra por separado. | Decidida | EddWlad / 2026-11-07 |
 | 5 | Backup de Cloudinary: alcance y cuota | SARC solicitará backup en cada subida a `sarc-prod` con `SARC_STORAGE_CLOUDINARY_BACKUP_UPLOADS=true`. Se verificaron una imagen y un archivo privado en `sarc-qa/backup`. Se confirmó la eliminación de ambos originales y de sus versiones. El ajuste global de la cuenta compartida se conserva. | Decidida | EddWlad / 2026-11-07 |
 | 6 | Rol de la cuenta de verificación posterior | `ASISTENTE` con un reporte de verificación de indicadores oficiales. En QA se comprobó el acceso a los cuatro módulos y que la gestión de usuarios queda restringida. La descarga del reporte real se comprueba después del arranque. | Decidida | Verificación técnica / 2026-11-07 |
 | 7 | «Prevent self-review» en el entorno `production` | Excepción temporal para que EddWlad pueda aprobar la primera instalación y su verificación con revisión obligatoria. Al designar suplente, activarlo y confirmar la revisión independiente antes de la primera publicación normal. | Decidida | EddWlad / 2026-11-07 |
-| 8 | Datos de la primera instalación | Base de producción nueva, con el administrador inicial y los roles. El catálogo de conectores y los demás datos operativos empiezan vacíos. La cuenta y el reporte técnicos de la verificación posterior se tratan aparte del primer arranque. | Decidida | EddWlad / 2026-11-07 |
+| 8 | Datos de la primera instalación | Base de producción nueva con el administrador inicial, los roles y los seis tipos de conector de V004. Los equipos, consumos y demás datos operativos empiezan vacíos. La cuenta y el reporte técnicos de la verificación posterior se tratan aparte del primer arranque. | Decidida | EddWlad / 2026-11-07 |
 
 ## Requisitos del computador local
 
