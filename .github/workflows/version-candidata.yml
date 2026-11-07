@@ -1,0 +1,147 @@
+name: Versión candidata
+
+# Cada integración en main con CI verde produce UNA versión candidata inmutable: tag + GitHub Release
+# pre-release con el JAR, el frontend, manifest.json y SHA256SUMS (contracts/release-manifest.md).
+# No toca el VPS ni publica nada en producción: publicar requiere el flujo `publicar` y aprobación.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: version-candidata
+  cancel-in-progress: false
+
+jobs:
+  crear:
+    name: Crear versión candidata
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      COMMIT: ${{ github.event.workflow_run.head_sha }}
+      CI_RUN_ID: ${{ github.event.workflow_run.id }}
+      CI_RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+    steps:
+      - name: Calcular la versión
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(date -u +%Y.%m.%d)-${CI_RUN_NUMBER}-${COMMIT:0:7}"
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+          echo "Versión candidata: $version"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      # Una versión nunca se reemplaza: si el tag ya existe, el flujo falla sin tocarlo.
+      - name: Comprobar que la versión no existe
+        shell: bash
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "La versión ${{ steps.version.outputs.version }} ya existe y es inmutable." >&2
+            exit 1
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: sarc-frontend/package-lock.json
+
+      - name: Construir backend y frontend (una sola vez)
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          (cd sarc-bakend && ./mvnw -B -DskipTests -Dsarc.version="$VERSION" package)
+          cp "sarc-bakend/target/sarc-bakend-${VERSION}.jar" "dist/sarc-backend-${VERSION}.jar"
+          (cd sarc-frontend && npm ci && npm run build)
+          browser_dir="$(ls -d sarc-frontend/dist/*/browser | head -n 1)"
+          tar -czf "dist/sarc-frontend-${VERSION}.tar.gz" -C "$browser_dir" .
+
+      - name: Reunir las comprobaciones de CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CI_RUN_ID}/jobs" --paginate \
+            --jq '.jobs[] | select(.name != "Avisar fallo") | [.name, .conclusion, "codigo", .html_url] | @tsv' \
+            >"$RUNNER_TEMP/checks.tsv"
+          cat "$RUNNER_TEMP/checks.tsv" | cut -f1,2
+
+      - name: Manifiesto del candidato anterior (para schemaChanges)
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/previo"
+          anterior="$(gh release list --exclude-drafts --limit 1 --json tagName --jq '.[0].tagName // empty' || true)"
+          if [ -n "$anterior" ]; then
+            gh release download "$anterior" --pattern manifest.json --dir "$RUNNER_TEMP/previo" || true
+          fi
+
+      - name: Generar manifest.json y SHA256SUMS
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          previo=()
+          if [ -f "$RUNNER_TEMP/previo/manifest.json" ]; then
+            previo=(--previous-manifest "$RUNNER_TEMP/previo/manifest.json")
+          fi
+          bash deploy/release/build-manifest.sh \
+            --version "$VERSION" --commit "$COMMIT" --run-id "$CI_RUN_ID" \
+            --artifacts-dir dist --migrations-dir sarc-bakend/src/main/resources/db/migration \
+            --checks-file "$RUNNER_TEMP/checks.tsv" --output-dir dist "${previo[@]}"
+
+      # Los artefactos no pueden contener secretos (FR-008). Se revisa también el contenido del JAR
+      # y del .tar.gz (hasta dos niveles de archivos comprimidos).
+      - name: Descargar gitleaks
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o "$RUNNER_TEMP/gitleaks.tar.gz" \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+
+      - name: Escanear los artefactos en busca de secretos
+        shell: bash
+        run: '"$RUNNER_TEMP/gitleaks" dir --redact --no-banner --max-archive-depth 2 --config .gitleaks.toml dist'
+
+      - name: Crear tag y Release pre-release
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          gh release create "$VERSION" \
+            "dist/sarc-backend-${VERSION}.jar" \
+            "dist/sarc-frontend-${VERSION}.tar.gz" \
+            dist/manifest.json dist/SHA256SUMS \
+            --target "$COMMIT" --prerelease --title "$VERSION" \
+            --notes "Versión candidata. Commit ${COMMIT:0:7}. No es una publicación: publicar requiere el flujo «publicar» y aprobación."
+          {
+            echo "### Versión candidata $VERSION"
+            echo
+            echo "- Commit: \`${COMMIT:0:7}\`"
+            echo "- Ejecución de CI: ${CI_RUN_ID}"
+          } >>"$GITHUB_STEP_SUMMARY"
