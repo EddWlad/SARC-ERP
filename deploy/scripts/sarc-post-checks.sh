@@ -112,8 +112,11 @@ else
 			registrar ingreso OK
 			[[ "$(http "$base_url/api/v1/auth/me")" == "200" ]] && registrar usuarios OK
 			[[ "$(http "$base_url/api/v1/equipment?page=0&size=1")" == "200" ]] && registrar inventario OK
-			hoy="$(date -u +%Y-%m-%d)"
-			[[ "$(http "$base_url/api/v1/energy/summary?from=$hoy&to=$hoy")" == "200" ]] && registrar consumo OK
+			# El resumen de consumo exige un período no vacío con fin exclusivo.
+			ahora="$(date -u +%s)"
+			desde="$(date -u -d "@$((ahora - 86400))" +%F)"
+			hasta="$(date -u -d "@$ahora" +%F)"
+			[[ "$(http "$base_url/api/v1/energy/summary?from=$desde&to=$hasta")" == "200" ]] && registrar consumo OK
 			[[ "$(http "$base_url/api/v1/uptime/scope/connectors?q=a")" == "200" ]] && registrar uptime OK
 			[[ "$(http "$base_url/api/v1/reports/issued?page=0&size=1")" == "200" ]] && registrar reportes OK
 			if [[ -n "${SARC_VERIFY_REPORT_ID:-}" && "$SARC_VERIFY_REPORT_ID" != "<definir>" ]]; then
