@@ -1,0 +1,15 @@
+[Unit]
+Description=SARC: copia lógica cifrada de PostgreSQL (nocturna)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+# root: necesita docker y leer /etc/sarc/sarc.env (la copia queda con permisos de lectura solo para el grupo sarc-backup).
+User=root
+ExecStart=/usr/local/sbin/sarc-backup nocturna
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+ReadWritePaths=/var/backups/sarc

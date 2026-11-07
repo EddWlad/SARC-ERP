@@ -1,3 +1,9 @@
+# Patron de registro con fecha, nivel, traceId (X-Request-ID de RequestTraceFilter), logger y mensaje.
+# No cambia que se registra, solo como se muestra (FR-036).
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5p [%X{traceId:--}] %-40.40logger{39} : %m%n%wEx"
+
 spring:
   application:
     name: sarc-bakend

@@ -10,11 +10,15 @@
 	</parent>
 	<groupId>com.tidsec</groupId>
 	<artifactId>sarc-bakend</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>${revision}</version>
 	<name>sarc-bakend</name>
 	<description>Sistema Administrativo de Reportes de Carga - backend</description>
 	<properties>
 		<java.version>25</java.version>
+		<!-- Version de la aplicacion que informa build-info; el flujo de version candidata la
+		     sustituye con -Dsarc.version=AAAA.MM.DD-run-sha7. -->
+		<sarc.version>0.0.1-SNAPSHOT</sarc.version>
+		<revision>${sarc.version}</revision>
 		<springdoc.version>3.1.1</springdoc.version>
 		<archunit.version>1.4.1</archunit.version>
 		<cloudinary.version>2.5.0</cloudinary.version>
@@ -144,6 +148,16 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<!-- META-INF/build-info.properties con la version publicada: la leen las
+						     comprobaciones posteriores a una publicacion (Feature 007). -->
+						<id>build-info</id>
+						<goals>
+							<goal>build-info</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

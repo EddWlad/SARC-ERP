@@ -23,6 +23,11 @@ class StorageConfig {
 		if (properties.isConfigured()) {
 			return new CloudinaryFileStorage(properties);
 		}
+		if (properties.required()) {
+			// Produccion no arranca sin almacenamiento (FR-025): solo se nombran las propiedades, nunca valores.
+			throw new IllegalStateException("Almacenamiento de archivos obligatorio sin configurar. Faltan: "
+					+ String.join(", ", properties.missing()));
+		}
 		log.warn("Cloudinary no configurado (sarc.storage.cloudinary.*): la subida de archivos esta deshabilitada");
 		return new FileStorage() {
 			@Override

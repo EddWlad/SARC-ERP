@@ -1,0 +1,8 @@
+# Excepciones aceptadas de OSV-Scanner (FR-005). Solo para vulnerabilidades que no se pueden corregir todavía.
+# Cada excepción lleva identificador, fecha de revisión (ignoreUntil) y motivo; sin ellas el trabajo `dependencias` falla
+# con severidad alta o crítica (CVSS >= 7.0). Ejemplo (no activo):
+#
+# [[IgnoredVulns]]
+# id = "GHSA-xxxx-xxxx-xxxx"
+# ignoreUntil = 2026-12-31
+# reason = "Sin corrección publicada; no se usa la función afectada. Revisar antes de la fecha."

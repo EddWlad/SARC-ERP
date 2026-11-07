@@ -1,0 +1,128 @@
+name: Control de ensayos
+
+# Vigila que nunca pasen más de 31 días sin un ensayo de restauración aprobado (FR-042, SC-018) y que
+# ningún ensayo pendiente (cambio crítico) quede abierto más de 7 días. No lee datos de SARC: solo los
+# issues `ensayo-restauracion` del repositorio.
+#
+# Los umbrales (28, 31 y 7 días) solo se pueden REDUCIR, y únicamente con `workflow_dispatch` (para
+# ensayar este control); la ejecución programada usa siempre los valores completos.
+# Si todavía no hay ningún ensayo aprobado, cuenta desde la variable de repositorio SARC_PRODUCCION_DESDE
+# y, si no está definida (antes de producción), no avisa.
+
+on:
+  schedule:
+    - cron: '17 11 * * *'
+  workflow_dispatch:
+    inputs:
+      dias_por_vencer:
+        description: 'Ensayo: días para el aviso «por vencer» (solo se puede reducir; por omisión 28)'
+        required: false
+        default: '28'
+      dias_vencido:
+        description: 'Ensayo: días para el aviso «vencido» (solo se puede reducir; por omisión 31)'
+        required: false
+        default: '31'
+      dias_pendiente:
+        description: 'Ensayo: días de un ensayo pendiente abierto (solo se puede reducir; por omisión 7)'
+        required: false
+        default: '7'
+
+permissions:
+  contents: read
+
+jobs:
+  controlar:
+    name: Controlar ensayos de restauración
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          RESPONSABLE: ${{ vars.SARC_RESPONSABLE }}
+          SUPLENTE: ${{ vars.SARC_SUPLENTE }}
+          PRODUCCION_DESDE: ${{ vars.SARC_PRODUCCION_DESDE }}
+          DIAS_POR_VENCER: ${{ inputs.dias_por_vencer }}
+          DIAS_VENCIDO: ${{ inputs.dias_vencido }}
+          DIAS_PENDIENTE: ${{ inputs.dias_pendiente }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const DIA = 24 * 60 * 60 * 1000;
+            // Umbrales: el máximo es el valor completo; el ensayo manual solo puede reducirlos.
+            const umbral = (valor, maximo) => {
+              const n = parseInt(valor, 10);
+              return context.eventName === 'workflow_dispatch' && Number.isFinite(n) && n >= 0 ? Math.min(n, maximo) : maximo;
+            };
+            const diasPorVencer = umbral(process.env.DIAS_POR_VENCER, 28);
+            const diasVencido = umbral(process.env.DIAS_VENCIDO, 31);
+            const diasPendiente = umbral(process.env.DIAS_PENDIENTE, 7);
+
+            const personas = [process.env.RESPONSABLE, process.env.SUPLENTE]
+              .map(p => (p || '').trim().replace(/^@/, '')).filter(Boolean);
+            const menciones = personas.length ? personas.map(p => '@' + p).join(' ') : '(responsable y suplente sin configurar)';
+            const enlace = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+
+            async function alertar(titulo, detalle) {
+              const etiqueta = 'alerta-operativa';
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name: etiqueta });
+              } catch (e) {
+                await github.rest.issues.createLabel({ owner, repo, name: etiqueta, color: 'b60205',
+                  description: 'Alerta operativa de SARC' });
+              }
+              const abiertos = await github.paginate(github.rest.issues.listForRepo, {
+                owner, repo, state: 'open', labels: etiqueta, per_page: 100,
+              });
+              const cuerpo = `${detalle}\n\nControl: ${enlace}\n\n${menciones}`;
+              const existente = abiertos.find(i => i.title === titulo && !i.pull_request);
+              if (existente) {
+                await github.rest.issues.createComment({ owner, repo, issue_number: existente.number, body: cuerpo });
+              } else {
+                await github.rest.issues.create({ owner, repo, title: titulo, body: cuerpo,
+                  labels: [etiqueta], assignees: personas });
+              }
+            }
+
+            // 1. Último ensayo aprobado (issue cerrado con etiquetas ensayo-restauracion y aprobado).
+            const aprobados = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'closed', labels: 'ensayo-restauracion,aprobado', per_page: 100,
+            });
+            const fechas = aprobados.filter(i => !i.pull_request && i.closed_at).map(i => new Date(i.closed_at).getTime());
+            let referencia = null;
+            let origen = '';
+            if (fechas.length) {
+              referencia = Math.max(...fechas);
+              origen = 'último ensayo aprobado';
+            } else if ((process.env.PRODUCCION_DESDE || '').trim()) {
+              const desde = new Date(process.env.PRODUCCION_DESDE.trim()).getTime();
+              if (Number.isFinite(desde)) {
+                referencia = desde;
+                origen = 'inicio de producción (aún no hay ensayo aprobado)';
+              }
+            }
+            if (referencia === null) {
+              core.info('Sin ensayo aprobado y sin SARC_PRODUCCION_DESDE: antes de producción, no se avisa.');
+            } else {
+              const dias = Math.floor((Date.now() - referencia) / DIA);
+              core.info(`Han pasado ${dias} días desde el ${origen}.`);
+              if (dias >= diasVencido) {
+                await alertar('Ensayo de restauración vencido',
+                  `Han pasado ${dias} días desde el ${origen} (límite ${diasVencido}). Hay que ensayar la restauración ya.`);
+              } else if (dias >= diasPorVencer) {
+                await alertar('Ensayo de restauración por vencer',
+                  `Han pasado ${dias} días desde el ${origen} (aviso a los ${diasPorVencer}; límite ${diasVencido}).`);
+              }
+            }
+
+            // 2. Ensayos pendientes (cambio crítico) abiertos demasiado tiempo.
+            const pendientes = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', labels: 'ensayo-restauracion,pendiente', per_page: 100,
+            });
+            const viejos = pendientes.filter(i => !i.pull_request
+              && Math.floor((Date.now() - new Date(i.created_at).getTime()) / DIA) >= diasPendiente);
+            if (viejos.length) {
+              await alertar('Ensayo de restauración pendiente sin resolver',
+                `Hay ${viejos.length} ensayo(s) pendiente(s) por cambio crítico abiertos desde hace ${diasPendiente} días o más.`);
+            }

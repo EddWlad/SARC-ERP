@@ -1,0 +1,4 @@
+# Regla sudoers de la cuenta de despliegue (una sola regla). Instalar como /etc/sudoers.d/sarc-deploy (0440 root:root)
+# tras validarla con: visudo -c -f deploy/sudoers/sarc-deploy
+# sarc-deploy vuelve a validar sus argumentos: cualquier forma distinta de las tres permitidas termina con codigo 2.
+sarc-deploy ALL=(root) NOPASSWD: /usr/local/sbin/sarc-deploy

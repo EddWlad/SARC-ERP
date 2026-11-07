@@ -1,0 +1,17 @@
+{
+  "host": "<IP_O_NOMBRE_DEL_VPS>",
+  "port": 22,
+  "user": "sarc-backup",
+  "sshKeyFile": "<RUTA_DE_LA_CLAVE_SSH_DE_sarc-backup>",
+  "knownHostsFile": "<RUTA_DEL_known_hosts_DEL_VPS>",
+  "ageIdentityFile": "<RUTA_DE_LA_CLAVE_PRIVADA_age>",
+  "destDir": "<CARPETA_CIFRADA_PARA_LAS_COPIAS>",
+  "healthchecksUrl": "<URL_DE_LATIDO_descarga-local>",
+  "cloudinary": {
+    "cloudName": "<CLOUD_NAME>",
+    "apiKey": "<CLAVE_DE_API_DE_EXPORTACION>",
+    "apiSecretFile": "<RUTA_DEL_ARCHIVO_CON_EL_SECRETO_DE_API>",
+    "folder": "sarc-prod",
+    "exportDir": "<CARPETA_PARA_LA_EXPORTACION>"
+  }
+}

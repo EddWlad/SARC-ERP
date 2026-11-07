@@ -21,7 +21,7 @@ class CloudinaryFileStorageTest {
 				.thenReturn(response);
 		var storage =
 				new CloudinaryFileStorage(
-						new StorageProperties("qa004", "dummy-key", "dummy-secret", "sandbox"),
+						new StorageProperties("qa004", "dummy-key", "dummy-secret", "sandbox", false),
 						client);
 		assertThat(storage.readDocument("qa004/private")).containsExactly(1, 2, 3);
 		verify(body).close();

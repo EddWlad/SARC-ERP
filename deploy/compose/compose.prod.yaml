@@ -1,0 +1,30 @@
+# PostgreSQL 18 de producción: solo en 127.0.0.1, con volumen persistente fuera de las versiones.
+# Se instala como /opt/sarc/compose/compose.prod.yaml y se invoca siempre con
+#   docker compose --env-file /etc/sarc/sarc.env -p sarc -f /opt/sarc/compose/compose.prod.yaml ...
+# La contraseña NUNCA está en este archivo: se interpola desde POSTGRES_PASSWORD de /etc/sarc/sarc.env
+# (así el contenedor no recibe el resto de secretos del archivo, como los de Cloudinary).
+# El usuario y la base son fijos y no secretos; SARC_DB_USER debe valer `sarc` y SARC_DB_URL apuntar a `sarc`.
+name: sarc
+
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sarc
+      POSTGRES_DB: sarc
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?definir POSTGRES_PASSWORD en /etc/sarc/sarc.env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # Volumen externo y persistente: no forma parte de ninguna versión ni se borra al publicar.
+      - sarc_pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sarc -d sarc"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+volumes:
+  sarc_pgdata:
+    external: true

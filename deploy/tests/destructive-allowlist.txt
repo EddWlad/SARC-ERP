@@ -1,0 +1,6 @@
+# Lista permitida de operaciones destructivas (T024; FR-021, FR-022).
+# Formato: <archivo>|<línea exacta, sin sangría>. Solo se admiten dos:
+#   1. La poda de versiones antiguas en sarc-deploy.sh (conserva las 5 últimas y nunca la actual ni la anterior).
+#   2. La retención de copias de 7 días en sarc-backup.sh (solo archivos sarc-*.dump.age*).
+deploy/scripts/sarc-deploy.sh|rm -rf -- "${releases_dir:?}/${old}"
+deploy/scripts/sarc-backup.sh|find "$backup_dir" -maxdepth 1 -type f -name 'sarc-*.dump.age*' -mtime +"$retention_days" -delete
