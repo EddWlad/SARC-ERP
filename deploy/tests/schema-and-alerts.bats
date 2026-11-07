@@ -68,7 +68,7 @@ teardown() {
 preparar_avisos() {
 	export SARC_STATE_DIR="$TMP/state" SARC_AVISOS_CONF="$TMP/avisos.conf"
 	mkdir -p "$SARC_STATE_DIR"
-	echo "destinatarios=responsable@example.invalid,suplente@example.invalid" >"$SARC_AVISOS_CONF"
+	printf 'responsable_github=responsable\nsuplente_github=suplente\ndestinatarios=responsable@example.invalid,suplente@example.invalid\n' >"$SARC_AVISOS_CONF"
 	huella="$(sha256sum "$SARC_AVISOS_CONF" | cut -d' ' -f1)"
 	printf 'fecha=2026-11-20T10:00:00Z\nhuella=%s\nconfirmado=responsable\nconfirmado=suplente\n' "$huella" \
 		>"$SARC_STATE_DIR/prueba-recepcion.ok"
@@ -107,5 +107,21 @@ preparar_avisos() {
 	preparar_avisos
 	sed -i 's/confirmado=suplente/confirmado=responsable/' "$SARC_STATE_DIR/prueba-recepcion.ok"
 	run "$GATE"
+	[ "$status" -eq 18 ]
+}
+
+@test "gate: excepción de un responsable pasa solo en primera instalación y verificación" {
+	preparar_avisos
+	printf 'responsable_github=responsable\nsuplente_github=\nexcepcion_sin_suplente=primera-instalacion\n' >"$SARC_AVISOS_CONF"
+	huella="$(sha256sum "$SARC_AVISOS_CONF" | cut -d' ' -f1)"
+	printf 'fecha=2026-11-20T10:00:00Z\nhuella=%s\nconfirmado=Responsable\n' "$huella" >"$SARC_STATE_DIR/prueba-recepcion.ok"
+	run "$GATE" primera
+	[ "$status" -eq 0 ]
+	run "$GATE" verificar
+	[ "$status" -eq 0 ]
+	run "$GATE" normal
+	[ "$status" -eq 18 ]
+	printf 'suplente_github=suplente\n' >>"$SARC_AVISOS_CONF"
+	run "$GATE" verificar
 	[ "$status" -eq 18 ]
 }

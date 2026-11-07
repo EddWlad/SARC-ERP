@@ -205,7 +205,7 @@ Como operador que no participó en esta conversación, quiero procedimientos cla
 - **FR-036**: Los registros técnicos MUST permitir diagnosticar fallos (momento, nivel, módulo, identificador de seguimiento) sin incluir contraseñas, tokens, identificadores sensibles de equipos ni datos personales innecesarios.
 - **FR-037**: Los registros técnicos MUST conservarse por un plazo definido y rotarse; la auditoría funcional de SARC MUST NOT eliminarse por antigüedad.
 - **FR-038**: El responsable y su suplente MUST recibir aviso ante: verificación fallida, migración o publicación fallida (por las notificaciones de GitHub), y servicio caído, copia fallida o atrasada, certificado próximo a vencer o no renovado y espacio en disco bajo (por correo electrónico). Los avisos MUST NOT contener secretos ni datos personales innecesarios.
-- **FR-038a**: Antes de la primera publicación, y tras cambiar al responsable, al suplente o el canal, MUST hacerse una prueba de recepción de cada tipo de aviso (GitHub y correo) por el responsable y por su suplente, con registro de la fecha y del resultado; un aviso no recibido bloquea la publicación hasta corregirse.
+- **FR-038a**: Antes de la primera publicación y tras cambiar al responsable, al suplente o el canal, MUST comprobarse la recepción de cada tipo de aviso (GitHub y correo) por los destinatarios designados, con fecha y resultado. Un aviso no recibido bloquea la publicación. Para la primera instalación y su verificación se permite temporalmente un único responsable si el producto aprobó y registró la excepción. En publicaciones normales se exigen las dos confirmaciones y revisión independiente tras incorporar al suplente.
 
 **Respaldos y recuperación**
 
@@ -287,7 +287,7 @@ Diferencias entre fuentes que deben conciliarse en el plan (no se resuelven aqu�
 - **SC-014**: El 100 % de las verificaciones que dependen de recursos aún inexistentes (servidor, dominio, credenciales, servicios externos) están listadas con responsable y condición de cierre.
 - **SC-015**: Las suites de pruebas existentes de las features 001–006 y los contratos de la API siguen pasando sin modificación de comportamiento (0 regresiones).
 - **SC-016**: Al acceder por la IP pública, los navegadores actuales muestran la conexión como segura sin advertencias; en el 100 % de los ensayos sin certificado emitible, la publicación no se inicia y el bloqueo queda informado.
-- **SC-017**: En la prueba de recepción, el responsable y su suplente reciben el 100 % de los tipos de aviso definidos (GitHub y correo) en menos de 15 minutos desde la condición simulada.
+- **SC-017**: En la prueba de recepción, cada destinatario requerido por FR-038a recibe el 100 % de los tipos de aviso definidos (GitHub y correo) en menos de 15 minutos desde la condición simulada.
 - **SC-018**: En producción, nunca pasan más de 31 días sin un ensayo de restauración registrado con resultado aprobado, ni se cierra un cambio crítico sin su ensayo posterior.
 
 ## Assumptions

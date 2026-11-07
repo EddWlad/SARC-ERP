@@ -6,7 +6,7 @@
 |---|---|
 | Disparo | `workflow_dispatch`, entradas `version` (obligatoria) y `modo` (`normal` por omisión, `primera-instalacion` o `verificar`); los tres modos pasan por la misma aprobación |
 | Trabajo `preparar` | Sin entorno ni secretos. Valida Release, CI exitoso, sumas. |
-| Trabajo `desplegar` | `environment: production` (revisores obligatorios: responsable y suplente; sin *bypass* de administradores; solo `main`/tags de versión). `concurrency: production`, sin cancelación. |
+| Trabajo `desplegar` | `environment: production` (revisores obligatorios según las decisiones de E0 y la excepción temporal de FR-038a; sin *bypass* de administradores; solo `main`/tags de versión). `concurrency: production`, sin cancelación. |
 | Trabajo `avisar` | `if: failure() \|\| cancelled()`: abre o comenta *issue* `alerta-operativa` mencionando a ambos (logins en las variables de repositorio `SARC_RESPONSABLE` y `SARC_SUPLENTE`; el trabajo no declara entorno); `/fail` a Healthchecks.io |
 | Salida | Resumen con versión, aprobador, pasos y resultado; enlace al registro |
 
@@ -31,6 +31,8 @@ Se invoca por SSH con la clave de despliegue (comando forzado que solo acepta `d
 | 11 | Retira mantenimiento; registra `COMPLETADA` | — |
 
 Códigos 2 (argumentos no válidos) y 10–18: nada cambió en producción. Códigos 20–21: producción en mantenimiento; la salida indica la última migración aplicada y el procedimiento de la guía.
+
+Las comprobaciones del paso 10 usan HTTPS por loopback con el certificado y la IP pública de SARC. Nginx mantiene el 503 para conexiones externas hasta retirar el indicador de mantenimiento. La sonda programada comprueba el acceso desde Internet.
 
 ## Comprobaciones posteriores (FR-015)
 

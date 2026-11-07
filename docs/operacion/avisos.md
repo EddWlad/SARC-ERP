@@ -27,10 +27,14 @@ Qué avisos existen, cómo llegan al **responsable y al suplente** y cómo se co
 
 ## Configurar responsable y suplente
 
+Para el primer arranque y su verificación se admite la excepción temporal registrada en `decisiones-previas.md`. El titular conserva la aprobación obligatoria y confirma todos los avisos. `SARC_SUPLENTE` queda vacío hasta designar a la segunda persona. Las publicaciones normales requieren las dos confirmaciones.
+
 1. **Variables de repositorio de GitHub**: `SARC_RESPONSABLE` y `SARC_SUPLENTE` con sus usuarios de GitHub (sin `@`). Los flujos los mencionan y asignan en los *issues*.
 2. **Healthchecks.io**: en cada comprobación de la tabla, añadir a ambas personas como destinatarias del correo (integración de correo). Definir el periodo y la gracia indicados.
 3. **GitHub**: ambas personas deben tener activadas las notificaciones por correo *participating* (menciones y asignaciones). Es la forma de que un *issue* o comentario llegue por correo.
 4. **`/etc/sarc/avisos.conf`** (en el VPS, fuera del repositorio): lista los destinatarios y los canales vigentes. Su huella SHA-256 liga la prueba de recepción: si cambia, la prueba deja de ser vigente.
+
+En `avisos.conf`, declarar `responsable_github=<login>` y `suplente_github=<login>`. Durante la excepción, dejar `suplente_github=` y añadir `excepcion_sin_suplente=primera-instalacion`. Al incorporar al suplente, asignar su login, retirar la excepción y repetir la prueba con ambos.
 
 Resultado esperado: cualquier fallo de la tabla notifica a las dos personas por al menos un canal en el plazo indicado.
 
@@ -40,10 +44,10 @@ La publicación **no** se permite sin una prueba de recepción vigente: `sarc-de
 
 Se hace antes de la primera publicación y cada vez que cambian los destinatarios o los canales:
 
-1. Abrir un *issue* `prueba-recepcion` en el repositorio y mencionar a ambas personas.
+1. Abrir un *issue* `prueba-recepcion` en el repositorio y mencionar a los destinatarios vigentes.
 2. Disparar **cada tipo de aviso** con una comprobación de prueba: un *issue* de alerta de prueba (GitHub), un `/fail` manual de una comprobación de Healthchecks.io de prueba y el envío de latido `vps-latido` detenido (correo).
 3. Cada persona confirma **por escrito en el *issue*** qué avisos recibió (sin copiar contenido sensible).
-4. Con las dos confirmaciones, en el VPS crear `/var/lib/sarc/prueba-recepcion.ok` con la fecha, la huella SHA-256 actual de `/etc/sarc/avisos.conf` y la confirmación de cada persona. Formato (una clave por línea):
+4. Con las confirmaciones requeridas, en el VPS crear `/var/lib/sarc/prueba-recepcion.ok` con la fecha, la huella SHA-256 actual de `/etc/sarc/avisos.conf` y la confirmación de cada persona. Formato habitual (una clave por línea):
 
 ```text
 fecha=<AAAA-MM-DDThh:mm:ssZ>

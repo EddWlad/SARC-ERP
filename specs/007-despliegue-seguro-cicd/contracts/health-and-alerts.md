@@ -28,7 +28,7 @@
 
 Reglas:
 
-- Destinatarios: responsable y suplente en todas las comprobaciones de Healthchecks.io y en los *issues*.
+- El responsable y el suplente reciben todas las comprobaciones de Healthchecks.io y menciones en los *issues*. La excepción temporal de FR-038a permite registrar solo al responsable para la primera instalación y su verificación.
 - Contenido: nombre de la comprobación, estado y hora. Nunca valores de configuración, rutas con datos, salida de comandos ni datos personales. Los *issues* son públicos mientras el repositorio lo sea.
 - Plazo (SC-017): con periodo de 5 min y gracia de 5 min, Healthchecks.io avisa como máximo 10 min después del último latido recibido; el margen restante hasta 15 min cubre el envío del correo. Los avisos de `servicio` usan una señal `/fail` inmediata cuando el servidor sigue vivo, sin esperar la gracia.
 - Prueba de recepción (FR-038a): antes de la primera publicación y tras cambiar destinatarios o canal, se dispara cada tipo con una comprobación de prueba; cada persona confirma en el *issue* `prueba-recepcion`. Con ambas confirmaciones se escribe `/var/lib/sarc/prueba-recepcion.ok` con la fecha y la huella SHA-256 de `/etc/sarc/avisos.conf` (destinatarios y canales). `sarc-deploy` falla con código 18 si el archivo falta o la huella ya no coincide.

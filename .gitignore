@@ -42,6 +42,8 @@ documents/informes_de_enerlink_wallbox/
 
 # Credenciales del servidor de produccion: nunca versionar (repositorio publico)
 documents/Usuario y contraseña de SARC_Servidor.txt
+documents/Caracteristicas_Servidor.png
+documents/Costo_servidor.png
 
 # Feature 007: rutas de trabajo de los ensayos y copias de base de datos (nunca se versionan)
 deploy/tests/tmp/
