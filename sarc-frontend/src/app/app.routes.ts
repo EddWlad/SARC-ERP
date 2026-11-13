@@ -51,6 +51,13 @@ export const routes: Routes = [
         loadChildren: () => import('./features/uptime/uptime.routes').then((m) => m.UPTIME_ROUTES),
       },
       {
+        path: 'intermitencias',
+        loadChildren: () =>
+          import('./features/intermittency/intermittency.routes').then(
+            (m) => m.INTERMITTENCY_ROUTES,
+          ),
+      },
+      {
         path: 'reportes',
         loadChildren: () =>
           import('./features/reports/reports.routes').then((m) => m.REPORTS_ROUTES),

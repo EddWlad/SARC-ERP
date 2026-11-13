@@ -1,0 +1,253 @@
+<header class="page-header">
+  <div>
+    <h1>Intermitencias de puntos KIA</h1>
+    <p>
+      Tiempo confirmado fuera de línea de los puntos de carga KIA. Solo cuentan las ventanas
+      confirmadas; lo abierto, por revisar y de prueba se informa aparte.
+    </p>
+  </div>
+  <div class="header-actions">
+    <button
+      matButton="outlined"
+      type="button"
+      [disabled]="facade.downloading() !== undefined || !facade.summary()"
+      (click)="download('PDF')"
+    >
+      <svg lucideFileText [size]="18"></svg>
+      {{ facade.downloading() === 'PDF' ? 'Generando...' : 'Informe PDF' }}
+    </button>
+    <button
+      matButton="outlined"
+      type="button"
+      [disabled]="facade.downloading() !== undefined || !facade.summary()"
+      (click)="download('XLSX')"
+    >
+      <svg lucideFileSpreadsheet [size]="18"></svg>
+      {{ facade.downloading() === 'XLSX' ? 'Generando...' : 'Excel' }}
+    </button>
+  </div>
+</header>
+
+<sarc-intermittency-filter-bar
+  [preset]="facade.preset()"
+  [month]="facade.month()"
+  [firstDay]="facade.firstDay()"
+  [lastDay]="facade.lastDay()"
+  [points]="facade.points()"
+  [rangeError]="facade.rangeError()"
+  [today]="facade.today()"
+  (presetChange)="facade.choosePreset($event)"
+  (monthChange)="facade.chooseMonth($event)"
+  (rangeChange)="facade.chooseRange($event.firstDay, $event.lastDay)"
+  (pointsChange)="facade.choosePoints($event)"
+  (cleared)="facade.clearFilters()"
+/>
+
+<div class="progress" aria-hidden="true">
+  @if (facade.loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+</div>
+
+@if (facade.error(); as message) {
+  <div class="state" role="alert">
+    <p>{{ message }}</p>
+    <button matButton="tonal" type="button" (click)="facade.reload()">Reintentar</button>
+  </div>
+} @else if (facade.summary(); as summary) {
+  <p class="period" aria-live="polite">{{ periodLabel(summary.period) }}</p>
+
+  <section aria-label="Indicadores oficiales" [attr.aria-busy]="facade.loading()">
+    <ul class="kpi-grid">
+      <li class="kpi-tile">
+        <span class="kpi-value">
+          {{ durationText(summary.official.minutes) }}
+          <span class="kpi-unit">h</span>
+        </span>
+        <span class="kpi-label">Tiempo confirmado fuera de línea</span>
+      </li>
+      <li class="kpi-tile">
+        <span class="kpi-value">{{ quantities.count(summary.official.affectedPoints) }}</span>
+        <span class="kpi-label">Cargadores afectados</span>
+      </li>
+      <li class="kpi-tile">
+        <span class="kpi-value">{{ quantities.count(summary.official.windows) }}</span>
+        <span class="kpi-label">Ventanas completas</span>
+      </li>
+      <li class="kpi-tile">
+        <span class="kpi-value">{{ quantities.count(summary.official.pointDays) }}</span>
+        <span class="kpi-label">Días-equipo</span>
+      </li>
+      <li class="kpi-tile">
+        <span class="kpi-value">{{ quantities.count(summary.official.recurrentPoints) }}</span>
+        <span class="kpi-label">Equipos recurrentes (3 o más días)</span>
+      </li>
+      <li class="kpi-tile">
+        <span class="kpi-value">
+          @if (present(summary.official.averageMinutes)) {
+            {{ summary.official.averageMinutes | number: '1.1-1' }}
+            <span class="kpi-unit">min</span>
+          } @else {
+            —
+          }
+        </span>
+        <span class="kpi-label">Promedio por ventana</span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="excluded" aria-labelledby="excluded-title">
+    <h2 id="excluded-title">Fuera de los indicadores oficiales</h2>
+    <div class="groups">
+      <section class="panel" aria-labelledby="excluded-review">
+        <h3 id="excluded-review">Registros por revisar</h3>
+        <ul>
+          <li class="metric-row">
+            <span>Total por revisar</span>
+            <span class="quantity">
+              <strong>{{ quantities.count(toReview()) }}</strong>
+            </span>
+          </li>
+          <li class="metric-row">
+            <span>Ventanas por revisar (4 h o más)</span>
+            <span class="quantity">{{ quantities.count(summary.outsideOfficial.review) }}</span>
+          </li>
+          <li class="metric-row">
+            <span>Filas en conflicto</span>
+            <span class="quantity">{{ quantities.count(summary.outsideOfficial.conflict) }}</span>
+          </li>
+          <li class="metric-row">
+            <span>Filas por vincular</span>
+            <span class="quantity">{{
+              quantities.count(summary.outsideOfficial.pendingLink)
+            }}</span>
+          </li>
+        </ul>
+      </section>
+      <section class="panel" aria-labelledby="excluded-other">
+        <h3 id="excluded-other">Abiertas y de prueba</h3>
+        <ul>
+          <li class="metric-row">
+            <span>Eventos abiertos</span>
+            <span class="quantity">
+              <strong>{{ quantities.count(summary.outsideOfficial.open.count) }}</strong>
+              @if (summary.outsideOfficial.open.count > 0) {
+                <span class="muted">
+                  ·
+                  {{ hoursText(summary.outsideOfficial.open.provisionalMinutes) }} provisional</span
+                >
+              }
+            </span>
+          </li>
+          <li class="metric-row">
+            <span>Ventanas de prueba</span>
+            <span class="quantity">
+              <strong>{{ quantities.count(summary.outsideOfficial.test) }}</strong>
+            </span>
+          </li>
+        </ul>
+      </section>
+    </div>
+    <p class="dashboard-note">
+      Se conservan y se informan aparte; no suman en los totales. La duración de un evento abierto
+      es provisional hasta que se cierra.
+    </p>
+
+    @if (summary.outsideOfficial.details; as details) {
+      <sarc-outside-details [details]="details" />
+      @if (canEdit) {
+        <a matButton="tonal" routerLink="../revision" class="review-link">Ir a Revisión</a>
+      }
+    }
+  </section>
+
+  @if (summary.official.windows === 0) {
+    <div class="state">
+      <p>No hay intermitencias confirmadas en el período.</p>
+    </div>
+  } @else {
+    <div class="charts">
+      <section class="panel wide" aria-labelledby="hours-title">
+        <h2 id="hours-title">Tiempo confirmado diario (horas)</h2>
+        <sarc-chart-view
+          kind="line"
+          [labels]="days()"
+          [series]="dailyHours()"
+          [format]="formatHours"
+          description="Tiempo confirmado fuera de línea por día, en horas"
+        />
+      </section>
+
+      <section class="panel wide" aria-labelledby="windows-title">
+        <h2 id="windows-title">Ventanas por día</h2>
+        <sarc-chart-view
+          kind="bar"
+          [labels]="days()"
+          [series]="dailyWindows()"
+          [format]="formatCount"
+          description="Cantidad de ventanas confirmadas con tiempo en cada día"
+        />
+        @if (summary.dailyWindowsMayExceedTotal) {
+          <p class="dashboard-note">
+            Una ventana que cruza la medianoche cuenta en cada día que toca; por eso la suma de las
+            barras puede superar el total de ventanas del período.
+          </p>
+        }
+      </section>
+
+      <section class="panel wide" aria-labelledby="top-title">
+        <h2 id="top-title">Top 10 de cargadores por tiempo fuera de línea</h2>
+        <sarc-top-equipment
+          [items]="topRows()"
+          seriesLabel="Tiempo confirmado (h)"
+          [chartFormat]="formatHours"
+          description="Los cargadores con más tiempo confirmado fuera de línea en el período"
+          [topSize]="10"
+          [tiesNote]="tiesNote"
+        />
+      </section>
+
+      <section class="panel" aria-labelledby="band-title">
+        <h2 id="band-title">Tiempo por duración de ventana</h2>
+        <sarc-share-chart
+          title="Tiempo por duración de ventana"
+          seriesLabel="Tiempo confirmado (h)"
+          [chartFormat]="formatHours"
+          [items]="byBand()"
+          [emptyMessage]="emptyShare"
+        />
+      </section>
+
+      <section class="panel" aria-labelledby="concentration-title">
+        <h2 id="concentration-title">Concentración del tiempo</h2>
+        <sarc-share-chart
+          title="Concentración del tiempo"
+          seriesLabel="Tiempo confirmado (h)"
+          [chartFormat]="formatHours"
+          [items]="concentration()"
+          [emptyMessage]="emptyShare"
+        />
+      </section>
+
+      <section class="panel" aria-labelledby="recurrence-title">
+        <h2 id="recurrence-title">Equipos recurrentes</h2>
+        <sarc-share-chart
+          title="Tiempo de equipos recurrentes frente a no recurrentes"
+          seriesLabel="Tiempo confirmado (h)"
+          [chartFormat]="formatHours"
+          [items]="recurrence()"
+          [emptyMessage]="emptyShare"
+        />
+      </section>
+    </div>
+  }
+
+  @if (canSeeAvailability) {
+    <sarc-availability-section />
+  }
+
+  <p class="dashboard-note generated">
+    Calculado {{ clock(summary.generatedAt) }} (hora de Ecuador) · Solo ventanas confirmadas; el
+    nombre y el código de cada cargador son los actuales del inventario.
+  </p>
+}

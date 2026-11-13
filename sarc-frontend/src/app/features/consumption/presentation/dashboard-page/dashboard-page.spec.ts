@@ -7,8 +7,8 @@ import { ChartView } from '../../../../shared/ui/chart/chart-view';
 import { ConsumptionDashboardFacade } from '../../application/consumption-dashboard-facade';
 import { ConsumptionFilterBar } from '../consumption-filter-bar/consumption-filter-bar';
 import { DailyTable } from '../daily-table/daily-table';
-import { ShareChart } from '../share-chart/share-chart';
-import { TopEquipment } from '../top-equipment/top-equipment';
+import { ShareChart } from '../../../../shared/ui/share-chart/share-chart';
+import { TopEquipment } from '../../../../shared/ui/top-equipment/top-equipment';
 import { DashboardPage } from './dashboard-page';
 
 describe('DashboardPage', () => {

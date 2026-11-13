@@ -64,6 +64,27 @@ export type ConnectorAliasResponse = {
     version: number;
 };
 
+export type ReviewedDayMarkResponse = {
+    day: ReviewedDayResponse;
+    warnings: Array<UnconfirmedBatchResponse>;
+};
+
+export type ReviewedDayResponse = {
+    day: string;
+    active: boolean;
+    markedBy?: string | null;
+    markedAt?: string | null;
+    version?: number | null;
+    finished: boolean;
+    pendingLinkRows: number;
+    unconfirmedBatches: number;
+};
+
+export type UnconfirmedBatchResponse = {
+    batchId: string;
+    fileName: string;
+};
+
 export type UpdateEquipmentRequest = {
     version: number;
     brand: 'BENNY' | 'WALLBOX';
@@ -503,6 +524,218 @@ export type PasteUptimeImportRequest = {
     text: string;
 };
 
+export type CaptureWindowsRequest = {
+    equipmentId: string;
+    windows: Array<WindowEntry>;
+};
+
+export type WindowEntry = {
+    startAt: string;
+    endAt?: string;
+    comment?: string;
+};
+
+export type CaptureResultResponse = {
+    equipmentId: string;
+    windows: Array<WindowResponse>;
+    dayTotals: Array<DayTotalResponse>;
+};
+
+export type DayTotalResponse = {
+    day: string;
+    minutes: number;
+    text: string;
+    windows: number;
+};
+
+export type WindowResponse = {
+    id: string;
+    version: number;
+    equipmentId: string;
+    pointLabel: string;
+    startAt: string;
+    endAt?: string | null;
+    durationMinutes?: number | null;
+    durationText?: string | null;
+    provisionalMinutes?: number | null;
+    provisionalText?: string | null;
+    state: 'OPEN' | 'REVIEW' | 'CONFIRMED' | 'TEST' | 'ANNULLED';
+    reviewReasons: Array<'LONG_WINDOW'>;
+    comment?: string | null;
+    source: 'MANUAL' | 'XLSX' | 'CSV' | 'PASTE';
+    revision: number;
+};
+
+export type WindowChangeRequest = {
+    version: number;
+    justification?: string;
+};
+
+export type CloseWindowRequest = {
+    version: number;
+    endAt: string;
+};
+
+export type WithdrawReviewedDayRequest = {
+    version: number;
+    justification?: string;
+};
+
+export type MarkPointTestRequest = {
+    from: string;
+    to: string;
+    justification?: string;
+};
+
+export type PointTestResultResponse = {
+    affectedWindows: number;
+    openWindowsNotMarked: number;
+};
+
+export type Counts = {
+    rows: number;
+    windows: number;
+    newRows: number;
+    identical: number;
+    conflict: number;
+    invalid: number;
+    pendingLink: number;
+    outOfScope: number;
+    review: number;
+    skipped: number;
+};
+
+export type IntermittencyImportBatchResponse = {
+    id: string;
+    version: number;
+    status: 'PARSING' | 'READY' | 'CONFIRMING' | 'COMPLETED' | 'FAILED' | 'DISCARDED';
+    origin: 'FILE' | 'PASTE';
+    format: 'XLSX' | 'CSV' | 'PASTE';
+    fileName: string;
+    totalRows: number;
+    checksum: string;
+    counts: Counts;
+    earliestDay?: string | null;
+    latestDay?: string | null;
+    appliedRows: number;
+    failureCode?: string | null;
+    failureMessage?: string | null;
+    createdAt: string;
+    confirmedAt?: string | null;
+};
+
+export type Edit = {
+    target: string;
+    pair?: number;
+    startAt?: string;
+    endAt?: string;
+    endsNextDay?: boolean;
+    value?: string;
+};
+
+export type ResolvePendingRowRequest = {
+    version: number;
+    equipmentId?: string;
+    edits?: Array<Edit>;
+    decision: 'APPLY' | 'SKIP' | 'KEEP_PENDING';
+    skipReason?: string;
+    acknowledgeTotal?: boolean;
+    windows?: Array<WindowDecision>;
+};
+
+export type WindowDecision = {
+    pair: number;
+    resolution?: 'KEEP_EXISTING' | 'REPLACE' | 'MERGE' | 'OMIT' | 'OPEN';
+    justification?: string;
+};
+
+export type EditResponse = {
+    target: string;
+    pair?: number | null;
+    field?: string | null;
+    previous?: string | null;
+    value?: string | null;
+    actor?: string | null;
+    at: string;
+};
+
+export type IntermittencyImportRowResponse = {
+    id: string;
+    version: number;
+    rowNumber: number;
+    classification: 'NEW' | 'IDENTICAL' | 'REVIEW' | 'CONFLICT' | 'OUT_OF_SCOPE' | 'PENDING_LINK' | 'INVALID';
+    decision?: 'APPLY' | 'SKIP' | 'KEEP_PENDING';
+    skipReason?: string | null;
+    equipmentId?: string | null;
+    raw: Array<RawCellResponse>;
+    edits: Array<EditResponse>;
+    interpretation: InterpretationResponse;
+    touchedDays: Array<string>;
+};
+
+export type InterpretationResponse = {
+    date?: string | null;
+    code: string;
+    name: string;
+    comment: string;
+    fileTotalMinutes?: number | null;
+    computedTotalMinutes: number;
+    computedWithDuplicatesMinutes?: number | null;
+    totalAcknowledged: boolean;
+    rowIssues: Array<IssueResponse>;
+    windows: Array<WindowInterpretationResponse>;
+};
+
+export type IssueResponse = {
+    code: 'DATE_FORMAT' | 'TIME_FORMAT' | 'SECONDS_AMBIGUOUS' | 'END_BEFORE_START' | 'ZERO_DURATION' | 'INCOMPLETE_PAIR' | 'FUTURE_INSTANT' | 'ALREADY_RECORDED' | 'OVERLAPS_EXISTING' | 'OVERLAP_IN_BATCH' | 'DUPLICATE_IN_BATCH' | 'UNKNOWN_CODE' | 'AMBIGUOUS_CODE' | 'DELETED_EQUIPMENT' | 'MISSING_CODE' | 'NOT_KIA_CHARGING_POINT' | 'TOTAL_MISMATCH' | 'LONG_WINDOW' | 'NAME_DIFFERS' | 'INACTIVE_EQUIPMENT' | 'TOTAL_MISSING';
+    message: string;
+};
+
+export type RawCellResponse = {
+    key: string;
+    label: string;
+    value: string;
+};
+
+export type RowChangeResponse = {
+    row: IntermittencyImportRowResponse;
+    batch: IntermittencyImportBatchResponse;
+};
+
+export type WindowInterpretationResponse = {
+    pair: number;
+    startText?: string | null;
+    endText?: string | null;
+    startAt?: string | null;
+    endAt?: string | null;
+    minutes?: number | null;
+    endsNextDay: boolean;
+    test: boolean;
+    added: boolean;
+    classification: 'NEW' | 'IDENTICAL' | 'REVIEW' | 'CONFLICT' | 'OUT_OF_SCOPE' | 'PENDING_LINK' | 'INVALID';
+    decision?: 'KEEP_EXISTING' | 'REPLACE' | 'MERGE' | 'OMIT' | 'OPEN';
+    conflictWindowId?: string | null;
+    mergedIntoPair?: number | null;
+    issues: Array<IssueResponse>;
+};
+
+export type LinkImportRowRequest = {
+    version: number;
+    equipmentId: string;
+};
+
+export type ImportRowDecisionRequest = {
+    version: number;
+    decision: 'APPLY' | 'SKIP' | 'KEEP_PENDING';
+    skipReason?: string;
+    acknowledgeTotal?: boolean;
+    windows?: Array<WindowDecision>;
+};
+
+export type PasteIntermittencyImportRequest = {
+    text: string;
+};
+
 export type ExternalIdentityResponse = {
     id: string;
     equipmentId: string;
@@ -676,6 +909,26 @@ export type UpdateUserRequest = {
     fullName?: string;
     roles?: Array<'ADMINISTRADOR' | 'GERENTE' | 'SUPERVISOR' | 'ASISTENTE' | 'ANALISTA'>;
     status?: 'ACTIVE' | 'INACTIVE';
+};
+
+export type CorrectWindowRequest = {
+    version: number;
+    startAt?: string;
+    endAt?: string;
+    comment?: string;
+    justification?: string;
+};
+
+export type EditImportRowRequest = {
+    version: number;
+    edits?: Array<Edit>;
+    addWindows?: Array<NewWindow>;
+    removePairs?: Array<number>;
+};
+
+export type NewWindow = {
+    startAt: string;
+    endAt?: string;
 };
 
 export type ChangeStatusRequest = {
@@ -1037,6 +1290,234 @@ export type InventorySummaryResponse = {
     generatedAt: string;
 };
 
+export type WindowPageResponse = {
+    content: Array<WindowResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type WindowDetailResponse = {
+    window: WindowResponse;
+    revisions?: Array<WindowRevisionResponse> | null;
+    batchId?: string | null;
+    rowNumber?: number | null;
+    pairNumber?: number | null;
+    currentPointName?: string | null;
+};
+
+export type WindowRevisionResponse = {
+    revision: number;
+    change: 'CREATED' | 'CORRECTED' | 'CLOSED' | 'REVIEW_CONFIRMED' | 'MARKED_TEST' | 'UNMARKED_TEST' | 'ANNULLED' | 'REPLACED_BY_IMPORT';
+    startAt: string;
+    endAt?: string | null;
+    durationMinutes?: number | null;
+    state: 'OPEN' | 'REVIEW' | 'CONFIRMED' | 'TEST' | 'ANNULLED';
+    reviewReasons: Array<'LONG_WINDOW'>;
+    comment?: string | null;
+    justification?: string | null;
+    actorId: string;
+    at: string;
+};
+
+export type ConcentrationShare = {
+    topMinutes: number;
+    restMinutes: number;
+};
+
+export type DailyRow = {
+    day: string;
+    minutes: number;
+    windows: number;
+};
+
+export type DurationBandRow = {
+    band: 'UNDER_5' | 'FROM_5_TO_14' | 'FROM_15_TO_59' | 'FROM_60_TO_239' | 'FROM_240';
+    minutes: number;
+    windows: number;
+};
+
+export type IntermittencySummaryResponse = {
+    period: SummaryPeriod;
+    official: OfficialIndicators;
+    outsideOfficial: OutsideOfficialIndicators;
+    top: Array<TopPointRow>;
+    topExtendedByTies: boolean;
+    daily: Array<DailyRow>;
+    dailyWindowsMayExceedTotal: boolean;
+    byDurationBand: Array<DurationBandRow>;
+    concentration: ConcentrationShare;
+    recurrence: RecurrenceShare;
+    generatedAt: string;
+};
+
+export type OfficialIndicators = {
+    minutes: number;
+    affectedPoints: number;
+    windows: number;
+    pointDays: number;
+    recurrentPoints: number;
+    averageMinutes?: number | null;
+};
+
+export type OpenEvents = {
+    count: number;
+    provisionalMinutes: number;
+};
+
+export type OutsideDetailsResponse = {
+    windows: Array<OutsideWindowRow>;
+    pendingRows: Array<OutsidePendingRowRow>;
+    truncated: boolean;
+};
+
+export type OutsideOfficialIndicators = {
+    open: OpenEvents;
+    review: number;
+    test: number;
+    pendingLink: number;
+    conflict: number;
+    details?: OutsideDetailsResponse;
+};
+
+export type OutsidePendingRowRow = {
+    batchId: string;
+    rowNumber: number;
+    classification: 'NEW' | 'IDENTICAL' | 'REVIEW' | 'CONFLICT' | 'OUT_OF_SCOPE' | 'PENDING_LINK' | 'INVALID';
+    equipmentId?: string | null;
+};
+
+export type OutsideWindowRow = {
+    windowId: string;
+    equipmentId: string;
+    pointLabel: string;
+    state: 'OPEN' | 'REVIEW' | 'CONFIRMED' | 'TEST' | 'ANNULLED';
+    startAt: string;
+    endAt?: string | null;
+    minutes: number;
+    reasons: Array<'LONG_WINDOW'>;
+};
+
+export type RecurrenceShare = {
+    recurrentMinutes: number;
+    nonRecurrentMinutes: number;
+};
+
+export type SummaryPeriod = {
+    preset: 'FIRST_HALF' | 'SECOND_HALF' | 'LAST_15_DAYS' | 'CUSTOM';
+    from: string;
+    to: string;
+    cutOff: string;
+    timeZone: string;
+};
+
+export type TopPointRow = {
+    equipmentId: string;
+    code?: string | null;
+    name: string;
+    minutes: number;
+    windows: number;
+    days: number;
+};
+
+export type KiaPointResponse = {
+    id: string;
+    name: string;
+    assignedCode?: string | null;
+    usageStatus?: string | null;
+    adminStatus: 'DELETED' | 'ACTIVE' | 'INACTIVE';
+};
+
+export type PageResultPendingRowResponse = {
+    content: Array<PendingRowResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type PendingRowResponse = {
+    batchId: string;
+    fileName?: string | null;
+    batchCreatedAt: string;
+    row: IntermittencyImportRowResponse;
+};
+
+export type PageResultIntermittencyImportBatchResponse = {
+    content: Array<IntermittencyImportBatchResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type PageResultIntermittencyImportRowResponse = {
+    content: Array<IntermittencyImportRowResponse>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type AvailabilityAggregate = {
+    percent?: number | null;
+    evaluatedMinutes: number;
+    offlineMinutes: number;
+};
+
+export type AvailabilityCoverage = {
+    coveredDays: number;
+    daysInScope: number;
+};
+
+export type AvailabilityExclusion = {
+    equipmentId: string;
+    code?: string | null;
+    name: string;
+    reason: 'DISCONNECTED' | 'INACTIVE' | 'DELETED';
+};
+
+export type AvailabilityLabels = {
+    estimated: boolean;
+    test: boolean;
+    origin: string;
+};
+
+export type AvailabilityPeriod = {
+    preset: 'FIRST_HALF' | 'SECOND_HALF' | 'LAST_15_DAYS' | 'CUSTOM';
+    from: string;
+    to: string;
+    cutOff: string;
+    timeZone: string;
+};
+
+export type AvailabilityPointRow = {
+    equipmentId: string;
+    code?: string | null;
+    name: string;
+    percent?: number | null;
+    evaluatedMinutes: number;
+    offlineMinutes: number;
+    coveredDays: number;
+};
+
+export type AvailabilityResponse = {
+    period: AvailabilityPeriod;
+    aggregate: AvailabilityAggregate;
+    coverage: AvailabilityCoverage;
+    blockedDays: Array<BlockedDayRow>;
+    points: Array<AvailabilityPointRow>;
+    exclusions: Array<AvailabilityExclusion>;
+    labels: AvailabilityLabels;
+    limitations: Array<string>;
+};
+
+export type BlockedDayRow = {
+    day: string;
+    pendingRows: number;
+};
+
 export type EquipmentSummaryResponse = {
     id: string;
     name: string;
@@ -1205,6 +1686,24 @@ export type UpdateResponses = {
 };
 
 export type UpdateResponse = UpdateResponses[keyof UpdateResponses];
+
+export type MarkData = {
+    body?: never;
+    path: {
+        day: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/reviewed-days/{day}';
+};
+
+export type MarkResponses = {
+    /**
+     * OK
+     */
+    200: ReviewedDayMarkResponse;
+};
+
+export type MarkResponse = MarkResponses[keyof MarkResponses];
 
 export type GetData = {
     body?: never;
@@ -1734,6 +2233,353 @@ export type PasteResponses = {
 
 export type PasteResponse = PasteResponses[keyof PasteResponses];
 
+export type List1Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        from?: string;
+        to?: string;
+        equipmentIds?: Array<string>;
+        states?: Array<'OPEN' | 'REVIEW' | 'CONFIRMED' | 'TEST' | 'ANNULLED'>;
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/intermittency/windows';
+};
+
+export type List1Responses = {
+    /**
+     * OK
+     */
+    200: WindowPageResponse;
+};
+
+export type List1Response = List1Responses[keyof List1Responses];
+
+export type CaptureData = {
+    body: CaptureWindowsRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/intermittency/windows';
+};
+
+export type CaptureResponses = {
+    /**
+     * OK
+     */
+    200: CaptureResultResponse;
+};
+
+export type CaptureResponse = CaptureResponses[keyof CaptureResponses];
+
+export type UnmarkTestData = {
+    body: WindowChangeRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/windows/{id}/untest';
+};
+
+export type UnmarkTestResponses = {
+    /**
+     * OK
+     */
+    200: WindowResponse;
+};
+
+export type UnmarkTestResponse = UnmarkTestResponses[keyof UnmarkTestResponses];
+
+export type MarkTestData = {
+    body: WindowChangeRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/windows/{id}/test';
+};
+
+export type MarkTestResponses = {
+    /**
+     * OK
+     */
+    200: WindowResponse;
+};
+
+export type MarkTestResponse = MarkTestResponses[keyof MarkTestResponses];
+
+export type ConfirmReviewData = {
+    body: WindowChangeRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/windows/{id}/confirm-review';
+};
+
+export type ConfirmReviewResponses = {
+    /**
+     * OK
+     */
+    200: WindowResponse;
+};
+
+export type ConfirmReviewResponse = ConfirmReviewResponses[keyof ConfirmReviewResponses];
+
+export type CloseData = {
+    body: CloseWindowRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/windows/{id}/close';
+};
+
+export type CloseResponses = {
+    /**
+     * OK
+     */
+    200: WindowResponse;
+};
+
+export type CloseResponse = CloseResponses[keyof CloseResponses];
+
+export type AnnulData = {
+    body: WindowChangeRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/windows/{id}/annul';
+};
+
+export type AnnulResponses = {
+    /**
+     * OK
+     */
+    200: WindowResponse;
+};
+
+export type AnnulResponse = AnnulResponses[keyof AnnulResponses];
+
+export type WithdrawData = {
+    body: WithdrawReviewedDayRequest;
+    path: {
+        day: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/reviewed-days/{day}/withdraw';
+};
+
+export type WithdrawResponses = {
+    /**
+     * OK
+     */
+    200: ReviewedDayResponse;
+};
+
+export type WithdrawResponse = WithdrawResponses[keyof WithdrawResponses];
+
+export type UnmarkTest1Data = {
+    body: MarkPointTestRequest;
+    path: {
+        equipmentId: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/points/{equipmentId}/untest';
+};
+
+export type UnmarkTest1Responses = {
+    /**
+     * OK
+     */
+    200: PointTestResultResponse;
+};
+
+export type UnmarkTest1Response = UnmarkTest1Responses[keyof UnmarkTest1Responses];
+
+export type MarkTest1Data = {
+    body: MarkPointTestRequest;
+    path: {
+        equipmentId: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/points/{equipmentId}/test';
+};
+
+export type MarkTest1Responses = {
+    /**
+     * OK
+     */
+    200: PointTestResultResponse;
+};
+
+export type MarkTest1Response = MarkTest1Responses[keyof MarkTest1Responses];
+
+export type History1Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/intermittency/import-batches';
+};
+
+export type History1Responses = {
+    /**
+     * OK
+     */
+    200: PageResultIntermittencyImportBatchResponse;
+};
+
+export type History1Response = History1Responses[keyof History1Responses];
+
+export type Upload1Data = {
+    body?: {
+        file: Blob | File;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/intermittency/import-batches';
+};
+
+export type Upload1Responses = {
+    /**
+     * Accepted
+     */
+    202: IntermittencyImportBatchResponse;
+};
+
+export type Upload1Response = Upload1Responses[keyof Upload1Responses];
+
+export type ResolveData = {
+    body: ResolvePendingRowRequest;
+    path: {
+        id: string;
+        rowId: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/import-batches/{id}/rows/{rowId}/resolve';
+};
+
+export type ResolveResponses = {
+    /**
+     * OK
+     */
+    200: RowChangeResponse;
+};
+
+export type ResolveResponse = ResolveResponses[keyof ResolveResponses];
+
+export type Link1Data = {
+    body: LinkImportRowRequest;
+    path: {
+        id: string;
+        rowId: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/import-batches/{id}/rows/{rowId}/link';
+};
+
+export type Link1Responses = {
+    /**
+     * OK
+     */
+    200: RowChangeResponse;
+};
+
+export type Link1Response = Link1Responses[keyof Link1Responses];
+
+export type Decide2Data = {
+    body: ImportRowDecisionRequest;
+    path: {
+        id: string;
+        rowId: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/import-batches/{id}/rows/{rowId}/decision';
+};
+
+export type Decide2Responses = {
+    /**
+     * OK
+     */
+    200: RowChangeResponse;
+};
+
+export type Decide2Response = Decide2Responses[keyof Decide2Responses];
+
+export type Retry1Data = {
+    body: VersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/import-batches/{id}/retry';
+};
+
+export type Retry1Responses = {
+    /**
+     * Accepted
+     */
+    202: IntermittencyImportBatchResponse;
+};
+
+export type Retry1Response = Retry1Responses[keyof Retry1Responses];
+
+export type Discard1Data = {
+    body: VersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/import-batches/{id}/discard';
+};
+
+export type Discard1Responses = {
+    /**
+     * OK
+     */
+    200: IntermittencyImportBatchResponse;
+};
+
+export type Discard1Response = Discard1Responses[keyof Discard1Responses];
+
+export type Confirm1Data = {
+    body: VersionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/import-batches/{id}/confirm';
+};
+
+export type Confirm1Responses = {
+    /**
+     * Accepted
+     */
+    202: IntermittencyImportBatchResponse;
+};
+
+export type Confirm1Response = Confirm1Responses[keyof Confirm1Responses];
+
+export type Paste1Data = {
+    body: PasteIntermittencyImportRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/intermittency/import-batches/paste';
+};
+
+export type Paste1Responses = {
+    /**
+     * Accepted
+     */
+    202: IntermittencyImportBatchResponse;
+};
+
+export type Paste1Response = Paste1Responses[keyof Paste1Responses];
+
 export type VerifyData = {
     body: VersionRequest;
     path: {
@@ -1752,7 +2598,7 @@ export type VerifyResponses = {
 
 export type VerifyResponse = VerifyResponses[keyof VerifyResponses];
 
-export type List1Data = {
+export type List2Data = {
     body?: never;
     path?: never;
     query?: {
@@ -1768,14 +2614,14 @@ export type List1Data = {
     url: '/api/v1/equipment';
 };
 
-export type List1Responses = {
+export type List2Responses = {
     /**
      * OK
      */
     200: PageResultEquipmentSummaryResponse;
 };
 
-export type List1Response = List1Responses[keyof List1Responses];
+export type List2Response = List2Responses[keyof List2Responses];
 
 export type Create1Data = {
     body: CreateEquipmentRequest;
@@ -1988,7 +2834,7 @@ export type LinkPendingResponses = {
 
 export type LinkPendingResponse = LinkPendingResponses[keyof LinkPendingResponses];
 
-export type History1Data = {
+export type History2Data = {
     body?: never;
     path?: never;
     query?: {
@@ -1998,16 +2844,16 @@ export type History1Data = {
     url: '/api/v1/energy/imports';
 };
 
-export type History1Responses = {
+export type History2Responses = {
     /**
      * OK
      */
     200: PageResultImportBatchResponse;
 };
 
-export type History1Response = History1Responses[keyof History1Responses];
+export type History2Response = History2Responses[keyof History2Responses];
 
-export type Upload1Data = {
+export type Upload2Data = {
     body?: {
         file: Blob | File;
     };
@@ -2019,16 +2865,16 @@ export type Upload1Data = {
     url: '/api/v1/energy/imports';
 };
 
-export type Upload1Responses = {
+export type Upload2Responses = {
     /**
      * Accepted
      */
     202: ImportBatchResponse;
 };
 
-export type Upload1Response = Upload1Responses[keyof Upload1Responses];
+export type Upload2Response = Upload2Responses[keyof Upload2Responses];
 
-export type Retry1Data = {
+export type Retry2Data = {
     body: VersionRequest;
     path: {
         id: string;
@@ -2037,16 +2883,16 @@ export type Retry1Data = {
     url: '/api/v1/energy/imports/{id}/retry';
 };
 
-export type Retry1Responses = {
+export type Retry2Responses = {
     /**
      * Accepted
      */
     202: ImportBatchResponse;
 };
 
-export type Retry1Response = Retry1Responses[keyof Retry1Responses];
+export type Retry2Response = Retry2Responses[keyof Retry2Responses];
 
-export type Discard1Data = {
+export type Discard2Data = {
     body: VersionRequest;
     path: {
         id: string;
@@ -2055,16 +2901,16 @@ export type Discard1Data = {
     url: '/api/v1/energy/imports/{id}/discard';
 };
 
-export type Discard1Responses = {
+export type Discard2Responses = {
     /**
      * OK
      */
     200: ImportBatchResponse;
 };
 
-export type Discard1Response = Discard1Responses[keyof Discard1Responses];
+export type Discard2Response = Discard2Responses[keyof Discard2Responses];
 
-export type Confirm1Data = {
+export type Confirm2Data = {
     body: VersionRequest;
     path: {
         id: string;
@@ -2073,46 +2919,46 @@ export type Confirm1Data = {
     url: '/api/v1/energy/imports/{id}/confirm';
 };
 
-export type Confirm1Responses = {
+export type Confirm2Responses = {
     /**
      * Accepted
      */
     202: ImportBatchResponse;
 };
 
-export type Confirm1Response = Confirm1Responses[keyof Confirm1Responses];
+export type Confirm2Response = Confirm2Responses[keyof Confirm2Responses];
 
-export type Paste1Data = {
+export type Paste2Data = {
     body: PasteImportRequest;
     path?: never;
     query?: never;
     url: '/api/v1/energy/imports/paste';
 };
 
-export type Paste1Responses = {
+export type Paste2Responses = {
     /**
      * Accepted
      */
     202: ImportBatchResponse;
 };
 
-export type Paste1Response = Paste1Responses[keyof Paste1Responses];
+export type Paste2Response = Paste2Responses[keyof Paste2Responses];
 
-export type List2Data = {
+export type List3Data = {
     body?: never;
     path?: never;
     query?: never;
     url: '/api/v1/connector-types';
 };
 
-export type List2Responses = {
+export type List3Responses = {
     /**
      * OK
      */
     200: Array<ConnectorTypeResponse>;
 };
 
-export type List2Response = List2Responses[keyof List2Responses];
+export type List3Response = List3Responses[keyof List3Responses];
 
 export type Create2Data = {
     body: CreateConnectorTypeRequest;
@@ -2180,6 +3026,61 @@ export type Update2Responses = {
 
 export type Update2Response = Update2Responses[keyof Update2Responses];
 
+export type DetailData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/windows/{id}';
+};
+
+export type DetailResponses = {
+    /**
+     * OK
+     */
+    200: WindowDetailResponse;
+};
+
+export type DetailResponse = DetailResponses[keyof DetailResponses];
+
+export type Correct1Data = {
+    body: CorrectWindowRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/windows/{id}';
+};
+
+export type Correct1Responses = {
+    /**
+     * OK
+     */
+    200: WindowResponse;
+};
+
+export type Correct1Response = Correct1Responses[keyof Correct1Responses];
+
+export type EditData = {
+    body: EditImportRowRequest;
+    path: {
+        id: string;
+        rowId: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/import-batches/{id}/rows/{rowId}';
+};
+
+export type EditResponses = {
+    /**
+     * OK
+     */
+    200: RowChangeResponse;
+};
+
+export type EditResponse2 = EditResponses[keyof EditResponses];
+
 export type ChangeStatusData = {
     body: ChangeStatusRequest;
     path: {
@@ -2198,7 +3099,7 @@ export type ChangeStatusResponses = {
 
 export type ChangeStatusResponse = ChangeStatusResponses[keyof ChangeStatusResponses];
 
-export type MarkTestData = {
+export type MarkTest2Data = {
     body: MarkTestRequest;
     path: {
         id: string;
@@ -2207,14 +3108,14 @@ export type MarkTestData = {
     url: '/api/v1/energy/sessions/{id}/test';
 };
 
-export type MarkTestResponses = {
+export type MarkTest2Responses = {
     /**
      * OK
      */
     200: SessionResponse;
 };
 
-export type MarkTestResponse = MarkTestResponses[keyof MarkTestResponses];
+export type MarkTest2Response = MarkTest2Responses[keyof MarkTest2Responses];
 
 export type Update3Data = {
     body: UpdateConnectorTypeRequest;
@@ -2418,7 +3319,7 @@ export type PendingResponses = {
 
 export type PendingResponse = PendingResponses[keyof PendingResponses];
 
-export type DetailData = {
+export type Detail1Data = {
     body?: never;
     path: {
         id: string;
@@ -2427,14 +3328,14 @@ export type DetailData = {
     url: '/api/v1/uptime/measurements/{id}';
 };
 
-export type DetailResponses = {
+export type Detail1Responses = {
     /**
      * OK
      */
     200: MeasurementDetailResponse;
 };
 
-export type DetailResponse = DetailResponses[keyof DetailResponses];
+export type Detail1Response = Detail1Responses[keyof Detail1Responses];
 
 export type RevisionsData = {
     body?: never;
@@ -2644,7 +3545,174 @@ export type Report1Responses = {
 
 export type Report1Response = Report1Responses[keyof Report1Responses];
 
-export type ResolveData = {
+export type Summary2Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        preset?: 'FIRST_HALF' | 'SECOND_HALF' | 'LAST_15_DAYS' | 'CUSTOM';
+        month?: string;
+        from?: string;
+        to?: string;
+        equipmentIds?: Array<string>;
+    };
+    url: '/api/v1/intermittency/summary';
+};
+
+export type Summary2Responses = {
+    /**
+     * OK
+     */
+    200: IntermittencySummaryResponse;
+};
+
+export type Summary2Response = Summary2Responses[keyof Summary2Responses];
+
+export type List4Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        from?: string;
+        to?: string;
+    };
+    url: '/api/v1/intermittency/reviewed-days';
+};
+
+export type List4Responses = {
+    /**
+     * OK
+     */
+    200: Array<ReviewedDayResponse>;
+};
+
+export type List4Response = List4Responses[keyof List4Responses];
+
+export type Report2Data = {
+    body?: never;
+    path?: never;
+    query: {
+        format: 'PDF' | 'XLSX';
+        preset?: 'FIRST_HALF' | 'SECOND_HALF' | 'LAST_15_DAYS' | 'CUSTOM';
+        month?: string;
+        from?: string;
+        to?: string;
+        equipmentIds?: Array<string>;
+    };
+    url: '/api/v1/intermittency/report';
+};
+
+export type Report2Responses = {
+    /**
+     * Documento nuevo; X-Report-Id y X-Report-Cut-Off lo identifican
+     */
+    200: Blob | File;
+};
+
+export type Report2Response = Report2Responses[keyof Report2Responses];
+
+export type Search1Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        query?: string;
+        limit?: number;
+    };
+    url: '/api/v1/intermittency/points';
+};
+
+export type Search1Responses = {
+    /**
+     * OK
+     */
+    200: Array<KiaPointResponse>;
+};
+
+export type Search1Response = Search1Responses[keyof Search1Responses];
+
+export type List5Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        from?: string;
+        to?: string;
+        classification?: 'NEW' | 'IDENTICAL' | 'REVIEW' | 'CONFLICT' | 'OUT_OF_SCOPE' | 'PENDING_LINK' | 'INVALID';
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/intermittency/pending-rows';
+};
+
+export type List5Responses = {
+    /**
+     * OK
+     */
+    200: PageResultPendingRowResponse;
+};
+
+export type List5Response = List5Responses[keyof List5Responses];
+
+export type Get2Data = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/intermittency/import-batches/{id}';
+};
+
+export type Get2Responses = {
+    /**
+     * OK
+     */
+    200: IntermittencyImportBatchResponse;
+};
+
+export type Get2Response = Get2Responses[keyof Get2Responses];
+
+export type Rows1Data = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        classification?: 'NEW' | 'IDENTICAL' | 'REVIEW' | 'CONFLICT' | 'OUT_OF_SCOPE' | 'PENDING_LINK' | 'INVALID';
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/intermittency/import-batches/{id}/rows';
+};
+
+export type Rows1Responses = {
+    /**
+     * OK
+     */
+    200: PageResultIntermittencyImportRowResponse;
+};
+
+export type Rows1Response = Rows1Responses[keyof Rows1Responses];
+
+export type AvailabilityData = {
+    body?: never;
+    path?: never;
+    query?: {
+        preset?: 'FIRST_HALF' | 'SECOND_HALF' | 'LAST_15_DAYS' | 'CUSTOM';
+        month?: string;
+        from?: string;
+        to?: string;
+        equipmentIds?: Array<string>;
+    };
+    url: '/api/v1/intermittency/availability';
+};
+
+export type AvailabilityResponses = {
+    /**
+     * OK
+     */
+    200: AvailabilityResponse;
+};
+
+export type AvailabilityResponse2 = AvailabilityResponses[keyof AvailabilityResponses];
+
+export type Resolve1Data = {
     body?: never;
     path?: never;
     query: {
@@ -2655,14 +3723,14 @@ export type ResolveData = {
     url: '/api/v1/external-identities/resolve';
 };
 
-export type ResolveResponses = {
+export type Resolve1Responses = {
     /**
      * OK
      */
     200: ExternalIdentityResponse;
 };
 
-export type ResolveResponse = ResolveResponses[keyof ResolveResponses];
+export type Resolve1Response = Resolve1Responses[keyof Resolve1Responses];
 
 export type EquipmentImportData = {
     body?: never;
@@ -2720,7 +3788,7 @@ export type EquipmentImportTemplateResponses = {
 
 export type EquipmentImportTemplateResponse = EquipmentImportTemplateResponses[keyof EquipmentImportTemplateResponses];
 
-export type Summary2Data = {
+export type Summary3Data = {
     body?: never;
     path?: never;
     query: {
@@ -2734,16 +3802,16 @@ export type Summary2Data = {
     url: '/api/v1/energy/summary';
 };
 
-export type Summary2Responses = {
+export type Summary3Responses = {
     /**
      * OK
      */
     200: ConsumptionSummaryResponse;
 };
 
-export type Summary2Response = Summary2Responses[keyof Summary2Responses];
+export type Summary3Response = Summary3Responses[keyof Summary3Responses];
 
-export type Search1Data = {
+export type Search2Data = {
     body?: never;
     path?: never;
     query?: {
@@ -2762,14 +3830,14 @@ export type Search1Data = {
     url: '/api/v1/energy/sessions';
 };
 
-export type Search1Responses = {
+export type Search2Responses = {
     /**
      * OK
      */
     200: PageResultSessionResponse;
 };
 
-export type Search1Response = Search1Responses[keyof Search1Responses];
+export type Search2Response = Search2Responses[keyof Search2Responses];
 
 export type ReviewsData = {
     body?: never;
@@ -2789,7 +3857,7 @@ export type ReviewsResponses = {
 
 export type ReviewsResponse = ReviewsResponses[keyof ReviewsResponses];
 
-export type Report2Data = {
+export type Report3Data = {
     body?: never;
     path?: never;
     query: {
@@ -2804,16 +3872,16 @@ export type Report2Data = {
     url: '/api/v1/energy/report';
 };
 
-export type Report2Responses = {
+export type Report3Responses = {
     /**
      * Documento nuevo; X-Report-Id y X-Report-Cut-Off lo identifican
      */
     200: Blob | File;
 };
 
-export type Report2Response = Report2Responses[keyof Report2Responses];
+export type Report3Response = Report3Responses[keyof Report3Responses];
 
-export type Get2Data = {
+export type Get3Data = {
     body?: never;
     path: {
         id: string;
@@ -2822,16 +3890,16 @@ export type Get2Data = {
     url: '/api/v1/energy/imports/{id}';
 };
 
-export type Get2Responses = {
+export type Get3Responses = {
     /**
      * OK
      */
     200: ImportBatchResponse;
 };
 
-export type Get2Response = Get2Responses[keyof Get2Responses];
+export type Get3Response = Get3Responses[keyof Get3Responses];
 
-export type Rows1Data = {
+export type Rows2Data = {
     body?: never;
     path: {
         id: string;
@@ -2845,14 +3913,14 @@ export type Rows1Data = {
     url: '/api/v1/energy/imports/{id}/rows';
 };
 
-export type Rows1Responses = {
+export type Rows2Responses = {
     /**
      * OK
      */
     200: PageResultImportRowResponse;
 };
 
-export type Rows1Response = Rows1Responses[keyof Rows1Responses];
+export type Rows2Response = Rows2Responses[keyof Rows2Responses];
 
 export type MeData = {
     body?: never;

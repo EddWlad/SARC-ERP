@@ -6,6 +6,7 @@ import {
   LucideIconData,
   LucidePlugZap,
   LucideUsers,
+  LucideZapOff,
 } from '@lucide/angular';
 
 import { Role } from '../core/auth/role';
@@ -24,6 +25,8 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Inventario', path: '/inventario', icon: LucidePlugZap.icon },
   { label: 'Consumo', path: '/consumo', icon: LucideBatteryCharging.icon },
   { label: 'Uptime', path: '/uptime', icon: LucideActivity.icon },
+  // Todos los roles consultan el historial de ventanas; las secciones de edicion se filtran dentro del modulo.
+  { label: 'Intermitencias', path: '/intermitencias', icon: LucideZapOff.icon },
   { label: 'Reportes', path: '/reportes', icon: LucideFileArchive.icon },
   { label: 'Usuarios', path: '/usuarios', icon: LucideUsers.icon, roles: ['ADMINISTRADOR'] },
 ];

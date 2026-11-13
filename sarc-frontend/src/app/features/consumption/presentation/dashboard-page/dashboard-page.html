@@ -182,24 +182,46 @@
       <section class="panel wide" aria-labelledby="top-title">
         <h2 id="top-title">Top 5 equipos por energía</h2>
         <sarc-top-equipment
-          [items]="summary.top"
-          [withoutEnergy]="summary.equipmentWithoutEnergy"
+          [items]="topRows()"
+          seriesLabel="Energía (kWh)"
+          [chartFormat]="formatKwh"
+          description="Los equipos con más energía entregada en el periodo"
+          tiesNote="El Top 5 incluye más de cinco equipos por empate en el quinto lugar."
+          [notes]="topNotes()"
         />
       </section>
 
       <section class="panel" aria-labelledby="network-title">
         <h2 id="network-title">Energía por red</h2>
-        <sarc-share-chart title="Energía por red" [items]="byNetwork()" />
+        <sarc-share-chart
+          title="Energía por red"
+          seriesLabel="Energía (kWh)"
+          [chartFormat]="formatKwh"
+          [items]="byNetwork().items"
+          [emptyMessage]="byNetwork().empty"
+        />
       </section>
 
       <section class="panel" aria-labelledby="source-title">
         <h2 id="source-title">Energía por plataforma</h2>
-        <sarc-share-chart title="Energía por plataforma" [items]="bySource()" />
+        <sarc-share-chart
+          title="Energía por plataforma"
+          seriesLabel="Energía (kWh)"
+          [chartFormat]="formatKwh"
+          [items]="bySource().items"
+          [emptyMessage]="bySource().empty"
+        />
       </section>
 
       <section class="panel" aria-labelledby="type-title">
         <h2 id="type-title">Energía por tipo de equipo</h2>
-        <sarc-share-chart title="Energía por tipo de equipo" [items]="byType()" />
+        <sarc-share-chart
+          title="Energía por tipo de equipo"
+          seriesLabel="Energía (kWh)"
+          [chartFormat]="formatKwh"
+          [items]="byType().items"
+          [emptyMessage]="byType().empty"
+        />
       </section>
     </div>
 

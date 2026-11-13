@@ -10,14 +10,15 @@ import { Notifier } from '../../../../core/notifications/notifier';
 import { QuantityFormat } from '../../../../shared/format/quantity-format';
 import { ReportFormat } from '../../../../shared/reports/report-format';
 import { ChartSeries, ChartView } from '../../../../shared/ui/chart/chart-view';
+import { ShareChart, ShareItem } from '../../../../shared/ui/share-chart/share-chart';
+import { TopEquipment } from '../../../../shared/ui/top-equipment/top-equipment';
 import { NETWORK_LABELS, TYPE_LABELS } from '../../../../shared/vocabulary/charging-infrastructure';
 import { ConsumptionDashboardFacade } from '../../application/consumption-dashboard-facade';
 import { SOURCE_LABELS } from '../../domain/consumption';
 import { parseIsoDate } from '../../domain/period';
 import { ConsumptionFilterBar } from '../consumption-filter-bar/consumption-filter-bar';
 import { DailyTable } from '../daily-table/daily-table';
-import { ShareChart, ShareItem } from '../share-chart/share-chart';
-import { TopEquipment } from '../top-equipment/top-equipment';
+import { EnergyShare, energyShareEmpty, energyShareItem, rankedRow } from './consumption-shares';
 
 /**
  * Tablero gerencial de consumo (PRD 7.3): KPIs oficiales, pendientes y pruebas aparte, tendencia
@@ -79,27 +80,46 @@ export class DashboardPage {
     values: (this.facade.summary()?.daily ?? []).map((day) => day.sessions),
     colors: 'series-1',
   }));
-  protected readonly byNetwork = computed<ShareItem[]>(() =>
-    (this.facade.summary()?.byNetwork ?? []).map((share) => ({
-      label: NETWORK_LABELS[share.network],
-      energyKwh: share.energyKwh,
-      sessions: share.sessions,
-    })),
+  protected readonly byNetwork = computed(() =>
+    this.energyShares(
+      this.facade.summary()?.byNetwork ?? [],
+      (share) => NETWORK_LABELS[share.network],
+    ),
   );
-  protected readonly bySource = computed<ShareItem[]>(() =>
-    (this.facade.summary()?.bySource ?? []).map((share) => ({
-      label: SOURCE_LABELS[share.source],
-      energyKwh: share.energyKwh,
-      sessions: share.sessions,
-    })),
+  protected readonly bySource = computed(() =>
+    this.energyShares(
+      this.facade.summary()?.bySource ?? [],
+      (share) => SOURCE_LABELS[share.source],
+    ),
   );
-  protected readonly byType = computed<ShareItem[]>(() =>
-    (this.facade.summary()?.byType ?? []).map((share) => ({
-      label: TYPE_LABELS[share.type],
-      energyKwh: share.energyKwh,
-      sessions: share.sessions,
-    })),
+  protected readonly byType = computed(() =>
+    this.energyShares(this.facade.summary()?.byType ?? [], (share) => TYPE_LABELS[share.type]),
   );
+  protected readonly topRows = computed(() =>
+    (this.facade.summary()?.top ?? []).map((item) => rankedRow(item, this.quantities)),
+  );
+  protected readonly topNotes = computed(() => {
+    const without = this.facade.summary()?.equipmentWithoutEnergy ?? 0;
+    return without > 0
+      ? [
+          this.quantities.amount(
+            without,
+            'equipo fuera del ranking por no tener energía informada',
+            'equipos fuera del ranking por no tener energía informada',
+          ),
+        ]
+      : [];
+  });
+
+  private energyShares<T extends EnergyShare>(
+    shares: readonly T[],
+    labelOf: (share: T) => string,
+  ): { items: ShareItem[]; empty: string } {
+    return {
+      items: shares.map((share) => energyShareItem(labelOf(share), share, this.quantities)),
+      empty: energyShareEmpty(shares, this.quantities),
+    };
+  }
 
   protected async download(format: ReportFormat): Promise<void> {
     try {

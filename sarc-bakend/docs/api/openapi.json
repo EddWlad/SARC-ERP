@@ -83,6 +83,33 @@
         }
       }
     },
+    "/api/v1/intermittency/reviewed-days/{day}" : {
+      "put" : {
+        "tags" : [ "reviewed-day-controller" ],
+        "operationId" : "mark",
+        "parameters" : [ {
+          "name" : "day",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReviewedDayMarkResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/equipment/{id}" : {
       "get" : {
         "tags" : [ "equipment-controller" ],
@@ -1156,6 +1183,752 @@
         }
       }
     },
+    "/api/v1/intermittency/windows" : {
+      "get" : {
+        "tags" : [ "intermittency-window-controller" ],
+        "operationId" : "list_1",
+        "parameters" : [ {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "equipmentIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          }
+        }, {
+          "name" : "states",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "OPEN", "REVIEW", "CONFIRMED", "TEST", "ANNULLED" ]
+            }
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WindowPageResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "intermittency-window-controller" ],
+        "operationId" : "capture",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CaptureWindowsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CaptureResultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/windows/{id}/untest" : {
+      "post" : {
+        "tags" : [ "intermittency-window-controller" ],
+        "operationId" : "unmarkTest",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WindowChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WindowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/windows/{id}/test" : {
+      "post" : {
+        "tags" : [ "intermittency-window-controller" ],
+        "operationId" : "markTest",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WindowChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WindowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/windows/{id}/confirm-review" : {
+      "post" : {
+        "tags" : [ "intermittency-window-controller" ],
+        "operationId" : "confirmReview",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WindowChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WindowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/windows/{id}/close" : {
+      "post" : {
+        "tags" : [ "intermittency-window-controller" ],
+        "operationId" : "close",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CloseWindowRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WindowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/windows/{id}/annul" : {
+      "post" : {
+        "tags" : [ "intermittency-window-controller" ],
+        "operationId" : "annul",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WindowChangeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WindowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/reviewed-days/{day}/withdraw" : {
+      "post" : {
+        "tags" : [ "reviewed-day-controller" ],
+        "operationId" : "withdraw",
+        "parameters" : [ {
+          "name" : "day",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WithdrawReviewedDayRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReviewedDayResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/points/{equipmentId}/untest" : {
+      "post" : {
+        "tags" : [ "intermittency-point-controller" ],
+        "operationId" : "unmarkTest_1",
+        "parameters" : [ {
+          "name" : "equipmentId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MarkPointTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PointTestResultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/points/{equipmentId}/test" : {
+      "post" : {
+        "tags" : [ "intermittency-point-controller" ],
+        "operationId" : "markTest_1",
+        "parameters" : [ {
+          "name" : "equipmentId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MarkPointTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PointTestResultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/import-batches" : {
+      "get" : {
+        "tags" : [ "intermittency-import-controller" ],
+        "operationId" : "history_1",
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultIntermittencyImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "intermittency-import-controller" ],
+        "operationId" : "upload_1",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "file" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IntermittencyImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/import-batches/{id}/rows/{rowId}/resolve" : {
+      "post" : {
+        "tags" : [ "intermittency-import-controller" ],
+        "operationId" : "resolve",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "rowId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResolvePendingRowRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RowChangeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/import-batches/{id}/rows/{rowId}/link" : {
+      "post" : {
+        "tags" : [ "intermittency-import-controller" ],
+        "operationId" : "link_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "rowId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LinkImportRowRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RowChangeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/import-batches/{id}/rows/{rowId}/decision" : {
+      "post" : {
+        "tags" : [ "intermittency-import-controller" ],
+        "operationId" : "decide_2",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "rowId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ImportRowDecisionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RowChangeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/import-batches/{id}/retry" : {
+      "post" : {
+        "tags" : [ "intermittency-import-controller" ],
+        "operationId" : "retry_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IntermittencyImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/import-batches/{id}/discard" : {
+      "post" : {
+        "tags" : [ "intermittency-import-controller" ],
+        "operationId" : "discard_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IntermittencyImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/import-batches/{id}/confirm" : {
+      "post" : {
+        "tags" : [ "intermittency-import-controller" ],
+        "operationId" : "confirm_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VersionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IntermittencyImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/import-batches/paste" : {
+      "post" : {
+        "tags" : [ "intermittency-import-controller" ],
+        "operationId" : "paste_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PasteIntermittencyImportRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IntermittencyImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/external-identities/{id}/verify" : {
       "post" : {
         "tags" : [ "external-identity-controller" ],
@@ -1196,7 +1969,7 @@
     "/api/v1/equipment" : {
       "get" : {
         "tags" : [ "equipment-controller" ],
-        "operationId" : "list_1",
+        "operationId" : "list_2",
         "parameters" : [ {
           "name" : "text",
           "in" : "query",
@@ -1679,7 +2452,7 @@
     "/api/v1/energy/imports" : {
       "get" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "history_1",
+        "operationId" : "history_2",
         "parameters" : [ {
           "name" : "page",
           "in" : "query",
@@ -1717,7 +2490,7 @@
       },
       "post" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "upload_1",
+        "operationId" : "upload_2",
         "parameters" : [ {
           "name" : "source",
           "in" : "query",
@@ -1769,7 +2542,7 @@
     "/api/v1/energy/imports/{id}/retry" : {
       "post" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "retry_1",
+        "operationId" : "retry_2",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -1806,7 +2579,7 @@
     "/api/v1/energy/imports/{id}/discard" : {
       "post" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "discard_1",
+        "operationId" : "discard_2",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -1843,7 +2616,7 @@
     "/api/v1/energy/imports/{id}/confirm" : {
       "post" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "confirm_1",
+        "operationId" : "confirm_2",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -1880,7 +2653,7 @@
     "/api/v1/energy/imports/paste" : {
       "post" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "paste_1",
+        "operationId" : "paste_2",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1908,7 +2681,7 @@
     "/api/v1/connector-types" : {
       "get" : {
         "tags" : [ "connector-type-controller" ],
-        "operationId" : "list_2",
+        "operationId" : "list_3",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -2038,6 +2811,113 @@
         }
       }
     },
+    "/api/v1/intermittency/windows/{id}" : {
+      "get" : {
+        "tags" : [ "intermittency-window-controller" ],
+        "operationId" : "detail",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WindowDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "intermittency-window-controller" ],
+        "operationId" : "correct_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CorrectWindowRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WindowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/import-batches/{id}/rows/{rowId}" : {
+      "patch" : {
+        "tags" : [ "intermittency-import-controller" ],
+        "operationId" : "edit",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "rowId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EditImportRowRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RowChangeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/equipment/{id}/status" : {
       "patch" : {
         "tags" : [ "equipment-controller" ],
@@ -2078,7 +2958,7 @@
     "/api/v1/energy/sessions/{id}/test" : {
       "patch" : {
         "tags" : [ "energy-session-controller" ],
-        "operationId" : "markTest",
+        "operationId" : "markTest_2",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -2845,7 +3725,7 @@
     "/api/v1/uptime/measurements/{id}" : {
       "get" : {
         "tags" : [ "uptime-measurement-controller" ],
-        "operationId" : "detail",
+        "operationId" : "detail_1",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -3380,10 +4260,464 @@
         }
       }
     },
+    "/api/v1/intermittency/summary" : {
+      "get" : {
+        "tags" : [ "intermittency-controller" ],
+        "operationId" : "summary_2",
+        "parameters" : [ {
+          "name" : "preset",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "FIRST_HALF", "SECOND_HALF", "LAST_15_DAYS", "CUSTOM" ]
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 7,
+            "minLength" : 0
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "equipmentIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 200,
+            "minItems" : 0
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IntermittencySummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/reviewed-days" : {
+      "get" : {
+        "tags" : [ "reviewed-day-controller" ],
+        "operationId" : "list_4",
+        "parameters" : [ {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ReviewedDayResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/report" : {
+      "get" : {
+        "tags" : [ "intermittency-controller" ],
+        "operationId" : "report_2",
+        "parameters" : [ {
+          "name" : "format",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "PDF", "XLSX" ]
+          }
+        }, {
+          "name" : "preset",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "FIRST_HALF", "SECOND_HALF", "LAST_15_DAYS", "CUSTOM" ]
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 7,
+            "minLength" : 0
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "equipmentIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 200,
+            "minItems" : 0
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Documento nuevo; X-Report-Id y X-Report-Cut-Off lo identifican",
+            "headers" : {
+              "X-Report-Cut-Off" : {
+                "style" : "simple",
+                "schema" : {
+                  "type" : "string",
+                  "format" : "date-time"
+                }
+              },
+              "X-Report-Id" : {
+                "style" : "simple",
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uuid"
+                }
+              }
+            },
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/points" : {
+      "get" : {
+        "tags" : [ "intermittency-point-controller" ],
+        "operationId" : "search_1",
+        "parameters" : [ {
+          "name" : "query",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 50,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/KiaPointResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/pending-rows" : {
+      "get" : {
+        "tags" : [ "intermittency-pending-row-controller" ],
+        "operationId" : "list_5",
+        "parameters" : [ {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "classification",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "NEW", "IDENTICAL", "REVIEW", "CONFLICT", "OUT_OF_SCOPE", "PENDING_LINK", "INVALID" ]
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 50,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultPendingRowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/import-batches/{id}" : {
+      "get" : {
+        "tags" : [ "intermittency-import-controller" ],
+        "operationId" : "get_2",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IntermittencyImportBatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/import-batches/{id}/rows" : {
+      "get" : {
+        "tags" : [ "intermittency-import-controller" ],
+        "operationId" : "rows_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "classification",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "NEW", "IDENTICAL", "REVIEW", "CONFLICT", "OUT_OF_SCOPE", "PENDING_LINK", "INVALID" ]
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 50,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResultIntermittencyImportRowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/intermittency/availability" : {
+      "get" : {
+        "tags" : [ "intermittency-controller" ],
+        "operationId" : "availability",
+        "parameters" : [ {
+          "name" : "preset",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "FIRST_HALF", "SECOND_HALF", "LAST_15_DAYS", "CUSTOM" ]
+          }
+        }, {
+          "name" : "month",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 7,
+            "minLength" : 0
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "equipmentIds",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 200,
+            "minItems" : 0
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AvailabilityResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/external-identities/resolve" : {
       "get" : {
         "tags" : [ "external-identity-controller" ],
-        "operationId" : "resolve",
+        "operationId" : "resolve_1",
         "parameters" : [ {
           "name" : "platform",
           "in" : "query",
@@ -3531,7 +4865,7 @@
     "/api/v1/energy/summary" : {
       "get" : {
         "tags" : [ "consumption-controller" ],
-        "operationId" : "summary_2",
+        "operationId" : "summary_3",
         "parameters" : [ {
           "name" : "from",
           "in" : "query",
@@ -3598,7 +4932,7 @@
     "/api/v1/energy/sessions" : {
       "get" : {
         "tags" : [ "energy-session-controller" ],
-        "operationId" : "search_1",
+        "operationId" : "search_2",
         "parameters" : [ {
           "name" : "from",
           "in" : "query",
@@ -3741,7 +5075,7 @@
     "/api/v1/energy/report" : {
       "get" : {
         "tags" : [ "consumption-controller" ],
-        "operationId" : "report_2",
+        "operationId" : "report_3",
         "parameters" : [ {
           "name" : "format",
           "in" : "query",
@@ -3839,7 +5173,7 @@
     "/api/v1/energy/imports/{id}" : {
       "get" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "get_2",
+        "operationId" : "get_3",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -3866,7 +5200,7 @@
     "/api/v1/energy/imports/{id}/rows" : {
       "get" : {
         "tags" : [ "energy-import-controller" ],
-        "operationId" : "rows_1",
+        "operationId" : "rows_2",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -4174,6 +5508,70 @@
           }
         },
         "required" : [ "active", "connectorId", "equipmentId", "id", "label", "version" ]
+      },
+      "ReviewedDayMarkResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "$ref" : "#/components/schemas/ReviewedDayResponse"
+          },
+          "warnings" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UnconfirmedBatchResponse"
+            }
+          }
+        },
+        "required" : [ "day", "warnings" ]
+      },
+      "ReviewedDayResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "active" : {
+            "type" : "boolean"
+          },
+          "markedBy" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "markedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "version" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "finished" : {
+            "type" : "boolean"
+          },
+          "pendingLinkRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "unconfirmedBatches" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "active", "day", "finished", "pendingLinkRows", "unconfirmedBatches" ]
+      },
+      "UnconfirmedBatchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "batchId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "fileName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "batchId", "fileName" ]
       },
       "UpdateEquipmentRequest" : {
         "type" : "object",
@@ -5645,6 +7043,709 @@
         },
         "required" : [ "declaredPeriodType", "text" ]
       },
+      "CaptureWindowsRequest" : {
+        "type" : "object",
+        "properties" : {
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "windows" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/WindowEntry"
+            },
+            "maxItems" : 500,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "equipmentId", "windows" ]
+      },
+      "WindowEntry" : {
+        "type" : "object",
+        "properties" : {
+          "startAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "endAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "comment" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "startAt" ]
+      },
+      "CaptureResultResponse" : {
+        "type" : "object",
+        "properties" : {
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "windows" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/WindowResponse"
+            }
+          },
+          "dayTotals" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DayTotalResponse"
+            }
+          }
+        },
+        "required" : [ "dayTotals", "equipmentId", "windows" ]
+      },
+      "DayTotalResponse" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "minutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "windows" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "day", "minutes", "text", "windows" ]
+      },
+      "WindowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "pointLabel" : {
+            "type" : "string"
+          },
+          "startAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "endAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "durationMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "durationText" : {
+            "type" : [ "string", "null" ]
+          },
+          "provisionalMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "provisionalText" : {
+            "type" : [ "string", "null" ]
+          },
+          "state" : {
+            "type" : "string",
+            "enum" : [ "OPEN", "REVIEW", "CONFIRMED", "TEST", "ANNULLED" ]
+          },
+          "reviewReasons" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "LONG_WINDOW" ]
+            }
+          },
+          "comment" : {
+            "type" : [ "string", "null" ]
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "MANUAL", "XLSX", "CSV", "PASTE" ]
+          },
+          "revision" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "equipmentId", "id", "pointLabel", "reviewReasons", "revision", "source", "startAt", "state", "version" ]
+      },
+      "WindowChangeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "justification" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "version" ]
+      },
+      "CloseWindowRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "endAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "endAt", "version" ]
+      },
+      "WithdrawReviewedDayRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "justification" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "version" ]
+      },
+      "MarkPointTestRequest" : {
+        "type" : "object",
+        "properties" : {
+          "from" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "to" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "justification" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "from", "to" ]
+      },
+      "PointTestResultResponse" : {
+        "type" : "object",
+        "properties" : {
+          "affectedWindows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "openWindowsNotMarked" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "affectedWindows", "openWindowsNotMarked" ]
+      },
+      "Counts" : {
+        "type" : "object",
+        "properties" : {
+          "rows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "windows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "newRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "identical" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "conflict" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "invalid" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pendingLink" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "outOfScope" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "review" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "skipped" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "conflict", "identical", "invalid", "newRows", "outOfScope", "pendingLink", "review", "rows", "skipped", "windows" ]
+      },
+      "IntermittencyImportBatchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "PARSING", "READY", "CONFIRMING", "COMPLETED", "FAILED", "DISCARDED" ]
+          },
+          "origin" : {
+            "type" : "string",
+            "enum" : [ "FILE", "PASTE" ]
+          },
+          "format" : {
+            "type" : "string",
+            "enum" : [ "XLSX", "CSV", "PASTE" ]
+          },
+          "fileName" : {
+            "type" : "string"
+          },
+          "totalRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "checksum" : {
+            "type" : "string"
+          },
+          "counts" : {
+            "$ref" : "#/components/schemas/Counts"
+          },
+          "earliestDay" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "latestDay" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "appliedRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "failureCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "failureMessage" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "confirmedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "appliedRows", "checksum", "counts", "createdAt", "fileName", "format", "id", "origin", "status", "totalRows", "version" ]
+      },
+      "Edit" : {
+        "type" : "object",
+        "properties" : {
+          "target" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "pair" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "startAt" : {
+            "type" : "string"
+          },
+          "endAt" : {
+            "type" : "string"
+          },
+          "endsNextDay" : {
+            "type" : "boolean"
+          },
+          "value" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "target" ]
+      },
+      "ResolvePendingRowRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "edits" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Edit"
+            },
+            "maxItems" : 50,
+            "minItems" : 0
+          },
+          "decision" : {
+            "type" : "string",
+            "enum" : [ "APPLY", "SKIP", "KEEP_PENDING" ]
+          },
+          "skipReason" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "acknowledgeTotal" : {
+            "type" : "boolean"
+          },
+          "windows" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/WindowDecision"
+            },
+            "maxItems" : 50,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "decision", "version" ]
+      },
+      "WindowDecision" : {
+        "type" : "object",
+        "properties" : {
+          "pair" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "resolution" : {
+            "type" : "string",
+            "enum" : [ "KEEP_EXISTING", "REPLACE", "MERGE", "OMIT", "OPEN" ]
+          },
+          "justification" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "pair" ]
+      },
+      "EditResponse" : {
+        "type" : "object",
+        "properties" : {
+          "target" : {
+            "type" : "string"
+          },
+          "pair" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "field" : {
+            "type" : [ "string", "null" ]
+          },
+          "previous" : {
+            "type" : [ "string", "null" ]
+          },
+          "value" : {
+            "type" : [ "string", "null" ]
+          },
+          "actor" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "at" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "at", "target" ]
+      },
+      "IntermittencyImportRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "rowNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "classification" : {
+            "type" : "string",
+            "enum" : [ "NEW", "IDENTICAL", "REVIEW", "CONFLICT", "OUT_OF_SCOPE", "PENDING_LINK", "INVALID" ]
+          },
+          "decision" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "APPLY", "SKIP", "KEEP_PENDING" ]
+          },
+          "skipReason" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipmentId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "raw" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RawCellResponse"
+            }
+          },
+          "edits" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EditResponse"
+            }
+          },
+          "interpretation" : {
+            "$ref" : "#/components/schemas/InterpretationResponse"
+          },
+          "touchedDays" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "date"
+            }
+          }
+        },
+        "required" : [ "classification", "edits", "id", "interpretation", "raw", "rowNumber", "touchedDays", "version" ]
+      },
+      "InterpretationResponse" : {
+        "type" : "object",
+        "properties" : {
+          "date" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "comment" : {
+            "type" : "string"
+          },
+          "fileTotalMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "computedTotalMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "computedWithDuplicatesMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "totalAcknowledged" : {
+            "type" : "boolean"
+          },
+          "rowIssues" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IssueResponse"
+            }
+          },
+          "windows" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/WindowInterpretationResponse"
+            }
+          }
+        },
+        "required" : [ "code", "comment", "computedTotalMinutes", "name", "rowIssues", "totalAcknowledged", "windows" ]
+      },
+      "IssueResponse" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string",
+            "enum" : [ "DATE_FORMAT", "TIME_FORMAT", "SECONDS_AMBIGUOUS", "END_BEFORE_START", "ZERO_DURATION", "INCOMPLETE_PAIR", "FUTURE_INSTANT", "ALREADY_RECORDED", "OVERLAPS_EXISTING", "OVERLAP_IN_BATCH", "DUPLICATE_IN_BATCH", "UNKNOWN_CODE", "AMBIGUOUS_CODE", "DELETED_EQUIPMENT", "MISSING_CODE", "NOT_KIA_CHARGING_POINT", "TOTAL_MISMATCH", "LONG_WINDOW", "NAME_DIFFERS", "INACTIVE_EQUIPMENT", "TOTAL_MISSING" ]
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "message" ]
+      },
+      "RawCellResponse" : {
+        "type" : "object",
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "key", "label", "value" ]
+      },
+      "RowChangeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "row" : {
+            "$ref" : "#/components/schemas/IntermittencyImportRowResponse"
+          },
+          "batch" : {
+            "$ref" : "#/components/schemas/IntermittencyImportBatchResponse"
+          }
+        },
+        "required" : [ "batch", "row" ]
+      },
+      "WindowInterpretationResponse" : {
+        "type" : "object",
+        "properties" : {
+          "pair" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "startText" : {
+            "type" : [ "string", "null" ]
+          },
+          "endText" : {
+            "type" : [ "string", "null" ]
+          },
+          "startAt" : {
+            "type" : [ "string", "null" ]
+          },
+          "endAt" : {
+            "type" : [ "string", "null" ]
+          },
+          "minutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "endsNextDay" : {
+            "type" : "boolean"
+          },
+          "test" : {
+            "type" : "boolean"
+          },
+          "added" : {
+            "type" : "boolean"
+          },
+          "classification" : {
+            "type" : "string",
+            "enum" : [ "NEW", "IDENTICAL", "REVIEW", "CONFLICT", "OUT_OF_SCOPE", "PENDING_LINK", "INVALID" ]
+          },
+          "decision" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "KEEP_EXISTING", "REPLACE", "MERGE", "OMIT", "OPEN" ]
+          },
+          "conflictWindowId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "mergedIntoPair" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "issues" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IssueResponse"
+            }
+          }
+        },
+        "required" : [ "added", "classification", "endsNextDay", "issues", "pair", "test" ]
+      },
+      "LinkImportRowRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "equipmentId", "version" ]
+      },
+      "ImportRowDecisionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "decision" : {
+            "type" : "string",
+            "enum" : [ "APPLY", "SKIP", "KEEP_PENDING" ]
+          },
+          "skipReason" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "acknowledgeTotal" : {
+            "type" : "boolean"
+          },
+          "windows" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/WindowDecision"
+            },
+            "maxItems" : 50,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "decision", "version" ]
+      },
+      "PasteIntermittencyImportRequest" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "text" ]
+      },
       "ExternalIdentityResponse" : {
         "type" : "object",
         "properties" : {
@@ -6245,6 +8346,82 @@
           }
         },
         "required" : [ "version" ]
+      },
+      "CorrectWindowRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "startAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "endAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "comment" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "justification" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "version" ]
+      },
+      "EditImportRowRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "edits" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Edit"
+            },
+            "maxItems" : 50,
+            "minItems" : 0
+          },
+          "addWindows" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/NewWindow"
+            },
+            "maxItems" : 50,
+            "minItems" : 0
+          },
+          "removePairs" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            },
+            "maxItems" : 50,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "version" ]
+      },
+      "NewWindow" : {
+        "type" : "object",
+        "properties" : {
+          "startAt" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "endAt" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "startAt" ]
       },
       "ChangeStatusRequest" : {
         "type" : "object",
@@ -7398,6 +9575,741 @@
           }
         },
         "required" : [ "activeConnectorsByType", "byAdminStatus", "byBrand", "byNetwork", "byType", "deletedEquipment", "generatedAt", "pointsByUsageStatus", "totalEquipment" ]
+      },
+      "WindowPageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/WindowResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "WindowDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "window" : {
+            "$ref" : "#/components/schemas/WindowResponse"
+          },
+          "revisions" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "$ref" : "#/components/schemas/WindowRevisionResponse"
+            }
+          },
+          "batchId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "rowNumber" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "pairNumber" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "currentPointName" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "window" ]
+      },
+      "WindowRevisionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "revision" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "change" : {
+            "type" : "string",
+            "enum" : [ "CREATED", "CORRECTED", "CLOSED", "REVIEW_CONFIRMED", "MARKED_TEST", "UNMARKED_TEST", "ANNULLED", "REPLACED_BY_IMPORT" ]
+          },
+          "startAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "endAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "durationMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "state" : {
+            "type" : "string",
+            "enum" : [ "OPEN", "REVIEW", "CONFIRMED", "TEST", "ANNULLED" ]
+          },
+          "reviewReasons" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "LONG_WINDOW" ]
+            }
+          },
+          "comment" : {
+            "type" : [ "string", "null" ]
+          },
+          "justification" : {
+            "type" : [ "string", "null" ]
+          },
+          "actorId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "at" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "actorId", "at", "change", "reviewReasons", "revision", "startAt", "state" ]
+      },
+      "ConcentrationShare" : {
+        "type" : "object",
+        "properties" : {
+          "topMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "restMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "restMinutes", "topMinutes" ]
+      },
+      "DailyRow" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "minutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "windows" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "day", "minutes", "windows" ]
+      },
+      "DurationBandRow" : {
+        "type" : "object",
+        "properties" : {
+          "band" : {
+            "type" : "string",
+            "enum" : [ "UNDER_5", "FROM_5_TO_14", "FROM_15_TO_59", "FROM_60_TO_239", "FROM_240" ]
+          },
+          "minutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "windows" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "band", "minutes", "windows" ]
+      },
+      "IntermittencySummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "period" : {
+            "$ref" : "#/components/schemas/SummaryPeriod"
+          },
+          "official" : {
+            "$ref" : "#/components/schemas/OfficialIndicators"
+          },
+          "outsideOfficial" : {
+            "$ref" : "#/components/schemas/OutsideOfficialIndicators"
+          },
+          "top" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TopPointRow"
+            }
+          },
+          "topExtendedByTies" : {
+            "type" : "boolean"
+          },
+          "daily" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DailyRow"
+            }
+          },
+          "dailyWindowsMayExceedTotal" : {
+            "type" : "boolean"
+          },
+          "byDurationBand" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DurationBandRow"
+            }
+          },
+          "concentration" : {
+            "$ref" : "#/components/schemas/ConcentrationShare"
+          },
+          "recurrence" : {
+            "$ref" : "#/components/schemas/RecurrenceShare"
+          },
+          "generatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "byDurationBand", "concentration", "daily", "dailyWindowsMayExceedTotal", "generatedAt", "official", "outsideOfficial", "period", "recurrence", "top", "topExtendedByTies" ]
+      },
+      "OfficialIndicators" : {
+        "type" : "object",
+        "properties" : {
+          "minutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "affectedPoints" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "windows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pointDays" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "recurrentPoints" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "averageMinutes" : {
+            "type" : [ "number", "null" ]
+          }
+        },
+        "required" : [ "affectedPoints", "minutes", "pointDays", "recurrentPoints", "windows" ]
+      },
+      "OpenEvents" : {
+        "type" : "object",
+        "properties" : {
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "provisionalMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "count", "provisionalMinutes" ]
+      },
+      "OutsideDetailsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "windows" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OutsideWindowRow"
+            }
+          },
+          "pendingRows" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OutsidePendingRowRow"
+            }
+          },
+          "truncated" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "pendingRows", "truncated", "windows" ]
+      },
+      "OutsideOfficialIndicators" : {
+        "type" : "object",
+        "properties" : {
+          "open" : {
+            "$ref" : "#/components/schemas/OpenEvents"
+          },
+          "review" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "test" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pendingLink" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "conflict" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "details" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/OutsideDetailsResponse"
+          }
+        },
+        "required" : [ "conflict", "open", "pendingLink", "review", "test" ]
+      },
+      "OutsidePendingRowRow" : {
+        "type" : "object",
+        "properties" : {
+          "batchId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "rowNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "classification" : {
+            "type" : "string",
+            "enum" : [ "NEW", "IDENTICAL", "REVIEW", "CONFLICT", "OUT_OF_SCOPE", "PENDING_LINK", "INVALID" ]
+          },
+          "equipmentId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "batchId", "classification", "rowNumber" ]
+      },
+      "OutsideWindowRow" : {
+        "type" : "object",
+        "properties" : {
+          "windowId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "pointLabel" : {
+            "type" : "string"
+          },
+          "state" : {
+            "type" : "string",
+            "enum" : [ "OPEN", "REVIEW", "CONFIRMED", "TEST", "ANNULLED" ]
+          },
+          "startAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "endAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "minutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "reasons" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "LONG_WINDOW" ]
+            }
+          }
+        },
+        "required" : [ "equipmentId", "minutes", "pointLabel", "reasons", "startAt", "state", "windowId" ]
+      },
+      "RecurrenceShare" : {
+        "type" : "object",
+        "properties" : {
+          "recurrentMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "nonRecurrentMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "nonRecurrentMinutes", "recurrentMinutes" ]
+      },
+      "SummaryPeriod" : {
+        "type" : "object",
+        "properties" : {
+          "preset" : {
+            "type" : "string",
+            "enum" : [ "FIRST_HALF", "SECOND_HALF", "LAST_15_DAYS", "CUSTOM" ]
+          },
+          "from" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "to" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "cutOff" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "timeZone" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "cutOff", "from", "preset", "timeZone", "to" ]
+      },
+      "TopPointRow" : {
+        "type" : "object",
+        "properties" : {
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "code" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "minutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "windows" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "days" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "days", "equipmentId", "minutes", "name", "windows" ]
+      },
+      "KiaPointResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "assignedCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "usageStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "adminStatus" : {
+            "type" : "string",
+            "enum" : [ "DELETED", "ACTIVE", "INACTIVE" ]
+          }
+        },
+        "required" : [ "adminStatus", "id", "name" ]
+      },
+      "PageResultPendingRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PendingRowResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "PendingRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "batchId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "fileName" : {
+            "type" : [ "string", "null" ]
+          },
+          "batchCreatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "row" : {
+            "$ref" : "#/components/schemas/IntermittencyImportRowResponse"
+          }
+        },
+        "required" : [ "batchCreatedAt", "batchId", "row" ]
+      },
+      "PageResultIntermittencyImportBatchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IntermittencyImportBatchResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "PageResultIntermittencyImportRowResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IntermittencyImportRowResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "AvailabilityAggregate" : {
+        "type" : "object",
+        "properties" : {
+          "percent" : {
+            "type" : [ "number", "null" ]
+          },
+          "evaluatedMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "offlineMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "evaluatedMinutes", "offlineMinutes" ]
+      },
+      "AvailabilityCoverage" : {
+        "type" : "object",
+        "properties" : {
+          "coveredDays" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "daysInScope" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "coveredDays", "daysInScope" ]
+      },
+      "AvailabilityExclusion" : {
+        "type" : "object",
+        "properties" : {
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "code" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string",
+            "enum" : [ "DISCONNECTED", "INACTIVE", "DELETED" ]
+          }
+        },
+        "required" : [ "equipmentId", "name", "reason" ]
+      },
+      "AvailabilityLabels" : {
+        "type" : "object",
+        "properties" : {
+          "estimated" : {
+            "type" : "boolean"
+          },
+          "test" : {
+            "type" : "boolean"
+          },
+          "origin" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "estimated", "origin", "test" ]
+      },
+      "AvailabilityPeriod" : {
+        "type" : "object",
+        "properties" : {
+          "preset" : {
+            "type" : "string",
+            "enum" : [ "FIRST_HALF", "SECOND_HALF", "LAST_15_DAYS", "CUSTOM" ]
+          },
+          "from" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "to" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "cutOff" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "timeZone" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "cutOff", "from", "preset", "timeZone", "to" ]
+      },
+      "AvailabilityPointRow" : {
+        "type" : "object",
+        "properties" : {
+          "equipmentId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "code" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "percent" : {
+            "type" : [ "number", "null" ]
+          },
+          "evaluatedMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "offlineMinutes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "coveredDays" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "coveredDays", "equipmentId", "evaluatedMinutes", "name", "offlineMinutes" ]
+      },
+      "AvailabilityResponse" : {
+        "type" : "object",
+        "properties" : {
+          "period" : {
+            "$ref" : "#/components/schemas/AvailabilityPeriod"
+          },
+          "aggregate" : {
+            "$ref" : "#/components/schemas/AvailabilityAggregate"
+          },
+          "coverage" : {
+            "$ref" : "#/components/schemas/AvailabilityCoverage"
+          },
+          "blockedDays" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/BlockedDayRow"
+            }
+          },
+          "points" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AvailabilityPointRow"
+            }
+          },
+          "exclusions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AvailabilityExclusion"
+            }
+          },
+          "labels" : {
+            "$ref" : "#/components/schemas/AvailabilityLabels"
+          },
+          "limitations" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "aggregate", "blockedDays", "coverage", "exclusions", "labels", "limitations", "period", "points" ]
+      },
+      "BlockedDayRow" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "pendingRows" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "day", "pendingRows" ]
       },
       "EquipmentSummaryResponse" : {
         "type" : "object",

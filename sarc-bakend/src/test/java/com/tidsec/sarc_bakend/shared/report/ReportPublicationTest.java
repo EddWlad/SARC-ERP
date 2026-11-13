@@ -49,6 +49,43 @@ class ReportPublicationTest {
 		assertThatThrownBy(() -> publication(Map.of("connectorId", "no-uuid")))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
+	@Test
+	void acceptsTheIntermittencyPeriodPresetsAndPointFilter() {
+		String first = UUID.randomUUID().toString();
+		String second = UUID.randomUUID().toString();
+
+		for (String preset : java.util.List.of("FIRST_HALF", "SECOND_HALF", "LAST_15_DAYS", "CUSTOM")) {
+			assertThat(publication(Map.of("periodPreset", preset, "equipmentIds", first + "," + second)).criteria())
+					.containsEntry("periodPreset", preset).containsEntry("equipmentIds", first + "," + second);
+		}
+	}
+
+	@Test
+	void rejectsAnInvalidPresetOrPointFilter() {
+		assertThatThrownBy(() -> publication(Map.of("periodPreset", "MENSUAL")))
+				.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> publication(Map.of("equipmentIds", "no-uuid")))
+				.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> publication(Map.of("equipmentIds", UUID.randomUUID() + ",")))
+				.isInstanceOf(IllegalArgumentException.class);
+		String tooMany = java.util.stream.IntStream.range(0, 201).mapToObj(index -> UUID.randomUUID().toString())
+				.collect(java.util.stream.Collectors.joining(","));
+		assertThatThrownBy(() -> publication(Map.of("equipmentIds", tooMany)))
+				.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void uptimePeriodTypesStayExactlyAsTheyWere() {
+		// Los periodos de intermitencias son una lista aparte: no se cuelan como tipo de periodo de Uptime.
+		assertThatThrownBy(() -> publication(Map.of("periodType", "FIRST_HALF")))
+				.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> publication(Map.of("periodType", "CUSTOM")))
+				.isInstanceOf(IllegalArgumentException.class);
+		for (String type : java.util.List.of("ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK")) {
+			assertThat(publication(Map.of("periodType", type)).criteria()).containsEntry("periodType", type);
+		}
+	}
+
     private Map<String,String> reference() {return new HashMap<>(Map.of("selectionBasis","REFERENCE_WEEK","referenceWeek","2026-10-26",
         "periodType","ROLLING_7D","periodKind","PROVISIONAL","timeZone",ReportPublication.TIME_ZONE));}
     @Test void referenceNeedsNoFabricatedBounds() {
