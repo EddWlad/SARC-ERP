@@ -5,6 +5,7 @@
   "sshKeyFile": "<RUTA_DE_LA_CLAVE_SSH_DE_sarc-backup>",
   "knownHostsFile": "<RUTA_DEL_known_hosts_DEL_VPS>",
   "ageIdentityFile": "<RUTA_DE_LA_CLAVE_PRIVADA_age>",
+  "binDir": "<CARPETA_CON_age.exe_OPCIONAL>",
   "destDir": "<CARPETA_CIFRADA_PARA_LAS_COPIAS>",
   "healthchecksUrl": "<URL_DE_LATIDO_descarga-local>",
   "cloudinary": {

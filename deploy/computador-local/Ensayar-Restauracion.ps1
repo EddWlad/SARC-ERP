@@ -66,6 +66,7 @@ if (-not (Test-Path -LiteralPath $Copia) -or -not (Test-Path -LiteralPath $metaP
 $meta = Get-Content -LiteralPath $metaPath -Raw | ConvertFrom-Json
 $cfg = $null
 if (Test-Path -LiteralPath $ConfigPath) { $cfg = Get-Content -LiteralPath $ConfigPath -Raw | ConvertFrom-Json }
+if ($cfg -and $cfg.binDir) { $env:Path = $cfg.binDir + ';' + $env:Path }
 
 $container = 'sarc-ensayo-' + [guid]::NewGuid().ToString('N').Substring(0, 12)
 $temp = Join-Path ([System.IO.Path]::GetTempPath()) ($container)
@@ -112,15 +113,24 @@ try {
 
     $audit = [long]((Invoke-Psql 'SELECT count(*) FROM audit_event') | Select-Object -First 1)
     Add-Check 'auditoria presente' ($audit -eq [long]$meta.tableCounts.audit_event) ('{0} eventos' -f $audit)
+    # Las copias anteriores a la Feature 008 no tienen itm_import_batch: solo se exige si los metadatos la traen.
+    $importTables = @('energy_import_batch', 'asset_import_batch', 'upt_import_batch')
+    $hasIntermittency = @($meta.tableCounts.PSObject.Properties.Name) -contains 'itm_import_batch'
+    if ($hasIntermittency) { $importTables += 'itm_import_batch' }
     $imports = 0
-    foreach ($t in @('energy_import_batch', 'asset_import_batch', 'upt_import_batch')) { $imports += [long]((Invoke-Psql ('SELECT count(*) FROM {0}' -f $t)) | Select-Object -First 1) }
-    Add-Check 'historiales de importacion presentes' ($imports -eq ([long]$meta.tableCounts.energy_import_batch + [long]$meta.tableCounts.asset_import_batch + [long]$meta.tableCounts.upt_import_batch)) ('{0} lotes' -f $imports)
+    $expectedImports = 0
+    foreach ($t in $importTables) {
+        $imports += [long]((Invoke-Psql ('SELECT count(*) FROM {0}' -f $t)) | Select-Object -First 1)
+        $expectedImports += [long]$meta.tableCounts.$t
+    }
+    Add-Check 'historiales de importacion presentes' ($imports -eq $expectedImports) ('{0} lotes' -f $imports)
 
     # Referencias a archivos: muestra contrastada con la ultima exportacion de Cloudinary.
     if ($IndiceExportacion -and (Test-Path -LiteralPath $IndiceExportacion)) {
         $exported = @{}
         foreach ($a in (Get-Content -LiteralPath $IndiceExportacion -Raw | ConvertFrom-Json).assets) { $exported[$a.public_id] = $true }
-        $refs = Invoke-Psql ("SELECT ref FROM (SELECT image_ref AS ref FROM asset_equipment UNION ALL SELECT original_ref FROM energy_import_batch UNION ALL SELECT original_ref FROM asset_import_batch UNION ALL SELECT original_ref FROM upt_import_batch UNION ALL SELECT file_ref FROM report_issued) r WHERE ref IS NOT NULL ORDER BY random() LIMIT {0}" -f $MuestraReferencias)
+        $itmRefs = if ($hasIntermittency) { ' UNION ALL SELECT original_ref FROM itm_import_batch' } else { '' }
+        $refs = Invoke-Psql ("SELECT ref FROM (SELECT image_ref AS ref FROM asset_equipment UNION ALL SELECT original_ref FROM energy_import_batch UNION ALL SELECT original_ref FROM asset_import_batch UNION ALL SELECT original_ref FROM upt_import_batch{1} UNION ALL SELECT file_ref FROM report_issued) r WHERE ref IS NOT NULL ORDER BY random() LIMIT {0}" -f $MuestraReferencias, $itmRefs)
         $missing = @($refs | Where-Object { $_ -and -not $exported.ContainsKey($_.Trim()) })
         Add-Check ('muestra de {0} referencias a archivos presentes en la exportacion' -f @($refs).Count) ($missing.Count -eq 0) $(if ($missing.Count) { '{0} no estan en la exportacion (restaurables en Cloudinary?)' -f $missing.Count } else { '' })
     } else {

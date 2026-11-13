@@ -8,7 +8,10 @@
 #   confirmado=<usuario de GitHub del suplente>
 # Falla con 18 si el archivo no existe, si la huella no coincide con la de /etc/sarc/avisos.conf actual (cambiaron
 # destinatarios o canales) o si falta la confirmación de alguna persona designada.
-# Solo la primera instalación y su verificación admiten una excepción explícita sin suplente.
+# Sin suplente solo se admite una excepción explícita en avisos.conf (`excepcion_sin_suplente=`):
+#   primera-instalacion  solo la primera instalación y su verificación (modos primera y verificar).
+#   un-solo-responsable  también publicaciones normales; decisión ratificada por el responsable del producto el
+#                        2026-11-13 (docs/operacion/decisiones-previas.md, decisión 9). No hay revisión independiente.
 
 # shellcheck source=/dev/null
 source "${SARC_LIB_DIR:-/usr/local/lib/sarc}/common.sh"
@@ -40,6 +43,8 @@ if [[ -n "$suplente" ]]; then
 	if [[ "${responsable,,}" == "${suplente,,}" ]] || ! confirmo "$suplente"; then
 		die 18 avisos "falta la confirmación de un suplente distinto del responsable"
 	fi
+elif [[ "$excepcion" == "un-solo-responsable" ]]; then
+	log_info avisos "excepción registrada: un solo responsable, sin revisión independiente"
 elif [[ "$excepcion" == "primera-instalacion" && "$modo" != "normal" ]]; then
 	log_info avisos "excepción temporal de primera instalación con un responsable"
 else

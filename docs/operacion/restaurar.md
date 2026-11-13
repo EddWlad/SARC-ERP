@@ -53,8 +53,9 @@ Solo cuando no hay otra salida (ver la regla de oro de `recuperar.md`). **Sustit
 2. **Hacer una copia del estado actual** antes de tocar nada: `sudo /usr/local/sbin/sarc-backup manual` y descargarla al computador local.
 3. **Restaurar** la copia elegida en la base de producción siguiendo el procedimiento aprobado (la copia está cifrada: se descifra en el computador local y se transfiere por una vía segura a una cuenta administrativa; no se deja sin cifrar en el VPS). Nunca se restaura con `--clean` sobre una base en uso sin la copia del paso 2.
 4. **Identificar los datos posteriores a la copia para volver a cargarlos** (FR-040): comparar la copia del estado actual (paso 2) con la restaurada y listar:
-   - historiales de importación de consumo, inventario y uptime y reportes emitidos con fecha posterior a `createdAt` de la copia;
+   - historiales de importación de consumo, inventario, uptime e intermitencias (`itm_import_batch`, `itm_import_row`) y reportes emitidos con fecha posterior a `createdAt` de la copia;
    - la ubicación de sus originales en Cloudinary (`original_ref`, `file_ref`) o en la última exportación del computador local.
+   - las tablas de intermitencias (`itm_window`, `itm_window_revision`, `itm_reviewed_day`, `itm_reviewed_day_event`) con el mismo conteo que los metadatos de la copia; los originales importados viven en la carpeta `imports/intermittency` de Cloudinary y entran en el respaldo y en la exportación mensual como el resto de importaciones.
    Esos datos se vuelven a cargar con las funciones normales de SARC.
 5. Iniciar el servicio y ejecutar las **comprobaciones posteriores** completas (`sarc-post-checks`): deben dar `COMPLETADA`.
 6. **Retirar el mantenimiento**: `sudo rm /var/lib/sarc/maintenance.flag`.
