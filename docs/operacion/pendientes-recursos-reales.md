@@ -12,14 +12,14 @@ La tabla registra la evidencia de las verificaciones que dependen del VPS, los a
 
 | Verificación | Depende de | Responsable | Condición de cierre | Estado |
 |---|---|---|---|---|
-| Emisión y renovación del certificado para la IP | VPS con IP pública, puerto 80 accesible | Responsable técnico | Certificado reconocido y renovación comprobada (`certificado.md`) | Emisión reconocida, temporizador activo y simulación exitosa el 2026-11-07. Renovación real pendiente de observar. |
+| Emisión y renovación del certificado para la IP | VPS con IP pública, puerto 80 accesible | Responsable técnico | Certificado reconocido y renovación comprobada (`certificado.md`) | Emisión reconocida el 2026-11-07; renovación automática real observada el 2026-11-11; conexión segura sin advertencias en un navegador actual el 2026-11-13. Verificado. |
 | Puertos expuestos desde Internet | VPS | Responsable técnico | Escaneo externo: solo 22/80/443 (`acceso-y-exposicion.md`) | Verificado el 2026-11-07. |
 | Alcance real del Auto Backup (puntos, restauración) | Contratación | Responsable del producto | El panel muestra puntos diarios | Pendiente |
 | Backup de Cloudinary: alcance y cuota en la cuenta compartida | Acceso autorizado a Cloudinary | Responsable del producto | Activado para `sarc-prod` y efecto en la cuota medido | Respaldo por carga y restauración de muestras verificados. Exportación con credencial dedicada y medición de cuota pendientes. |
-| Recepción de cada aviso | Cuentas de GitHub y correo | Responsable y suplente según E0 | Registro de la prueba de recepción (`avisos.md`). La excepción de la primera instalación permite solo al responsable. | EddWlad confirmó los dos correos de prueba. Prueba de recepción vigente en el VPS. Falta el registro en el issue de GitHub. |
+| Recepción de cada aviso | Cuentas de GitHub y correo | Responsable y suplente según E0 | Registro de la prueba de recepción (`avisos.md`). La excepción de la primera instalación permite solo al responsable. | El responsable confirmó el 2026-11-13 que recibe los avisos de GitHub y de correo; registrado en el issue #11. Prueba de recepción vigente en el VPS y excepción permanente de un solo responsable (decisión 9). Verificado. |
 | Detección de caída total del VPS | VPS y Healthchecks.io | Responsable técnico | Correo recibido en menos de 15 min tras apagar el VPS en ventana acordada | Pendiente |
 | Rendimiento con 30 usuarios | VPS | Responsable técnico | Medición registrada frente a los objetivos del TRD (p95 2 s) | Pendiente |
-| Descarga desde el computador local real | Computador designado | Responsable del producto | Siete días seguidos con recibo | El 2026-11-13 se instaló la cuenta `sarc-backup` (SFTP enjaulado) y una descarga manual verificó 7 copias y subió sus recibos; la puerta de frescura del servidor pasó. La tarea programada diaria quedó registrada el mismo día (03:30 hora local y al iniciar sesión; prueba manual con resultado 0). Faltan el latido `descarga-local` de Healthchecks y los siete días seguidos con recibo. |
+| Descarga desde el computador local real | Computador designado | Responsable del producto | Siete días seguidos con recibo | El 2026-11-13 se instaló la cuenta `sarc-backup` (SFTP enjaulado) y una descarga manual verificó 7 copias y subió sus recibos; la puerta de frescura del servidor pasó. La tarea programada diaria quedó registrada el mismo día (03:30 hora local y al iniciar sesión; prueba manual con resultado 0). El latido `descarga-local` de Healthchecks quedó configurado y probado el mismo día (comprobación en estado «up», periodo de 1 día, gracia de 2 h, aviso por correo). Faltan los siete días seguidos con recibo. |
 
 La protección de `main`, el entorno `production` y las versiones inmutables quedaron configurados en GitHub. El ensayo de restauración con tiempo medido se mantiene pendiente junto con los siete recibos diarios.
 
@@ -29,13 +29,35 @@ Lectura del VPS con acceso autorizado del responsable: `sarc`, `sarc-postgres` y
 
 Se encontró y corrigió que la cuenta `sarc-backup` no estaba instalada (sin jaula SFTP ni `received/`) y que `Descargar-CopiaSarc.ps1` tenía un error de argumentos que impedía su ejecución. Las dos puertas de publicación quedaron resueltas ese mismo día: el responsable del producto ratificó la excepción permanente de un solo responsable (decisión 9 de `decisiones-previas.md`), confirmó que recibe los avisos de GitHub y de Healthchecks, y la puerta de avisos pasa en modo normal, primera y verificar; el recibo de copia local se renueva con la tarea programada diaria. Para publicar queda además el certificado: la comprobación previa exige más de 72 h de vigencia y el actual vence el 2026-11-17, así que conviene publicar tras su renovación (hacia el 15 o 16). El historial de publicaciones tiene `runId` y `approvedBy` vacíos en las dos entradas.
 
+## Seguimiento aceptado al cerrar las Features 007 y 008 (2026-11-13)
+
+El responsable del producto cerró las Features 007 y 008 el 2026-11-13 con los cuatro controles siguientes como seguimiento aceptado. Ninguno bloquea el uso de SARC ni el trabajo de nuevas features. Cada uno tiene su condición de cierre y se tacha aquí cuando se cumple.
+
+| # | Control | Origen | Condición de cierre | Quién | Cuándo |
+|---|---|---|---|---|---|
+| 1 | Clave de API de Cloudinary dedicada a la exportación y primera exportación real de `sarc-prod` | Feature 007, T083 | Crear la clave en la consola de Cloudinary, ponerla en la configuración del computador local y ejecutar `Exportar-Cloudinary.ps1`. El Backup de Cloudinary de `sarc-prod` ya está activo. | Responsable del producto (consola) y Claude (configuración y prueba) | Antes de la primera exportación mensual |
+| 2 | Recorrido manual en el navegador y prueba de detección de caída | Feature 007, T085 | Iniciar sesión en SARC, recorrer cada módulo y descargar un archivo. Para la caída, detener el latido del VPS unos 12 minutos en una ventana acordada y confirmar el correo en menos de 15 minutos, sin tumbar la aplicación. | Responsable del producto | Cuando lo decida |
+| 3 | Siete días seguidos de recibos de descarga | Feature 007, T086 | Recibos diarios en `/var/backups/sarc/received/` desde el 2026-11-13 hasta el 2026-11-20 sin huecos, con el computador local encendido o con sesión iniciada | Responsable del producto | 2026-11-20 |
+| 4 | Medición con una persona de SC-001, SC-008 y SC-010 | Feature 008, quickstart | Cinco ventanas registradas en menos de 2 minutos; un día marcado como revisado en menos de 30 segundos; distinguir cifras oficiales, provisionales y rango en menos de 10 segundos | Responsable del producto | Con el primer uso real |
+
+Limitaciones conocidas que también quedan anotadas:
+
+- `deploy-history.jsonl` registra `runId` y `approvedBy` vacíos, porque la interfaz de despliegue solo pasa la versión. La aprobación consta en el historial de ejecuciones de GitHub Actions.
+- El recibo de copia local caduca a las 24 h: si el computador local no corre la tarea diaria, la puerta de copia local bloquea la siguiente publicación.
+- El certificado es de 6 días y se renueva solo; la comprobación previa de la publicación exige al menos 72 h de vigencia.
+- Sin suplente (decisión 9): no hay revisión independiente de las publicaciones.
+
 ## Evidencia aislada de recuperación
 
 El 2026-11-07 se verificaron en Docker el arranque de Nginx con la configuración de primera emisión, el 503 externo durante las comprobaciones HTTPS locales y el reinicio automático al detener su proceso. SARC conservó su frontend tras sustituir el índice de bienvenida de prueba y al reinstalar y recargar Nginx 1.24.0 en Ubuntu 24.04. PostgreSQL 18 recuperó una fila confirmada tras una parada inmediata y un reinicio explícito, usando un volumen desechable. Sigue pendiente el ensayo en VM con systemd, reinicio del sistema y cambio de versión del paquete de Nginx.
 
 El JAR con perfil `prod` escuchó solo en loopback. La base de prueba quedó con 16 migraciones aplicadas, un usuario administrador, cinco roles en el catálogo y cero equipos. Al detener PostgreSQL, readiness respondió `DOWN` en 30,1 segundos. Al volver a iniciarlo, el mismo proceso Java respondió `UP` en 4,9 segundos. Tras detener y volver a arrancar Java, readiness respondió `UP` en 28,4 segundos y se conservaron el administrador y las migraciones.
 
-## Feature 008 (intermitencias): lo que falta con recursos reales
+## Feature 008 (intermitencias): publicada el 2026-11-13
+
+La versión `2026.11.13-35-9937edb` se publicó el 2026-11-13 con la aprobación del responsable y quedó `COMPLETADA` (ver «Publicación» en `specs/008-intermitencias-kia/quickstart.md`). Lo que sigue abierto: el ensayo de restauración oficial que pide el *issue* `ensayo-restauracion` (7 días), los siete días de recibos de descarga y la medición con una persona de SC-001, SC-008 y SC-010. Las viñetas siguientes son el historial de lo que faltaba antes de publicar.
+
+## Feature 008 (intermitencias): lo que faltaba con recursos reales
 
 - **Ensayo de V018 sobre una copia restaurada de producción**: hecho el 2026-11-13 con la copia manual del 2026-11-07 (V017, 29 tablas con el mismo conteo que los metadatos) en un PostgreSQL 18 desechable y un rol de aplicación no superusuario. V018 se aplicó en menos de 1 s, creó `btree_gist` y las tablas `itm_` sin cambiar las existentes. Ya no bloquea la primera versión candidata. La clave `age` se guarda protegida con DPAPI en el computador local autorizado, fuera del control de versiones.
 - **Restauración con datos de intermitencias y sus originales**: hecha el 2026-11-13 con datos sintéticos. La base se restauró con los mismos conteos y un original sintético de `imports/intermittency/` en una carpeta propia de Cloudinary salió en la exportación con su SHA-256 y en la comprobación de referencias. Falta, en la tarea T083 de la Feature 007, crear la clave de API dedicada a la exportación y activar el Backup de Cloudinary para `sarc-prod`.

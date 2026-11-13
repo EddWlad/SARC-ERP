@@ -47,5 +47,6 @@
 
 - Las seis historias están implementadas y verificadas con pruebas automatizadas, la regresión de Consumo, Uptime e Inventario, el rendimiento y la revisión en navegador (ver «Evidencia del cierre» en [quickstart.md](../quickstart.md)).
 - Las aclaraciones 16 a 21 de CC-PRD-008 están ratificadas por el responsable del producto.
-- **Pendiente para cerrar la feature**: la medición con una persona de SC-001, SC-008 y SC-010, y T131 (publicación, solo con la autorización del responsable).
+- **Publicada** en producción el 2026-11-13 con la aprobación del responsable (ver «Publicación» en [quickstart.md](../quickstart.md)).
+- **Cerrada con seguimiento aceptado** (2026-11-13): la medición con una persona de SC-001, SC-008 y SC-010 queda registrada en `docs/operacion/pendientes-recursos-reales.md`.
 
