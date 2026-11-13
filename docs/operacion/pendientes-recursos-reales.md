@@ -19,7 +19,7 @@ La tabla registra la evidencia de las verificaciones que dependen del VPS, los a
 | Recepción de cada aviso | Cuentas de GitHub y correo | Responsable y suplente según E0 | Registro de la prueba de recepción (`avisos.md`). La excepción de la primera instalación permite solo al responsable. | EddWlad confirmó los dos correos de prueba. Prueba de recepción vigente en el VPS. Falta el registro en el issue de GitHub. |
 | Detección de caída total del VPS | VPS y Healthchecks.io | Responsable técnico | Correo recibido en menos de 15 min tras apagar el VPS en ventana acordada | Pendiente |
 | Rendimiento con 30 usuarios | VPS | Responsable técnico | Medición registrada frente a los objetivos del TRD (p95 2 s) | Pendiente |
-| Descarga desde el computador local real | Computador designado | Responsable del producto | Siete días seguidos con recibo | El 2026-11-13 se instaló la cuenta `sarc-backup` (SFTP enjaulado) y una descarga manual verificó 7 copias y subió sus recibos; la puerta de frescura del servidor pasó. La tarea programada diaria quedó registrada el mismo día (03:30 hora local y al iniciar sesión; prueba manual con resultado 0). Faltan el latido `descarga-local` de Healthchecks y los siete días seguidos con recibo. |
+| Descarga desde el computador local real | Computador designado | Responsable del producto | Siete días seguidos con recibo | El 2026-11-13 se instaló la cuenta `sarc-backup` (SFTP enjaulado) y una descarga manual verificó 7 copias y subió sus recibos; la puerta de frescura del servidor pasó. La tarea programada diaria quedó registrada el mismo día (03:30 hora local y al iniciar sesión; prueba manual con resultado 0). El latido `descarga-local` de Healthchecks quedó configurado y probado el mismo día (comprobación en estado «up», periodo de 1 día, gracia de 2 h, aviso por correo). Faltan los siete días seguidos con recibo. |
 
 La protección de `main`, el entorno `production` y las versiones inmutables quedaron configurados en GitHub. El ensayo de restauración con tiempo medido se mantiene pendiente junto con los siete recibos diarios.
 
@@ -35,7 +35,11 @@ El 2026-11-07 se verificaron en Docker el arranque de Nginx con la configuració
 
 El JAR con perfil `prod` escuchó solo en loopback. La base de prueba quedó con 16 migraciones aplicadas, un usuario administrador, cinco roles en el catálogo y cero equipos. Al detener PostgreSQL, readiness respondió `DOWN` en 30,1 segundos. Al volver a iniciarlo, el mismo proceso Java respondió `UP` en 4,9 segundos. Tras detener y volver a arrancar Java, readiness respondió `UP` en 28,4 segundos y se conservaron el administrador y las migraciones.
 
-## Feature 008 (intermitencias): lo que falta con recursos reales
+## Feature 008 (intermitencias): publicada el 2026-11-13
+
+La versión `2026.11.13-35-9937edb` se publicó el 2026-11-13 con la aprobación del responsable y quedó `COMPLETADA` (ver «Publicación» en `specs/008-intermitencias-kia/quickstart.md`). Lo que sigue abierto: el ensayo de restauración oficial que pide el *issue* `ensayo-restauracion` (7 días), los siete días de recibos de descarga y la medición con una persona de SC-001, SC-008 y SC-010. Las viñetas siguientes son el historial de lo que faltaba antes de publicar.
+
+## Feature 008 (intermitencias): lo que faltaba con recursos reales
 
 - **Ensayo de V018 sobre una copia restaurada de producción**: hecho el 2026-11-13 con la copia manual del 2026-11-07 (V017, 29 tablas con el mismo conteo que los metadatos) en un PostgreSQL 18 desechable y un rol de aplicación no superusuario. V018 se aplicó en menos de 1 s, creó `btree_gist` y las tablas `itm_` sin cambiar las existentes. Ya no bloquea la primera versión candidata. La clave `age` se guarda protegida con DPAPI en el computador local autorizado, fuera del control de versiones.
 - **Restauración con datos de intermitencias y sus originales**: hecha el 2026-11-13 con datos sintéticos. La base se restauró con los mismos conteos y un original sintético de `imports/intermittency/` en una carpeta propia de Cloudinary salió en la exportación con su SHA-256 y en la comprobación de referencias. Falta, en la tarea T083 de la Feature 007, crear la clave de API dedicada a la exportación y activar el Backup de Cloudinary para `sarc-prod`.

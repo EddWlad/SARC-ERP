@@ -147,6 +147,16 @@ Sin datos reales, secretos ni la base de compose: todo corrió sobre PostgreSQL 
 - **Originales en Cloudinary (T127, 2026-11-13)**: se subió un archivo sintético a `sarc-qa008-t127/imports/intermittency/` (carpeta propia, vacía antes y después), `Exportar-Cloudinary.ps1` lo exportó con su SHA-256 igual al del original y la comprobación de referencias del ensayo de restauración lo encontró en el índice. El recurso se borró y los temporales también. `Ensayar-Restauracion.ps1` ahora incluye `itm_import_batch` en los historiales y en la muestra de referencias.
 - Sigue pendiente en la Feature 007 (T083) crear la clave de API dedicada a la exportación y activar el Backup de Cloudinary para `sarc-prod`; sin eso no se hace la primera exportación mensual real.
 
+## Publicación (2026-11-13)
+
+- **Versión**: `2026.11.13-35-9937edb` (commit `9937edb`, PR #8), creada por `version-candidata` con las seis comprobaciones de CI en verde. Se publicó con el flujo `publicar` en modo `normal`, con la aprobación del entorno `production` por el responsable del producto. Duración: unos 50 segundos.
+- **Comprobaciones previas**: bloqueo, sumas, configuración, prueba de recepción de avisos, certificado, copia local reciente, esquema y copia previa (`sarc-20261113T2312Z-previa`), todas en `ok`. Migración aplicada: `V018`.
+- **Comprobaciones posteriores**: disponibilidad, base de datos, versión, ingreso, usuarios, inventario, consumo, uptime, reportes y archivos, todas en `OK`; resultado `COMPLETADA`. SARC, PostgreSQL y Nginx activos; readiness `UP`.
+- **Datos existentes**: contra los metadatos de la copia previa, las 29 tablas existentes tienen los mismos conteos, salvo `flyway_schema_history` (17 a 18 por V018) y las dos tablas de sesión (la sesión de la verificación). Se crearon las seis tablas `itm_*`, vacías.
+- **Intermitencias con la cuenta técnica (rol `ASISTENTE`)**: el resumen responde 200 con 0 minutos confirmados, las ventanas responden 200 y la disponibilidad estimada responde 403 `AVAILABILITY_RESTRICTED`, como debe ser. Consumo e Inventario siguen respondiendo 200.
+- **Observación abierta**: las entradas de `deploy-history.jsonl` tienen `runId` y `approvedBy` vacíos; la aprobación consta en el historial de ejecuciones de GitHub Actions.
+- **Pendiente tras publicar**: el flujo abrió el *issue* #9 `ensayo-restauracion` `pendiente` (cambio crítico con migración); debe cerrarse con un ensayo aprobado en 7 días.
+
 ## Despliegue (solo como referencia; en esta etapa no se ejecuta)
 
 El despliegue sigue el flujo de Feature 007:
