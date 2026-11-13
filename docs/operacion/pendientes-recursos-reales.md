@@ -29,6 +29,24 @@ Lectura del VPS con acceso autorizado del responsable: `sarc`, `sarc-postgres` y
 
 Se encontró y corrigió que la cuenta `sarc-backup` no estaba instalada (sin jaula SFTP ni `received/`) y que `Descargar-CopiaSarc.ps1` tenía un error de argumentos que impedía su ejecución. Las dos puertas de publicación quedaron resueltas ese mismo día: el responsable del producto ratificó la excepción permanente de un solo responsable (decisión 9 de `decisiones-previas.md`), confirmó que recibe los avisos de GitHub y de Healthchecks, y la puerta de avisos pasa en modo normal, primera y verificar; el recibo de copia local se renueva con la tarea programada diaria. Para publicar queda además el certificado: la comprobación previa exige más de 72 h de vigencia y el actual vence el 2026-11-17, así que conviene publicar tras su renovación (hacia el 15 o 16). El historial de publicaciones tiene `runId` y `approvedBy` vacíos en las dos entradas.
 
+## Seguimiento aceptado al cerrar las Features 007 y 008 (2026-11-13)
+
+El responsable del producto cerró las Features 007 y 008 el 2026-11-13 con los cuatro controles siguientes como seguimiento aceptado. Ninguno bloquea el uso de SARC ni el trabajo de nuevas features. Cada uno tiene su condición de cierre y se tacha aquí cuando se cumple.
+
+| # | Control | Origen | Condición de cierre | Quién | Cuándo |
+|---|---|---|---|---|---|
+| 1 | Clave de API de Cloudinary dedicada a la exportación y primera exportación real de `sarc-prod` | Feature 007, T083 | Crear la clave en la consola de Cloudinary, ponerla en la configuración del computador local y ejecutar `Exportar-Cloudinary.ps1`. El Backup de Cloudinary de `sarc-prod` ya está activo. | Responsable del producto (consola) y Claude (configuración y prueba) | Antes de la primera exportación mensual |
+| 2 | Recorrido manual en el navegador y prueba de detección de caída | Feature 007, T085 | Iniciar sesión en SARC, recorrer cada módulo y descargar un archivo. Para la caída, detener el latido del VPS unos 12 minutos en una ventana acordada y confirmar el correo en menos de 15 minutos, sin tumbar la aplicación. | Responsable del producto | Cuando lo decida |
+| 3 | Siete días seguidos de recibos de descarga | Feature 007, T086 | Recibos diarios en `/var/backups/sarc/received/` desde el 2026-11-13 hasta el 2026-11-20 sin huecos, con el computador local encendido o con sesión iniciada | Responsable del producto | 2026-11-20 |
+| 4 | Medición con una persona de SC-001, SC-008 y SC-010 | Feature 008, quickstart | Cinco ventanas registradas en menos de 2 minutos; un día marcado como revisado en menos de 30 segundos; distinguir cifras oficiales, provisionales y rango en menos de 10 segundos | Responsable del producto | Con el primer uso real |
+
+Limitaciones conocidas que también quedan anotadas:
+
+- `deploy-history.jsonl` registra `runId` y `approvedBy` vacíos, porque la interfaz de despliegue solo pasa la versión. La aprobación consta en el historial de ejecuciones de GitHub Actions.
+- El recibo de copia local caduca a las 24 h: si el computador local no corre la tarea diaria, la puerta de copia local bloquea la siguiente publicación.
+- El certificado es de 6 días y se renueva solo; la comprobación previa de la publicación exige al menos 72 h de vigencia.
+- Sin suplente (decisión 9): no hay revisión independiente de las publicaciones.
+
 ## Evidencia aislada de recuperación
 
 El 2026-11-07 se verificaron en Docker el arranque de Nginx con la configuración de primera emisión, el 503 externo durante las comprobaciones HTTPS locales y el reinicio automático al detener su proceso. SARC conservó su frontend tras sustituir el índice de bienvenida de prueba y al reinstalar y recargar Nginx 1.24.0 en Ubuntu 24.04. PostgreSQL 18 recuperó una fila confirmada tras una parada inmediata y un reinicio explícito, usando un volumen desechable. Sigue pendiente el ensayo en VM con systemd, reinicio del sistema y cambio de versión del paquete de Nginx.

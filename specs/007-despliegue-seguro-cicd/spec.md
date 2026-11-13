@@ -2,7 +2,7 @@
 
 **Feature**: `007-despliegue-seguro-cicd`
 **Created**: 2026-11-06
-**Status**: Cerrada. Primera publicación en producción verificada el 2026-11-07. Los [controles operativos pendientes](../../docs/operacion/pendientes-recursos-reales.md) conservan su seguimiento. Las nuevas integraciones y publicaciones se gestionan desde Feature 008.
+**Status**: Cerrada con seguimiento aceptado (2026-11-13). Primera publicación en producción verificada el 2026-11-07 y segunda, con migración, el 2026-11-13. Los [controles que siguen abiertos](../../docs/operacion/pendientes-recursos-reales.md) (T083, T085 y T086) conservan su seguimiento con condición de cierre. Las nuevas integraciones y publicaciones se gestionan desde Feature 008.
 **Baseline**: `main` en `e85c910` (features 001–006 integradas). Esta feature no cambia reglas de negocio, permisos, importaciones, indicadores, historiales ni reportes.
 **Input**: Dejar definido cómo construir, verificar, publicar y recuperar SARC de forma segura y repetible para un futuro despliegue en un VPS de Contabo (6 vCPU, 12 GB de RAM, 200 GB SSD, Ubuntu, respaldo automático del proveedor). El despliegue real ocurrirá después, con el servidor contratado y una decisión explícita.
 
