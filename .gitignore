@@ -45,6 +45,11 @@ documents/Usuario y contraseña de SARC_Servidor.txt
 documents/Caracteristicas_Servidor.png
 documents/Costo_servidor.png
 
+# Feature 008: plantillas operativas reales de intermitencias. Traen los Codigos asignados reales de los puntos
+# de carga, que autorizan la carga: nunca se versionan (repositorio publico). Las pruebas usan datos sinteticos.
+documents/plantillas/Intermitencia_copiamos_nube.xlsx
+documents/plantillas/Informe_Intermitencias_*.xlsx
+
 # Feature 007: rutas de trabajo de los ensayos y copias de base de datos (nunca se versionan)
 deploy/tests/tmp/
 **/*.dump

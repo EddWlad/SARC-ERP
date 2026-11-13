@@ -204,7 +204,7 @@ Como operador que no participó en esta conversación, quiero procedimientos cla
 - **FR-036**: Los registros técnicos MUST permitir diagnosticar fallos (momento, nivel, módulo, identificador de seguimiento) sin incluir contraseñas, tokens, identificadores sensibles de equipos ni datos personales innecesarios.
 - **FR-037**: Los registros técnicos MUST conservarse por un plazo definido y rotarse; la auditoría funcional de SARC MUST NOT eliminarse por antigüedad.
 - **FR-038**: El responsable y su suplente MUST recibir aviso ante: verificación fallida, migración o publicación fallida (por las notificaciones de GitHub), y servicio caído, copia fallida o atrasada, certificado próximo a vencer o no renovado y espacio en disco bajo (por correo electrónico). Los avisos MUST NOT contener secretos ni datos personales innecesarios.
-- **FR-038a**: Antes de la primera publicación y tras cambiar al responsable, al suplente o el canal, MUST comprobarse la recepción de cada tipo de aviso (GitHub y correo) por los destinatarios designados, con fecha y resultado. Un aviso no recibido bloquea la publicación. Para la primera instalación y su verificación se permite temporalmente un único responsable si el producto aprobó y registró la excepción. En publicaciones normales se exigen las dos confirmaciones y revisión independiente tras incorporar al suplente.
+- **FR-038a**: Antes de la primera publicación y tras cambiar al responsable, al suplente o el canal, MUST comprobarse la recepción de cada tipo de aviso (GitHub y correo) por los destinatarios designados, con fecha y resultado. Un aviso no recibido bloquea la publicación. Para la primera instalación y su verificación se permite temporalmente un único responsable si el producto aprobó y registró la excepción. En publicaciones normales se exigen las dos confirmaciones y revisión independiente tras incorporar al suplente, salvo que el responsable del producto ratifique por escrito, mientras sea la única persona del equipo, la excepción permanente `un-solo-responsable` (decisión 9 de `docs/operacion/decisiones-previas.md`, 2026-11-13): un único responsable confirma todos los avisos y aprueba las publicaciones, sin revisión independiente.
 
 **Respaldos y recuperación**
 
@@ -291,7 +291,7 @@ Diferencias entre fuentes que deben conciliarse en el plan (no se resuelven aqu�
 
 ## Assumptions
 
-- La publicación real, la contratación del servidor, la creación de cuentas, certificados y secretos reales y cualquier restauración sobre producción quedan fuera de esta feature y requieren una decisión posterior explícita del responsable del producto.
+- La publicación real, la contratación del servidor, la creación de cuentas, certificados y secretos reales y cualquier restauración sobre producción quedan fuera del desarrollo de esta feature y requieren una decisión explícita del responsable del producto. Esa decisión se tomó y quedó registrada en `docs/operacion/decisiones-previas.md`: la etapa E7 del plan (T077 a T086) es la operación real autorizada.
 - La feature entrega una definición verificable (requisitos, procedimientos, criterios y, en fases posteriores, la automatización necesaria); el despliegue real y las comprobaciones que dependen del servidor real se cerrarán cuando exista el servidor.
 - La pérdida máxima de datos aceptada es de 24 horas (aclarado el 2026-11-06), en lugar de la hora que propone el TRD. Del TRD se toman como objetivos de partida la recuperación en 4 horas, la retención de 30 copias diarias y 12 mensuales y 30 días de registros técnicos, hasta que se ratifiquen o ajusten con evidencia de un ensayo; son metas, no garantías.
 - Para la capacidad inicial se toma como referencia la carga del TRD (30 usuarios simultáneos; 250.000 registros importados al mes), sin garantía hasta medirla en el servidor real.
@@ -315,7 +315,7 @@ Diferencias entre fuentes que deben conciliarse en el plan (no se resuelven aqu�
 ### Fuera de alcance
 
 - Cambiar reglas de negocio, permisos, importaciones, indicadores, historiales o reportes.
-- Contratar, configurar o conectarse al servidor; desplegar; ejecutar migraciones sobre datos reales; modificar la base local de desarrollo.
+- Contratar, configurar o conectarse al servidor; desplegar; ejecutar migraciones sobre datos reales; modificar la base local de desarrollo. (Salvo en la etapa E7, autorizada por escrito.)
 - Crear secretos, certificados, cuentas o permisos reales.
 - Definir la solución técnica detallada (archivos concretos de automatización, comandos, puertos, configuración de infraestructura): corresponde al plan técnico posterior.
 - Alta disponibilidad, balanceo de carga, varios servidores o herramientas de orquestación.
@@ -327,7 +327,7 @@ Diferencias entre fuentes que deben conciliarse en el plan (no se resuelven aqu�
 
 ### Decisiones operativas pendientes (etapa E0 del plan)
 
-No son ambigüedades funcionales sino decisiones del responsable del producto que deben registrarse por escrito antes de preparar el servidor:
+No son ambigüedades funcionales sino decisiones del responsable del producto que debían registrarse por escrito antes de preparar el servidor. **Resueltas y registradas en `docs/operacion/decisiones-previas.md` (T077, 2026-11-07).**
 
 1. **Visibilidad del repositorio**: hoy es público; decidir si pasa a privado o se mantiene público con las medidas del plan (R11).
 2. **Cuenta del servicio de supervisión**: titular, correo de la organización y aceptación de sus condiciones de uso comercial.

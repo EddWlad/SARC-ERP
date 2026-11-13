@@ -74,6 +74,16 @@ class EquipmentRepositoryAdapter implements EquipmentRepository {
 		return jpa.findBySerialIn(serials);
 	}
 
+	@Override
+	public List<Equipment> findByAssignedCodes(Collection<String> assignedCodes) {
+		return jpa.findByAssignedCodeIn(assignedCodes);
+	}
+
+	@Override
+	public List<Equipment> findKiaChargingPoints() {
+		return jpa.findByNetworkAndType(ChargingNetwork.KIA, InfrastructureType.CHARGING_POINT);
+	}
+
 	/**
 	 * Sin vaciado previo (COMMIT): al editar, el equipo ya tiene los identificadores nuevos en memoria y
 	 * el vaciado automatico los escribiria antes de la consulta, chocando con la restriccion UNIQUE en

@@ -125,3 +125,33 @@ preparar_avisos() {
 	run "$GATE" verificar
 	[ "$status" -eq 18 ]
 }
+
+@test "gate: la excepcion de un solo responsable pasa tambien en publicaciones normales" {
+	preparar_avisos
+	printf 'responsable_github=responsable\nsuplente_github=\nexcepcion_sin_suplente=un-solo-responsable\n' >"$SARC_AVISOS_CONF"
+	huella="$(sha256sum "$SARC_AVISOS_CONF" | cut -d' ' -f1)"
+	printf 'fecha=2026-11-20T10:00:00Z\nhuella=%s\nconfirmado=responsable\n' "$huella" >"$SARC_STATE_DIR/prueba-recepcion.ok"
+	run "$GATE" normal
+	[ "$status" -eq 0 ]
+	[[ "$output" == *"un solo responsable"* ]]
+	run "$GATE" primera
+	[ "$status" -eq 0 ]
+}
+
+@test "gate: un solo responsable sin su confirmacion devuelve 18" {
+	preparar_avisos
+	printf 'responsable_github=responsable\nsuplente_github=\nexcepcion_sin_suplente=un-solo-responsable\n' >"$SARC_AVISOS_CONF"
+	huella="$(sha256sum "$SARC_AVISOS_CONF" | cut -d' ' -f1)"
+	printf 'fecha=2026-11-20T10:00:00Z\nhuella=%s\n' "$huella" >"$SARC_STATE_DIR/prueba-recepcion.ok"
+	run "$GATE" normal
+	[ "$status" -eq 18 ]
+}
+
+@test "gate: con suplente designado la excepcion de un solo responsable ya no exime" {
+	preparar_avisos
+	printf 'responsable_github=responsable\nsuplente_github=suplente\nexcepcion_sin_suplente=un-solo-responsable\n' >"$SARC_AVISOS_CONF"
+	huella="$(sha256sum "$SARC_AVISOS_CONF" | cut -d' ' -f1)"
+	printf 'fecha=2026-11-20T10:00:00Z\nhuella=%s\nconfirmado=responsable\n' "$huella" >"$SARC_STATE_DIR/prueba-recepcion.ok"
+	run "$GATE" normal
+	[ "$status" -eq 18 ]
+}

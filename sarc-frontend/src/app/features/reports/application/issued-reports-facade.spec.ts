@@ -36,7 +36,9 @@ describe('IssuedReportsFacade', () => {
     const { facade } = setup({});
 
     expect(kindLabel('UPTIME')).toBe('Uptime');
+    expect(kindLabel('INTERMITTENCY')).toBe('Intermitencias');
     expect(REPORT_KINDS).toContain('UPTIME');
+    expect(REPORT_KINDS).toContain('INTERMITTENCY');
     facade.filterKind('UPTIME');
     expect(facade.kind()).toBe('UPTIME');
   });

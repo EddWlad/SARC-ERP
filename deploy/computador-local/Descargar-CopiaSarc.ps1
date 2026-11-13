@@ -39,7 +39,7 @@ function Invoke-Sftp([string[]]$Commands) {
     $batch = Join-Path $script:Temp 'lote.sftp'
     Set-Content -Path $batch -Value $Commands -Encoding ASCII
     $sftpArgs = @('-b', $batch, '-i', $script:Config.sshKeyFile, '-P', [string]$script:Config.port,
-        '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'UserKnownHostsFile=' + $script:Config.knownHostsFile,
+        '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', ('UserKnownHostsFile=' + $script:Config.knownHostsFile),
         ('{0}@{1}' -f $script:Config.user, $script:Config.host))
     $out = & sftp.exe @sftpArgs 2>&1
     if ($LASTEXITCODE -ne 0) { throw 'fallo de SFTP' }
@@ -51,6 +51,8 @@ if (-not (Test-Path -LiteralPath $ConfigPath)) {
     exit 12
 }
 $script:Config = Get-Content -LiteralPath $ConfigPath -Raw | ConvertFrom-Json
+# Carpeta opcional con age.exe: la tarea programada no hereda el PATH del usuario.
+if ($script:Config.binDir) { $env:Path = $script:Config.binDir + ';' + $env:Path }
 $dest = $script:Config.destDir
 $daily = Join-Path $dest 'diarias'
 $monthly = Join-Path $dest 'mensuales'

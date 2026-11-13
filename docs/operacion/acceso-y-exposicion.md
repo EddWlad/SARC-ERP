@@ -65,6 +65,19 @@ En `~sarc-deploy/.ssh/authorized_keys` la línea de la clave pública de GitHub 
 command="/usr/local/sbin/sarc-deploy-ssh-wrapper",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty <clave pública de despliegue>
 ```
 
+Instalación de la cuenta `sarc-backup` (solo SFTP enjaulado; instalada en producción el 2026-11-13):
+
+```bash
+sudo install -d -o sarc-backup -g sarc-backup -m 0750 /var/backups/sarc/received
+sudo install -m 0644 -o root -g root deploy/sshd/10-sarc-backup.conf /etc/ssh/sshd_config.d/10-sarc-backup.conf
+# La línea de la clave pública del computador local lleva el prefijo `restrict `:
+echo 'restrict <clave pública de sarc-backup>' | sudo tee /etc/ssh/sarc-backup.authorized_keys >/dev/null
+sudo chmod 0644 /etc/ssh/sarc-backup.authorized_keys
+sudo sshd -t && sudo systemctl reload ssh
+```
+
+Resultado esperado: `sftp sarc-backup@<IP>` lista las copias y `received/`; `ssh sarc-backup@<IP> id` responde «This service allows sftp connections only». `/var/backups/sarc` debe seguir siendo propiedad de root y sin escritura para el grupo (requisito de `ChrootDirectory`). Si `sshd -t` falla, no recargar: retirar el archivo de `sshd_config.d`.
+
 ## Alta, baja y rotación de claves
 
 - **Alta**: añadir la clave pública de la persona a `~/.ssh/authorized_keys` de su cuenta personal (el responsable lo hace con su propia sesión). Registrar fecha y persona.

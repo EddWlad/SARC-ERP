@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tidsec.sarc_bakend.modules.reporting.domain.model.IssuedReport;
+import com.tidsec.sarc_bakend.modules.reporting.domain.model.IssuedReportKinds;
 import com.tidsec.sarc_bakend.modules.reporting.domain.repository.IssuedReportRepository;
 import com.tidsec.sarc_bakend.shared.audit.ContentFingerprint;
 import com.tidsec.sarc_bakend.shared.error.NotFoundException;
@@ -53,7 +54,7 @@ public class IssuedReportService {
 	public ReportFile download(UUID id) {
 		IssuedReport report = reports.findById(id)
 				.orElseThrow(() -> new NotFoundException("ISSUED_REPORT_NOT_FOUND", "El reporte no existe"));
-		if ("CONSUMPTION".equals(report.getKind()) && report.getContentProfile() != ReportContentProfile.OFFICIAL_ONLY
+		if (IssuedReportKinds.restrictable(report.getKind()) && report.getContentProfile() != ReportContentProfile.OFFICIAL_ONLY
 				&& !access.canReadOperational()) {
 			throw new OperationalAccessDeniedException("REPORT_OPERATIONAL_CONTENT_RESTRICTED",
 					"Este informe contiene información operativa restringida para tus roles. Puedes emitir un nuevo "

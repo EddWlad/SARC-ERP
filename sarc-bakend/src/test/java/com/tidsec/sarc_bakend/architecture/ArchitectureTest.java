@@ -53,4 +53,29 @@ class ArchitectureTest {
 	static final ArchRule modules_do_not_touch_each_other_directly = slices()
 			.matching("..modules.(*)..")
 			.should().notDependOnEachOther();
+
+	/** Feature 008: intermitencias solo conoce el kernel compartido y los puertos de shared.catalog. */
+	@ArchTest
+	static final ArchRule intermittency_depends_only_on_the_shared_kernel = noClasses()
+			.that().resideInAPackage("..modules.intermittency..")
+			.should().dependOnClassesThat().resideInAnyPackage("..modules.consumption..", "..modules.inventory..",
+					"..modules.uptime..", "..modules.identity..", "..modules.reporting..");
+
+	@ArchTest
+	static final ArchRule intermittency_domain_is_free_of_web_and_infrastructure = noClasses()
+			.that().resideInAPackage("..modules.intermittency.domain..")
+			.should().dependOnClassesThat().resideInAnyPackage("org.springframework.web..",
+					"..modules.intermittency.infrastructure..", "..modules.intermittency.application..",
+					"..modules.intermittency.api..");
+
+	/** FR-047: las cifras de uptime no se mezclan con las de intermitencias, en ninguna direccion. */
+	@ArchTest
+	static final ArchRule uptime_and_intermittency_do_not_import_each_other = noClasses()
+			.that().resideInAPackage("..modules.uptime..")
+			.should().dependOnClassesThat().resideInAPackage("..modules.intermittency..");
+
+	@ArchTest
+	static final ArchRule intermittency_does_not_import_uptime = noClasses()
+			.that().resideInAPackage("..modules.intermittency..")
+			.should().dependOnClassesThat().resideInAPackage("..modules.uptime..");
 }

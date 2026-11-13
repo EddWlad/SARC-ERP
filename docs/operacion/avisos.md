@@ -27,14 +27,14 @@ Qué avisos existen, cómo llegan al **responsable y al suplente** y cómo se co
 
 ## Configurar responsable y suplente
 
-Para el primer arranque y su verificación se admite la excepción temporal registrada en `decisiones-previas.md`. El titular conserva la aprobación obligatoria y confirma todos los avisos. `SARC_SUPLENTE` queda vacío hasta designar a la segunda persona. Las publicaciones normales requieren las dos confirmaciones.
+Para el primer arranque y su verificación se admite la excepción temporal registrada en `decisiones-previas.md`. El titular conserva la aprobación obligatoria y confirma todos los avisos. `SARC_SUPLENTE` queda vacío hasta designar a la segunda persona. Las publicaciones normales requieren las dos confirmaciones, salvo la excepción permanente `un-solo-responsable` ratificada el 2026-11-13 (decisión 9 de `decisiones-previas.md`) mientras no exista una segunda persona.
 
 1. **Variables de repositorio de GitHub**: `SARC_RESPONSABLE` y `SARC_SUPLENTE` con sus usuarios de GitHub (sin `@`). Los flujos los mencionan y asignan en los *issues*.
 2. **Healthchecks.io**: en cada comprobación de la tabla, añadir a ambas personas como destinatarias del correo (integración de correo). Definir el periodo y la gracia indicados.
 3. **GitHub**: ambas personas deben tener activadas las notificaciones por correo *participating* (menciones y asignaciones). Es la forma de que un *issue* o comentario llegue por correo.
 4. **`/etc/sarc/avisos.conf`** (en el VPS, fuera del repositorio): lista los destinatarios y los canales vigentes. Su huella SHA-256 liga la prueba de recepción: si cambia, la prueba deja de ser vigente.
 
-En `avisos.conf`, declarar `responsable_github=<login>` y `suplente_github=<login>`. Durante la excepción, dejar `suplente_github=` y añadir `excepcion_sin_suplente=primera-instalacion`. Al incorporar al suplente, asignar su login, retirar la excepción y repetir la prueba con ambos.
+En `avisos.conf`, declarar `responsable_github=<login>` y `suplente_github=<login>`. Durante la excepción, dejar `suplente_github=` y añadir `excepcion_sin_suplente=primera-instalacion`. Con la excepción permanente de un solo responsable, dejar `suplente_github=` y declarar `excepcion_sin_suplente=un-solo-responsable`. Al incorporar al suplente, asignar su login, retirar la excepción, activar «Prevent self-review» y repetir la prueba con ambos.
 
 Resultado esperado: cualquier fallo de la tabla notifica a las dos personas por al menos un canal en el plazo indicado.
 

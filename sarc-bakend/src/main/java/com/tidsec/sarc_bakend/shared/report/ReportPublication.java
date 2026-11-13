@@ -17,9 +17,14 @@ public record ReportPublication(ReportContentProfile profile, Instant cutOff, Ma
 	public static final String TIME_ZONE = "America/Guayaquil";
 
 	private static final Set<String> KEYS = Set.of("from", "to", "network", "type", "source", "equipmentId", "timeZone",
-			"periodKind", "periodType", "brand", "connectorId", "selectionBasis", "referenceWeek", "temporalSection");
+			"periodKind", "periodType", "brand", "connectorId", "selectionBasis", "referenceWeek", "temporalSection",
+			"periodPreset", "equipmentIds");
 	private static final Set<String> PERIOD_KINDS = Set.of("OFFICIAL", "PROVISIONAL", "NONE");
 	private static final Set<String> PERIOD_TYPES = Set.of("ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK");
+	/** Periodos del dashboard de intermitencias; es una lista propia: no se mezcla con los de Uptime. */
+	private static final Set<String> PERIOD_PRESETS = Set.of("FIRST_HALF", "SECOND_HALF", "LAST_15_DAYS", "CUSTOM");
+	/** Puntos de un reporte de intermitencias: identificadores separados por comas. */
+	private static final int MAX_EQUIPMENT_IDS = 200;
 
 	public ReportPublication {
 		Objects.requireNonNull(profile);
@@ -64,6 +69,18 @@ public record ReportPublication(ReportContentProfile profile, Instant cutOff, Ma
 		}
 		if (criteria.containsKey("periodType") && !PERIOD_TYPES.contains(criteria.get("periodType"))) {
 			throw new IllegalArgumentException("Tipo de periodo inválido");
+		}
+		if (criteria.containsKey("periodPreset") && !PERIOD_PRESETS.contains(criteria.get("periodPreset"))) {
+			throw new IllegalArgumentException("Periodo predefinido inválido");
+		}
+		if (criteria.containsKey("equipmentIds")) {
+			String[] ids = criteria.get("equipmentIds").split(",", -1);
+			if (ids.length > MAX_EQUIPMENT_IDS) {
+				throw new IllegalArgumentException("Demasiados equipos en el reporte");
+			}
+			for (String id : ids) {
+				UUID.fromString(id);
+			}
 		}
 		if (criteria.containsKey("brand") && criteria.get("brand").isBlank()) {
 			throw new IllegalArgumentException("Marca inválida");

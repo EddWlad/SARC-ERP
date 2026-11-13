@@ -30,6 +30,11 @@ Dependencias: `api -> application -> domain <- infrastructure`.
 - `api`: controladores y DTOs `record`. Nunca devuelve entidades JPA.
 - Un modulo no importa clases de otro modulo; se comunican por puertos publicos (`shared/catalog`, implementados por el modulo duenio) o eventos.
 
+## Modulos
+
+- `identity`, `inventory`, `consumption`, `uptime`, `reporting` e `intermittency` (Feature 008). Ninguno importa clases de otro: se comunican por puertos de `shared/catalog`.
+- `intermittency` registra y consulta las ventanas de intermitencia de los puntos de carga KIA (captura manual e importacion con vista previa editable), calcula el tablero y emite PDF y Excel. Resuelve los puntos por el puerto `KiaPointDirectory` (lo implementa Inventario) y archiva sus informes por `ReportArchive`. La disponibilidad estimada de prueba es solo para Administrador y Analista (`IntermittencyPermissions.AVAILABILITY`) y nunca se mezcla con Uptime. Ver `docs/adr/0013-modulo-intermitencias.md`.
+
 ## Organizacion de paquetes
 
 - Dentro de cada capa se agrupa por **rol**, nunca por construccion de Java: no hay carpetas `records/` ni `enums/`. Un enum va junto al modelo que describe (`Role`, `UserStatus` en `domain/model`); un record va donde su rol (`request`, `response`, `command`, value object en `model`, `*Properties` en `config`).

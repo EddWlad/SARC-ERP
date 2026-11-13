@@ -5,12 +5,13 @@ export type IssuedReport = IssuedReportResponse;
 export type IssuedReportPage = PageResultIssuedReportResponse;
 
 /** Tipos de reporte que se archivan; el backend usa el modulo que lo emitio. */
-export type ReportKind = 'CONSUMPTION' | 'INVENTORY' | 'UPTIME';
+export type ReportKind = 'CONSUMPTION' | 'INVENTORY' | 'UPTIME' | 'INTERMITTENCY';
 
 export const KIND_LABELS: Readonly<Record<ReportKind, string>> = {
   CONSUMPTION: 'Consumo',
   INVENTORY: 'Inventario',
   UPTIME: 'Uptime',
+  INTERMITTENCY: 'Intermitencias',
 };
 
 export const REPORT_KINDS = Object.keys(KIND_LABELS) as readonly ReportKind[];

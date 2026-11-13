@@ -22,6 +22,12 @@ public interface EquipmentRepository {
 	/** Series ya normalizadas; incluye inactivos y eliminados. */
 	List<Equipment> findBySerials(Collection<String> serials);
 
+	/** Codigos asignados tal como estan guardados; incluye cualquier red, tipo y estado. */
+	List<Equipment> findByAssignedCodes(Collection<String> assignedCodes);
+
+	/** Todos los puntos de carga de la red KIA, tambien inactivos y eliminados. */
+	List<Equipment> findKiaChargingPoints();
+
 	/**
 	 * Equipos que ya usan alguno de estos identificadores (serie, codigo asignado o UID/PUK),
 	 * incluidos inactivos y eliminados, porque la unicidad es global.

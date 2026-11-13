@@ -72,6 +72,30 @@ class IssuedReportAccessApiTest {
 	}
 
 	@Test
+	void intermittencyOriginalsWithOperationsAreRestrictedLikeConsumptionAndOfficialOnesAreNot() throws Exception {
+		when(storage.readDocument("private-reference")).thenReturn(original);
+		UUID restricted = report("INTERMITTENCY", "WITH_OPERATIONS");
+		UUID official = report("INTERMITTENCY", "OFFICIAL_ONLY");
+
+		for (String role : List.of("GERENTE", "SUPERVISOR", "ASISTENTE"))
+			mvc.perform(get("/api/v1/reports/issued/" + restricted + "/download").with(user("qa").roles(role)))
+					.andExpect(status().isForbidden())
+					.andExpect(jsonPath("$.code").value("REPORT_OPERATIONAL_CONTENT_RESTRICTED"))
+					.andExpect(jsonPath("$.action").value("ISSUE_MANAGERIAL_REPORT"));
+		verify(storage, never()).readDocument(anyString());
+
+		mvc.perform(get("/api/v1/reports/issued/" + official + "/download").with(user("qa").roles("GERENTE")))
+				.andExpect(status().isOk()).andExpect(content().bytes(original));
+		mvc.perform(get("/api/v1/reports/issued/" + restricted + "/download").with(user("qa").roles("ANALISTA")))
+				.andExpect(status().isOk()).andExpect(content().bytes(original));
+		mvc.perform(get("/api/v1/reports/issued").with(user("qa").roles("GERENTE"))).andExpect(status().isOk())
+				.andExpect(jsonPath("$.content[?(@.id=='" + restricted + "')].canDownload").value(false))
+				.andExpect(jsonPath("$.content[?(@.id=='" + restricted + "')].accessReason")
+						.value("REPORT_OPERATIONAL_CONTENT_RESTRICTED"))
+				.andExpect(jsonPath("$.content[?(@.id=='" + official + "')].canDownload").value(true));
+	}
+
+	@Test
 	void allowedCopiesAreExactAuthenticatedBinaryWithoutProviderUrl() throws Exception {
 		when(storage.readDocument("private-reference")).thenReturn(original);
 		for (String kind : List.of("CONSUMPTION", "INVENTORY")) {
