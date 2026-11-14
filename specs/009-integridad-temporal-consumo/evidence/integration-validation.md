@@ -134,7 +134,7 @@ Estados: **Cumple** = verificado con prueba automatizada, ensayo o recorrido reg
 
 Ninguno bloquea el flujo de publicación de Feature 007.
 
-1. **Issue #15** (`ensayo-restauracion`, abierto por la publicación `2026.11.14-43-3549f18`): espera un ensayo de restauración sobre una copia posterior a V020 (por ejemplo `sarc-20261114T1553Z-previa` o la nocturna siguiente). El #13 se cerró con el informe de T041.
+1. **Issues de ensayo**: #13 y #15 cerrados con `aprobado` (ver «Ensayo de restauración posterior a V020»). No queda ningún `ensayo-restauracion` abierto.
 2. **gitleaks**: no está instalado en este equipo. Lo ejecuta el CI y `version-candidata.yml` al publicar; la búsqueda manual en los artefactos dio 0 coincidencias.
 3. **Referencias a archivos de Cloudinary** en el ensayo de restauración: quedaron «pendiente de ensayar con la exportación». Requiere el índice de exportación dedicado (ya figura en `docs/operacion/pendientes-recursos-reales.md`).
 4. **Uptime e Intermitencias**: el patrón B2 (un refresco fallido vacía la vista) quedó registrado y sin intervenir, para coordinarlo con el responsable de Feature 008.
@@ -156,4 +156,10 @@ Autorizada por el responsable en el chat («Haz todo esto por favor pero bien re
 
 **Datos antes y después (solo lectura).** Iguales en todo salvo la migración (19 a 20): 16 537 sesiones `VALIDATED` con 318 452,720 kWh, desplazamientos de origen sin cambio (Enerlink 0: 717, Enerlink −300: 11 300, Wallbox −300: 4 520), la misma huella MD5 de identificador, fecha de inicio e instantes de todas las sesiones, 38 lotes, 38 021 filas, 233 equipos, 4 usuarios y 3 reportes. Después de V020: 0 bajas, 0 fines con desplazamiento propio y `deleted_rows = 0` en los 38 lotes.
 
-**Seguimiento.** El flujo abrió el issue #15 (`ensayo-restauracion` `pendiente`) por la migración aplicada. Se cierra con un ensayo sobre una copia posterior a V020.
+**Seguimiento.** El flujo abrió el issue #15 (`ensayo-restauracion` `pendiente`) por la migración aplicada.
+
+### Ensayo de restauración posterior a V020 (2026-11-14)
+
+La copia previa de la publicación (`sarc-20261114T1553Z-previa`) se toma antes de migrar y queda en V019, así que se creó una copia manual en el VPS con `sarc-backup manual`: `sarc-20261114T1821Z-manual.dump.age` (creada 2026-11-14T18:21:15Z, V020). La tarea local «SARC - Descargar copia de PostgreSQL» la descargó y verificó (suma SHA-256, `pg_restore --list`, recibo enviado).
+
+`Ensayar-Restauracion.ps1` dio `APROBADO (7/7)` en 0,2 min frente a un objetivo de 4 h. Pasaron: aislamiento, `pg_restore`, V020 igual a los metadatos, conteos de todas las tablas, auditoría (499 eventos) e historiales de importación (40 lotes). Las referencias a archivos siguen «pendiente de ensayar con la exportación» (sin índice de exportación de Cloudinary). El script destruyó el entorno y el puerto 55432 quedó libre. El informe, sin datos de filas, se pegó en el issue #15, que se cerró con la etiqueta `aprobado`.
