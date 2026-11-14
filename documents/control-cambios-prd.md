@@ -2,7 +2,7 @@
 
 ## CC-PRD-009-20261113 — Consumo: fecha de la fuente, acciones por sesión y vistas estables
 
-**Estado:** precisiones especificadas en `specs/009-integridad-temporal-consumo/spec.md` (aclaraciones del 2026-11-11 y del 2026-11-13). La atribución por fecha de la fuente se publicó como hotfix el 2026-11-14 (`2026.11.14-41-793e92f`, V019). Las acciones por sesión (US3) y la estabilidad visual (US4) están en implementación. El PDF maestro aprobado permanece intacto.
+**Estado:** precisiones especificadas en `specs/009-integridad-temporal-consumo/spec.md` (aclaraciones del 2026-11-11 y del 2026-11-13). La atribución por fecha de la fuente se publicó como hotfix el 2026-11-14 (`2026.11.14-41-793e92f`, V019). Las acciones por sesión (US3), el fin de origen (US1) y la estabilidad visual (US4) se publicaron el 2026-11-14 (`2026.11.14-43-3549f18`, V020). El PDF maestro aprobado permanece intacto.
 
 **Base:** PRD v1.1 §3.2, §7.1–7.3 y §11 (RF-003, en especial RF-003.10, atribución por inicio), TRD 03.3 (zona de operación) y Feature 002 (importación y revisión de sesiones).
 

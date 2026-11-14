@@ -83,7 +83,7 @@ Script del ensayo: contenedor `postgres:18` desechable en `127.0.0.1`, con contr
 
 **Limpieza.** Se destruyeron el contenedor y su volumen, el registro de la aplicación y los puertos 55434 y 18080. No quedó ningún volcado descifrado en disco.
 
-**Pendiente fuera del repositorio.** El issue #13 (`ensayo-restauracion`, abierto por la publicación del hotfix) puede cerrarse con el informe de restauración de arriba. Hacerlo es una acción en GitHub y espera la autorización del responsable.
+**Issue #13.** Cerrado el 2026-11-14 con este informe (`APROBADO (7/7)`) y la etiqueta `aprobado`, con autorización del responsable.
 
 ## T043 · Trazabilidad (2026-11-14)
 
@@ -134,10 +134,26 @@ Estados: **Cumple** = verificado con prueba automatizada, ensayo o recorrido reg
 
 Ninguno bloquea el flujo de publicación de Feature 007.
 
-1. **Issue #13** (`ensayo-restauracion`): se puede cerrar con el informe `APROBADO (7/7)` de T041. Es una acción en GitHub y espera autorización.
+1. **Issue #15** (`ensayo-restauracion`, abierto por la publicación `2026.11.14-43-3549f18`): espera un ensayo de restauración sobre una copia posterior a V020 (por ejemplo `sarc-20261114T1553Z-previa` o la nocturna siguiente). El #13 se cerró con el informe de T041.
 2. **gitleaks**: no está instalado en este equipo. Lo ejecuta el CI y `version-candidata.yml` al publicar; la búsqueda manual en los artefactos dio 0 coincidencias.
 3. **Referencias a archivos de Cloudinary** en el ensayo de restauración: quedaron «pendiente de ensayar con la exportación». Requiere el índice de exportación dedicado (ya figura en `docs/operacion/pendientes-recursos-reales.md`).
 4. **Uptime e Intermitencias**: el patrón B2 (un refresco fallido vacía la vista) quedó registrado y sin intervenir, para coordinarlo con el responsable de Feature 008.
 5. **360 px**: el último filtro de las barras con número impar de campos ocupa media fila (`ui-harmony.md`).
 6. **Exportación de Enerlink**: conviene exportar siempre con la misma zona. Una sesión de un lote UTC reimportada desde un archivo UTC-05:00 queda como modificada y requiere resolverla (`hotfix.md`).
-7. **Publicación**: el cambio sigue sin commit en `feat/009-integridad-temporal-consumo`. La versión candidata real la genera `version-candidata.yml` al entrar en `main`, y `sarc-deploy.sh` crea su copia previa antes de aplicar V020.
+7. **Publicación**: hecha el 2026-11-14 (ver «Publicación en producción» abajo).
+
+## Publicación en producción (2026-11-14)
+
+Autorizada por el responsable en el chat («Haz todo esto por favor pero bien revisado, la app de produccion debe seguir funcionando»).
+
+**Antes de integrar.** Revisión del diff: sin secretos (las contraseñas que aparecen son de pruebas) y sin códigos reales de puntos de carga. Backend `./mvnw verify` con 904 pruebas, 0 fallos. Frontend: tipos al día con OpenAPI, `lint`, `format:check`, 509 pruebas y build inicial de 347,80 kB.
+
+**Integración.** PR #14 (commit `20d8bb0`, que incluye el registro del hotfix `2dd7dac`) con CI verde en sus 6 trabajos, fusionado en `main` como `3549f18`. Versión candidata `2026.11.14-43-3549f18`: `migrations.latest = V020`, los 6 controles en `success`, `manifest.json` verificado con `SHA256SUMS`.
+
+**Requisitos de la puerta.** Prueba de recepción de avisos vigente (`sarc-alerts-gate` código 0), recibo de copia local de hace 6 h (`sarc-backup-freshness` código 0), certificado con más de 72 h (vence 2026-11-17 22:18 UTC), disco al 3 % y sin errores de la aplicación en 24 h.
+
+**Publicación.** Flujo «Publicar» #5 (ejecución `43611644586`), modo `normal`, aprobado en el entorno `production`. `sarc-deploy`: 15:53:04Z a 15:53:43Z, `COMPLETADA`, `migrationsApplied = [V020]` (183 ms), copia previa `sarc-20261114T1553Z-previa.dump.age`. Las 10 comprobaciones posteriores dieron OK (disponibilidad, base de datos, versión, ingreso, usuarios, inventario, consumo, uptime, reportes, archivos). La aplicación arrancó en 20,8 s, sin reinicios (`NRestarts=0`). El código 143 del registro es la parada planificada de la versión anterior.
+
+**Datos antes y después (solo lectura).** Iguales en todo salvo la migración (19 a 20): 16 537 sesiones `VALIDATED` con 318 452,720 kWh, desplazamientos de origen sin cambio (Enerlink 0: 717, Enerlink −300: 11 300, Wallbox −300: 4 520), la misma huella MD5 de identificador, fecha de inicio e instantes de todas las sesiones, 38 lotes, 38 021 filas, 233 equipos, 4 usuarios y 3 reportes. Después de V020: 0 bajas, 0 fines con desplazamiento propio y `deleted_rows = 0` en los 38 lotes.
+
+**Seguimiento.** El flujo abrió el issue #15 (`ensayo-restauracion` `pendiente`) por la migración aplicada. Se cierra con un ensayo sobre una copia posterior a V020.
