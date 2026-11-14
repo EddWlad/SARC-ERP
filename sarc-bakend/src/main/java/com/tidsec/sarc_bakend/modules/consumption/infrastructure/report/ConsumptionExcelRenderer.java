@@ -1,6 +1,8 @@
 package com.tidsec.sarc_bakend.modules.consumption.infrastructure.report;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,9 +29,11 @@ import com.tidsec.sarc_bakend.shared.report.ReportFormat;
 @Component
 class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 
-	private static final List<String> SESSION_HEADERS = List.of("ID sesión", "Fuente", "Inicio", "Término",
-			"Día de conteo", "kWh", "Equipo", "Código", "Red", "Tipo", "Activo (origen)", "Cargador (origen)",
+	private static final List<String> SESSION_HEADERS = List.of("ID sesión", "Fuente", "Inicio (hora de la fuente)",
+			"Término (hora de la fuente)", "Fecha de inicio según la fuente", "kWh", "Equipo", "Código", "Red", "Tipo", "Activo (origen)", "Cargador (origen)",
 			"Serie (origen)", "Conector (origen)", "Excepción de energía", "Justificación");
+
+	private static final DateTimeFormatter SOURCE_TIME = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
 	private final CorporateBranding branding;
 	private final DateTimeFormatter dateTime;
@@ -57,7 +61,7 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 								.map(share -> List.<Object>of(share.dimension(), share.category(), share.sessions(),
 										energy(share.energyKwh())))
 								.toList())
-				.sheet("Diario", "Consumo por día de inicio", List.of("Fecha", "Sesiones", "kWh"),
+				.sheet("Diario", "Consumo por fecha de inicio según la fuente", List.of("Fecha", "Sesiones", "kWh"),
 						report.summary().daily().stream()
 								.map(day -> List.<Object>of(ConsumptionLabels.DAY.format(day.date()), day.sessions(),
 										energy(day.energyKwh())))
@@ -126,7 +130,7 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 		EnergySession session = view.session();
 		SessionReading reading = session.reading();
 		List<Object> row = new ArrayList<>(List.of(session.getExternalSessionId(), ConsumptionLabels.of(session.getSource()),
-				dateTime.format(session.getStartedAt()), ended(session),
+				sourceTime(session.getStartedAt(), reading), ended(session, reading),
 				ConsumptionLabels.DAY.format(session.getStartDate()), reported(session.getEnergyKwh()),
 				ConsumptionLabels.name(view.equipment()), ConsumptionLabels.code(view.equipment()),
 				ConsumptionLabels.network(view.equipment()), DomainLabels.of(session.getInfrastructureType()),
@@ -148,8 +152,21 @@ class ConsumptionExcelRenderer implements ConsumptionReportRenderer {
 		return value == null ? ConsumptionLabels.NOT_REPORTED : value;
 	}
 
-	private String ended(EnergySession session) {
-		return session.getEndedAt() == null ? ConsumptionLabels.NOT_REPORTED : dateTime.format(session.getEndedAt());
+	private String ended(EnergySession session, SessionReading reading) {
+		return session.getEndedAt() == null ? ConsumptionLabels.NOT_REPORTED : sourceTime(session.getEndedAt(), reading);
+	}
+
+	/**
+	 * Hora tal como la escribio la fuente, con segundos y su desplazamiento (Feature 009, FR-002). Sin
+	 * desplazamiento de origen conocido se muestra en la zona de operacion, como antes.
+	 */
+	private String sourceTime(Instant instant, SessionReading reading) {
+		ZoneOffset offset = reading.sourceOffset();
+		if (offset == null) {
+			return dateTime.format(instant);
+		}
+		return SOURCE_TIME.format(instant.atOffset(offset)) + " (UTC" + (offset.getTotalSeconds() == 0 ? "+00:00"
+				: offset.getId()) + ")";
 	}
 
 	private static String text(String value) {

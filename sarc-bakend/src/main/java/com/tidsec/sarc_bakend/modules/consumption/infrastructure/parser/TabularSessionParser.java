@@ -90,8 +90,9 @@ abstract class TabularSessionParser implements SessionReportParser {
 		if (!issues.isEmpty()) {
 			return new ParsedSession(row.number(), blankToNull(id), null, fields.lookup(), issues);
 		}
+		// La fecha que vale es la que escribio la fuente: se guarda su desplazamiento en el inicio.
 		SessionReading reading = new SessionReading(start, end, energy, fields.site(), fields.charger(),
-				fields.serial(), fields.connector());
+				fields.serial(), fields.connector(), zone.getRules().getOffset(start));
 		issues.addAll(SessionRules.check(reading));
 		return new ParsedSession(row.number(), id,
 				issues.stream().anyMatch(SessionRules::isBlocking) ? null : reading, fields.lookup(), issues);

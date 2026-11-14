@@ -9,6 +9,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionReading;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SourceOffsets;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentReference;
 import com.tidsec.sarc_bakend.shared.domain.ChargingNetwork;
 import com.tidsec.sarc_bakend.shared.domain.InfrastructureType;
@@ -65,6 +66,10 @@ public class ImportRow {
 
 	@Column(updatable = false, length = 150)
 	private String sourceConnector;
+
+	/** Desplazamiento UTC en minutos declarado por la fuente para el inicio (Feature 009). */
+	@Column(updatable = false)
+	private Integer sourceUtcOffsetMinutes;
 
 	@Column(updatable = false)
 	private UUID equipmentId;
@@ -137,6 +142,7 @@ public class ImportRow {
 		row.sourceCharger = reading.charger();
 		row.sourceSerial = reading.serial();
 		row.sourceConnector = reading.connector();
+		row.sourceUtcOffsetMinutes = SourceOffsets.toMinutes(reading.sourceOffset());
 		if (equipment != null) {
 			row.equipmentId = equipment.id();
 			row.network = equipment.network();
@@ -203,7 +209,7 @@ public class ImportRow {
 
 	public SessionReading reading() {
 		return new SessionReading(startedAt, endedAt, energyKwh, sourceSite, sourceCharger, sourceSerial,
-				sourceConnector);
+				sourceConnector, SourceOffsets.toOffset(sourceUtcOffsetMinutes));
 	}
 
 	/**
@@ -237,6 +243,10 @@ public class ImportRow {
 
 	public Instant getStartedAt() {
 		return startedAt;
+	}
+
+	public Integer getSourceUtcOffsetMinutes() {
+		return sourceUtcOffsetMinutes;
 	}
 
 	public Instant getEndedAt() {

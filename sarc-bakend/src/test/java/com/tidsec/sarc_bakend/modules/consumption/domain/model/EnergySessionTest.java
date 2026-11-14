@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,6 +49,26 @@ class EnergySessionTest {
 		assertThat(session.getStartDate()).isEqualTo(LocalDate.of(2026, 10, 20));
 		assertThat(session.getState()).isEqualTo(SessionState.VALIDATED);
 		assertThat(session.getNetwork()).isEqualTo(ChargingNetwork.CONECTZ);
+	}
+
+	@Test
+	void aSourceThatDeclaresItsOffsetKeepsItsOwnStartDate() {
+		// Feature 009: Enerlink 1212 declara UTC+00:00 y cuenta el 11/11, no el 10/11 de Ecuador.
+		SessionReading utc = new SessionReading(Instant.parse("2026-11-11T01:36:15Z"),
+				Instant.parse("2026-11-11T02:10:00Z"), new BigDecimal("8"), "Conectz", "ESTACION 4", null, "A - CCS1",
+				ZoneOffset.UTC);
+		EnergySession session = EnergySession.record(SessionSource.ENERLINK, "", "1212", utc, CONECTZ_STATION, false,
+				false, BATCH, ECUADOR);
+
+		assertThat(session.getStartDate()).isEqualTo(LocalDate.of(2026, 11, 11));
+		assertThat(session.reading().sourceOffset()).isEqualTo(ZoneOffset.UTC);
+		// Sin desplazamiento conocido se conserva la fecha operativa previa (America/Guayaquil).
+		EnergySession legacy = EnergySession.record(SessionSource.ENERLINK, "", "1213",
+				reading("2026-11-11T01:36:15Z", "2026-11-11T02:10:00Z", "8"), CONECTZ_STATION, false, false, BATCH,
+				ECUADOR);
+		assertThat(legacy.getStartDate()).isEqualTo(LocalDate.of(2026, 11, 10));
+		// Otro desplazamiento para el mismo instante es otra lectura: requiere aprobacion al reimportar.
+		assertThat(session.hasSameReading(legacy.reading())).isFalse();
 	}
 
 	@Test

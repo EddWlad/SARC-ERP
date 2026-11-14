@@ -70,6 +70,10 @@ public class EnergySession extends BaseAuditableEntity {
 
 	private Instant endedAt;
 
+	/** Desplazamiento UTC en minutos con que la fuente escribio el inicio; nulo sin evidencia de origen. */
+	private Integer sourceUtcOffsetMinutes;
+
+	/** Fecha de atribucion: el dia de inicio segun la fuente (Feature 009, FR-002 y FR-006). */
 	@Column(nullable = false)
 	private LocalDate startDate;
 
@@ -255,7 +259,7 @@ public class EnergySession extends BaseAuditableEntity {
 
 	public SessionReading reading() {
 		return new SessionReading(startedAt, endedAt, energyKwh, sourceSite, sourceCharger, sourceSerial,
-				sourceConnector);
+				sourceConnector, SourceOffsets.toOffset(sourceUtcOffsetMinutes));
 	}
 
 	private void apply(SessionReading reading, OperatingZone zone) {
@@ -268,7 +272,9 @@ public class EnergySession extends BaseAuditableEntity {
 		}
 		this.startedAt = reading.startedAt();
 		this.endedAt = reading.endedAt();
-		this.startDate = zone.dateOf(reading.startedAt());
+		this.sourceUtcOffsetMinutes = SourceOffsets.toMinutes(reading.sourceOffset());
+		// La fuente fija el dia; sin evidencia de origen se conserva la fecha operativa de Ecuador.
+		this.startDate = reading.sourceOffset() != null ? reading.sourceStartDate() : zone.dateOf(reading.startedAt());
 		this.energyKwh = reading.energyKwh();
 		this.sourceSite = reading.site();
 		this.sourceCharger = reading.charger();
@@ -350,6 +356,10 @@ public class EnergySession extends BaseAuditableEntity {
 
 	public LocalDate getStartDate() {
 		return startDate;
+	}
+
+	public Integer getSourceUtcOffsetMinutes() {
+		return sourceUtcOffsetMinutes;
 	}
 
 	public BigDecimal getEnergyKwh() {

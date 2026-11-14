@@ -23,6 +23,7 @@ import { injectIsHandset } from '../../../../shared/ui/handset';
 import { NETWORK_LABELS } from '../../../../shared/vocabulary/charging-infrastructure';
 import { ImportBatchFacade } from '../../application/import-batch-facade';
 import { SOURCE_LABELS } from '../../domain/consumption';
+import { sourceUtcLabel, sourceUtcOffset } from '../../domain/source-time';
 import {
   CLASSIFICATION_HINTS,
   CLASSIFICATION_LABELS,
@@ -75,6 +76,9 @@ export class ImportBatchPage {
   protected readonly facade = inject(ImportBatchFacade);
   protected readonly quantities = inject(QuantityFormat);
   protected readonly isHandset = injectIsHandset();
+  /** Hora tal como la escribio la fuente (Feature 009). */
+  protected readonly sourceOffset = sourceUtcOffset;
+  protected readonly sourceLabel = sourceUtcLabel;
   protected readonly sourceLabels = SOURCE_LABELS;
   protected readonly networkLabels = NETWORK_LABELS;
   protected readonly classificationLabels = CLASSIFICATION_LABELS;

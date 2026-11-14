@@ -4,13 +4,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
 import com.tidsec.sarc_bakend.modules.consumption.application.port.EquipmentLookup;
 import com.tidsec.sarc_bakend.modules.consumption.application.port.ParsedSession;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionReading;
 import com.tidsec.sarc_bakend.shared.catalog.ExternalKey;
 import com.tidsec.sarc_bakend.shared.importing.batch.RowIssue;
 import com.tidsec.sarc_bakend.shared.importing.reading.TabularReader;
@@ -59,8 +62,37 @@ class SessionParsersTest {
 		assertThat(session.reading().endedAt()).isEqualTo(Instant.parse("2026-10-23T05:14:50Z"));
 		assertThat(session.reading().energyKwh()).isEqualByComparingTo("22.42");
 		assertThat(session.reading().connector()).isEqualTo("A - PUESTO 8 - CCS1");
+		assertThat(session.reading().sourceOffset()).isEqualTo(ZoneOffset.ofHours(-5));
 		assertThat(session.lookup())
 				.isEqualTo(new EquipmentLookup.ByIdentity(new ExternalKey("Conectz", "ESTACION 4")));
+	}
+
+	@Test
+	void enerlinkKeepsTheDeclaredUtcOffsetSoTheSessionKeepsItsSourceDate() {
+		// Feature 009, sesion 1212: el archivo declara UTC+00:00; en Ecuador seria el 10/11 a las 20:36.
+		List<ParsedSession> parsed = enerlink.parse(reader.readText("""
+				ID\tINICIO (UTC+00:00)\tTÉRMINO (UTC+00:00)\tACTIVO\tCARGADOR\tCONECTOR\tENERGIA CARGADA (kWh)
+				1212\t11-11-2026 01:36:15\t11-11-2026 02:10:00\tConectz\tESTACION 4\tA - CCS1\t8
+				"""));
+
+		SessionReading reading = parsed.getFirst().reading();
+		assertThat(reading.startedAt()).isEqualTo(Instant.parse("2026-11-11T01:36:15Z"));
+		assertThat(reading.sourceOffset()).isEqualTo(ZoneOffset.UTC);
+		assertThat(reading.sourceStartDate()).isEqualTo(LocalDate.of(2026, 11, 11));
+	}
+
+	@Test
+	void sourcesWithoutDeclaredOffsetUseTheOperatingZone() {
+		List<ParsedSession> enerlinkRows = enerlink.parse(reader.readText(ENERLINK_HEADER
+				+ "1\t22-10-2026 23:30:00\t\tA\tB\tC1\t\n"));
+		List<ParsedSession> wallboxRows = wallbox.parse(reader.readText("""
+				Serial number\tCharger\tSession id\tStart\tEnd\tEnergy (kWh)
+				1172071\tPlaza\tS-9\t2026-11-10 23:59:11\t2026-11-11 00:30:00\t5,00
+				"""));
+
+		assertThat(enerlinkRows.getFirst().reading().sourceOffset()).isEqualTo(ZoneOffset.ofHours(-5));
+		assertThat(wallboxRows.getFirst().reading().sourceOffset()).isEqualTo(ZoneOffset.ofHours(-5));
+		assertThat(wallboxRows.getFirst().reading().sourceStartDate()).isEqualTo(LocalDate.of(2026, 11, 10));
 	}
 
 	@Test

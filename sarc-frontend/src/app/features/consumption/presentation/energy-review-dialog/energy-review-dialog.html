@@ -17,7 +17,15 @@
       </div>
       <div>
         <dt>Inicio</dt>
-        <dd>{{ data.session.startedAt | date: 'dd/MM/yyyy HH:mm' : '-0500' }}</dd>
+        <dd>
+          {{
+            data.session.startedAt
+              | date: 'dd/MM/yyyy HH:mm:ss' : sourceOffset(data.session.sourceUtcOffsetMinutes)
+          }}
+          @if (sourceLabel(data.session.sourceUtcOffsetMinutes); as utc) {
+            ({{ utc }})
+          }
+        </dd>
       </div>
       <div>
         <dt>Fuente</dt>

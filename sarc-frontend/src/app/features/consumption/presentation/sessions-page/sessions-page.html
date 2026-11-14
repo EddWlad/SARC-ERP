@@ -98,7 +98,14 @@
           <div class="card-head">
             <div>
               <strong>{{ session.equipment?.name ?? session.charger ?? 'Sin vincular' }}</strong>
-              <span class="muted">{{ session.startedAt | date: 'short' }}</span>
+              <span class="muted">
+                {{
+                  session.startedAt | date: 'short' : sourceOffset(session.sourceUtcOffsetMinutes)
+                }}
+                @if (sourceLabel(session.sourceUtcOffsetMinutes); as utc) {
+                  ({{ utc }})
+                }
+              </span>
             </div>
             <strong class="energy">{{ quantities.reportedEnergy(session.energyKwh) }}</strong>
           </div>
@@ -137,9 +144,17 @@
         <th mat-header-cell *matHeaderCellDef>Inicio</th>
         <td mat-cell *matCellDef="let row">
           @let session = sessionOf(row);
-          {{ session.startedAt | date: 'short' }}
+          {{ session.startedAt | date: 'short' : sourceOffset(session.sourceUtcOffsetMinutes) }}
+          @if (sourceLabel(session.sourceUtcOffsetMinutes); as utc) {
+            <span class="muted">({{ utc }})</span>
+          }
           @if (session.endedAt) {
-            <span class="muted block">hasta {{ session.endedAt | date: 'shortTime' }}</span>
+            <span class="muted block">
+              hasta
+              {{
+                session.endedAt | date: 'shortTime' : sourceOffset(session.sourceUtcOffsetMinutes)
+              }}
+            </span>
           } @else {
             <span class="muted block">Término no informado</span>
           }

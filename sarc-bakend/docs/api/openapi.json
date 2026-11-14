@@ -6038,6 +6038,11 @@
             "type" : [ "string", "null" ],
             "format" : "date-time"
           },
+          "sourceUtcOffsetMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "Desplazamiento UTC en minutos declarado por la fuente para el inicio"
+          },
           "energyKwh" : {
             "type" : [ "number", "null" ]
           },
@@ -8018,9 +8023,15 @@
             "type" : [ "string", "null" ],
             "format" : "date-time"
           },
+          "sourceUtcOffsetMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "Desplazamiento UTC en minutos con que la fuente escribio el inicio; nulo si no hay evidencia de origen (se muestra en hora de Ecuador)"
+          },
           "startDate" : {
             "type" : "string",
-            "format" : "date"
+            "format" : "date",
+            "description" : "Fecha de inicio segun la fuente: el dia en que se cuenta la sesion"
           },
           "energyKwh" : {
             "type" : [ "number", "null" ]

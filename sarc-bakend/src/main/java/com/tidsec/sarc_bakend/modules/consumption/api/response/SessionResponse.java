@@ -26,7 +26,9 @@ public record SessionResponse(
 		String externalSessionId,
 		Instant startedAt,
 		@Schema(nullable = true) Instant endedAt,
-		LocalDate startDate,
+		@Schema(nullable = true, description = "Desplazamiento UTC en minutos con que la fuente escribio el inicio;"
+				+ " nulo si no hay evidencia de origen (se muestra en hora de Ecuador)") Integer sourceUtcOffsetMinutes,
+		@Schema(description = "Fecha de inicio segun la fuente: el dia en que se cuenta la sesion") LocalDate startDate,
 		@Schema(nullable = true) BigDecimal energyKwh,
 		SessionState state,
 		@Schema(nullable = true) EnergyReviewStatus energyReview,
@@ -45,7 +47,8 @@ public record SessionResponse(
 		EnergySession session = view.session();
 		SessionReading reading = session.reading();
 		return new SessionResponse(session.getId(), session.getSource(), session.getExternalSessionId(),
-				session.getStartedAt(), session.getEndedAt(), session.getStartDate(), session.getEnergyKwh(),
+				session.getStartedAt(), session.getEndedAt(), session.getSourceUtcOffsetMinutes(), session.getStartDate(),
+				session.getEnergyKwh(),
 				session.getState(), session.getEnergyReview(), session.canApproveSource(), session.getLinkIssue(), EquipmentRefResponse.from(view.equipment()), reading.site(), reading.charger(),
 				reading.serial(), reading.connector(), session.getRevision(), session.getImportBatchId(),
 				session.getVersion());

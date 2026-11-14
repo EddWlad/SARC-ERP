@@ -181,9 +181,12 @@
       @let item = rowOf(row);
       @if (item.startedAt) {
         <span class="muted block">
-          {{ item.startedAt | date: 'short' }}
+          {{ item.startedAt | date: 'short' : sourceOffset(item.sourceUtcOffsetMinutes) }}
+          @if (sourceLabel(item.sourceUtcOffsetMinutes); as utc) {
+            ({{ utc }})
+          }
           @if (item.endedAt) {
-            – {{ item.endedAt | date: 'shortTime' }}
+            – {{ item.endedAt | date: 'shortTime' : sourceOffset(item.sourceUtcOffsetMinutes) }}
           } @else {
             · Término no informado
           }

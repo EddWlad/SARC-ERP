@@ -763,6 +763,40 @@ class ConsumptionApiTest {
 	}
 
 	@Test
+	void eachSessionCountsOnTheStartDateDeclaredByItsSourceAlsoInTheConsolidatedView() throws Exception {
+		// Feature 009, escenario 6: Enerlink declara UTC+00:00 y Wallbox escribe en hora de Ecuador.
+		conectzStationWithEnerlinkIdentity("Conectz", "ESTACION 4");
+		confirm(
+				upload(
+						"ENERLINK",
+						"Transacciones_UTC.csv",
+						"ID\tINICIO (UTC+00:00)\tTÉRMINO (UTC+00:00)\tACTIVO\tCARGADOR\tCONECTOR"
+								+ "\tSOC FINAL (%)\tENERGIA CARGADA (kWh)\n"
+								+ "1212\t11-11-2026 01:36:15\t11-11-2026 02:10:00\tConectz\tESTACION 4"
+								+ "\tA - CCS1\t80\t8\n"));
+		confirm(
+				upload(
+						"WALLBOX",
+						"wallbox.csv",
+						WALLBOX_HEADER
+								+ "WB-1001\tPlaza\tS-9\t2026-11-10 23:59:11\t2026-11-11 00:30:00\t5,00\n"));
+
+		mvc.perform(get("/api/v1/energy/sessions").param("source", "ENERLINK").cookie(analyst))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.content[0].startDate").value("2026-11-11"))
+				.andExpect(jsonPath("$.content[0].startedAt").value("2026-11-11T01:36:15Z"))
+				.andExpect(jsonPath("$.content[0].sourceUtcOffsetMinutes").value(0));
+		mvc.perform(get("/api/v1/energy/sessions").param("source", "WALLBOX").cookie(analyst))
+				.andExpect(jsonPath("$.content[0].startDate").value("2026-11-10"))
+				.andExpect(jsonPath("$.content[0].sourceUtcOffsetMinutes").value(-300));
+		assertOfficial("2026-11-10", "2026-11-11", 1, 5.0);
+		assertOfficial("2026-11-11", "2026-11-12", 1, 8.0);
+		assertOfficial("2026-11-10", "2026-11-12", 2, 13.0);
+		mvc.perform(summary("2026-11-10", "2026-11-11").param("source", "ENERLINK").cookie(analyst))
+				.andExpect(jsonPath("$.official.sessions").value(0));
+	}
+
+	@Test
 	void sessionsMarkedAsTestInThePreviewAreKeptButExcluded() throws Exception {
 		conectzStationWithEnerlinkIdentity("Conectz", "ESTACION 4");
 		String id =
