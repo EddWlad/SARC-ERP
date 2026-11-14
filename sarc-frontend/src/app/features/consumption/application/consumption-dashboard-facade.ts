@@ -13,7 +13,7 @@ import {
   NO_CONSUMPTION_FILTERS,
 } from '../domain/consumption';
 import { PeriodSelection } from './period-selection';
-import { retainedValue } from '../../../core/http/retained-value';
+import { retainedQuery } from '../../../core/http/retained-value';
 
 /**
  * Estado del tablero de consumo (PRD 7.3): periodo, filtros, indicadores y reportes. El PDF y el
@@ -28,17 +28,25 @@ export class ConsumptionDashboardFacade {
   readonly filters = signal<ConsumptionFilters>(NO_CONSUMPTION_FILTERS);
   readonly downloading = signal<ReportFormat | undefined>(undefined);
 
-  private readonly result = httpResource<ConsumptionSummary>(() =>
+  private readonly request = computed(() =>
     this.api.summaryRequest(this.period.range(), this.filters()),
   );
-
-  readonly summary = retainedValue(this.result);
-  readonly loading = this.result.isLoading;
-  /** Mensaje del backend si no se pudo calcular (p. ej. periodo mayor a 366 dias). */
-  readonly error = computed(() => {
+  private readonly result = httpResource<ConsumptionSummary>(() => this.request());
+  private readonly retained = retainedQuery(this.result, this.request);
+  private readonly problem = computed(() => {
     const error = this.result.error();
     return error === undefined ? undefined : toProblem(error).detail;
   });
+
+  readonly summary = this.retained.value;
+  readonly loading = this.result.isLoading;
+  /**
+   * Mensaje del backend si no hay cifras de esta consulta (p. ej. periodo mayor a 366 dias). Si
+   * solo fallo un refresco, las cifras siguen a la vista y el aviso va en {@link refreshError}.
+   */
+  readonly error = computed(() => (this.retained.current() ? undefined : this.problem()));
+  /** Fallo el refresco de la misma consulta: se conservan las cifras y se avisa (Feature 009, US4). */
+  readonly refreshError = computed(() => (this.retained.current() ? this.problem() : undefined));
 
   updateFilters(changes: Partial<ConsumptionFilters>): void {
     this.filters.update((current) => ({ ...current, ...changes }));

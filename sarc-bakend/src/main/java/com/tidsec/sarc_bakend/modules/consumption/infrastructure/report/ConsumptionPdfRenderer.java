@@ -59,7 +59,7 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 		}
 		pdf.ensureSpace(ConsumptionPdfCharts.INTRO_SPACE)
 				.section("Gráficos oficiales")
-				.note(report.scope() + ". Hora de Ecuador; misma fecha de corte y filtros que "
+				.note(report.scope() + ". Fecha de inicio según la fuente; corte en hora de Ecuador; mismos filtros que "
 						+ "las tablas. Un tramo interrumpido indica energía no informada, no 0 kWh.");
 		ConsumptionPdfCharts.render(pdf, ConsumptionChartData.from(summary, ConsumptionLabels.CHARTS));
 		pdf
@@ -69,7 +69,7 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 				.section("Distribución de la energía")
 				.table(List.of("Dimensión", "Categoría", "Sesiones", "kWh", "Participación"),
 						distribution(summary), new float[] { 1.5f, 3, 1.5f, 1.5f, 1.5f })
-				.section("Tendencia diaria")
+				.section("Tendencia diaria · " + ConsumptionLabels.SOURCE_DATE_CRITERION)
 				.table(List.of("Fecha", "Sesiones", "kWh"), daily(summary.daily()), new float[] { 2, 1.5f, 1.5f });
 
 		if (report.ranking().size() > summary.top().size()) {
@@ -79,7 +79,9 @@ class ConsumptionPdfRenderer implements ConsumptionReportRenderer {
 		}
 		pdf.section("Notas de metodología")
 				.note("Fuente: sesiones importadas de Enerlink y Wallbox en SARC (RF-003). Cada sesión se cuenta "
-						+ "una vez, en el día de su inicio (hora de Ecuador), aunque termine al día siguiente.")
+						+ "una vez, en su fecha de inicio según la fuente, aunque termine al día siguiente: la que declara el "
+						+ "archivo de Enerlink (p. ej. UTC+00:00 o UTC-05:00) y la hora de Ecuador para Wallbox. Un filtro de plataforma "
+						+ "no cambia la fecha de ninguna sesión. El corte del informe se expresa en hora de Ecuador.")
 				.note("Solo suman las sesiones validadas. Las pendientes de vincular y las de prueba se informan "
 						+ "aparte y no se incluyen en los totales.")
 				.note("La red y el tipo de cada sesión provienen del equipo del inventario, no del archivo de "

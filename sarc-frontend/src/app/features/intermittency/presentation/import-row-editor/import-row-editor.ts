@@ -15,7 +15,9 @@ import {
   localParts,
   minutesBetween,
   operatingInstant,
+  sourceCellText,
 } from '../../domain/intermittency-time';
+import { issueText } from '../../domain/intermittency-labels';
 
 /** Una ventana de la fila en edicion, con sus valores originales para saber que cambio. */
 interface WindowForm {
@@ -71,15 +73,20 @@ function toInstant(local: string): string {
           Original: {{ originalSummary }}. Lo que cambie queda registrado con su valor anterior.
         </p>
         <div class="fields">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Fecha de la fila</mat-label>
             <input matInput type="date" [value]="date()" (input)="date.set(valueOf($event))" />
           </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Código del cargador</mat-label>
             <input matInput [value]="code()" (input)="code.set(valueOf($event))" />
           </mat-form-field>
-          <mat-form-field appearance="outline" class="wide" subscriptSizing="dynamic">
+          <mat-form-field
+            floatLabel="always"
+            appearance="outline"
+            class="wide"
+            subscriptSizing="dynamic"
+          >
             <mat-label>Comentario</mat-label>
             <input
               matInput
@@ -100,19 +107,23 @@ function toInstant(local: string): string {
               <p class="muted">
                 Par {{ window.pair }}
                 @if (window.original.startText || window.original.endText) {
-                  · Original: {{ window.original.startText || '—' }} →
-                  {{ window.original.endText || '—' }}
+                  · Original: {{ sourceCellText(window.original.startText) }} →
+                  {{ sourceCellText(window.original.endText) }}
                 }
                 @if (window.original.added) {
                   · Agregado en esta revisión
                 }
               </p>
               @for (issue of window.original.issues; track issue.code) {
-                <p class="issue">{{ issue.message }}</p>
+                <p class="issue">{{ issueText(issue) }}</p>
               }
               @if (!window.removed) {
                 <div class="fields">
-                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-form-field
+                    floatLabel="always"
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                  >
                     <mat-label>Inicio {{ window.pair }}</mat-label>
                     <input
                       matInput
@@ -121,7 +132,11 @@ function toInstant(local: string): string {
                       (input)="patchWindow(window.pair, { start: valueOf($event) })"
                     />
                   </mat-form-field>
-                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-form-field
+                    floatLabel="always"
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                  >
                     <mat-label>Fin {{ window.pair }}</mat-label>
                     <input
                       matInput
@@ -170,7 +185,7 @@ function toInstant(local: string): string {
             <li class="window">
               <p class="muted">Ventana nueva</p>
               <div class="fields">
-                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
                   <mat-label>Inicio</mat-label>
                   <input
                     matInput
@@ -179,7 +194,7 @@ function toInstant(local: string): string {
                     (input)="patchNew(added.key, { start: valueOf($event) })"
                   />
                 </mat-form-field>
-                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
                   <mat-label>Fin</mat-label>
                   <input
                     matInput
@@ -295,6 +310,8 @@ export class ImportRowEditor {
 
   protected readonly row = this.data.row;
   protected readonly localInputOf = localInput;
+  protected readonly issueText = issueText;
+  protected readonly sourceCellText = sourceCellText;
   private readonly interpretation = this.row.interpretation;
 
   protected readonly date = signal(this.interpretation.date ?? '');

@@ -1,5 +1,22 @@
 # Control de cambios del PRD SARC
 
+## CC-PRD-009-20261113 — Consumo: fecha de la fuente, acciones por sesión y vistas estables
+
+**Estado:** precisiones especificadas en `specs/009-integridad-temporal-consumo/spec.md` (aclaraciones del 2026-11-11 y del 2026-11-13). La atribución por fecha de la fuente se publicó como hotfix el 2026-11-14 (`2026.11.14-41-793e92f`, V019). Las acciones por sesión (US3) y la estabilidad visual (US4) están en implementación. El PDF maestro aprobado permanece intacto.
+
+**Base:** PRD v1.1 §3.2, §7.1–7.3 y §11 (RF-003, en especial RF-003.10, atribución por inicio), TRD 03.3 (zona de operación) y Feature 002 (importación y revisión de sesiones).
+
+**Decisión A (2026-11-11):** cada sesión se atribuye a la fecha de inicio que corresponde a su fuente, también en el consolidado. Enerlink cuenta en la fecha que declara su archivo (`INICIO (UTC±hh:mm)`) y Wallbox conserva la fecha de Ecuador. Un filtro de plataforma cambia el conjunto, no la fecha. El rango inicial y los accesos rápidos siguen el día operativo de Ecuador (D13). Esto precisa RF-003.10 sin cambiar la regla de «se cuenta el día en que inicia».
+
+**Alcance de las acciones de sesión (US3):** ver, editar y dar de baja lógica una sesión, con motivo obligatorio, historial, control de versión y los mismos permisos de edición de Consumo. La baja excluye la sesión de los indicadores oficiales, no se borra y no reaparece al reimportar. Amplía RF-003 (antes solo había marcado de prueba, aprobación de fuente y revisión energética).
+
+**Aclaraciones del 2026-11-13 (después del hotfix):**
+
+- US2 (auditoría y corrección del histórico) queda acreditada por H006–H007: se auditaron los 24 lotes Enerlink de producción contra sus originales y se aplicó la corrección con copia previa y aprobación del responsable. No se construye un subsistema genérico de propuestas y constancias.
+- FR-006a («Fecha operativa heredada») se retira: después de V019 todas las sesiones tienen su desplazamiento verificado, así que no queda ninguna excepción histórica.
+
+**Impacto documental:** al consolidar el PRD, RF-003.10 debe citar la Decisión A, y RF-003 debe incorporar las acciones de ver, editar y dar de baja. La Feature 002 conserva su flujo de importación, con la protección de bajas y la revisión explícita de las discrepancias de zona.
+
 ## CC-PRD-008-20261110 — Intermitencias KIA: precisiones propuestas
 
 **Estado:** precisiones funcionales indicadas por el responsable del producto el 2026-11-10 y especificadas en `specs/008-intermitencias-kia/spec.md`. El cálculo, la cobertura y la visibilidad de la disponibilidad se aprobaron explícitamente el mismo día, junto con las aclaraciones 4 a 15. Plan técnico, tareas y análisis de consistencia elaborados el 2026-11-10. Implementadas y verificadas con pruebas las historias US1 a US6 (captura, importación, revisión, dashboard, informes y disponibilidad estimada de prueba), con la matriz de seguridad, la regresión de Consumo y Uptime, el rendimiento y la revisión en navegador hechas el 2026-11-13. Falta para cerrar: ensayar V018 sobre una copia restaurada de producción (T006), restaurar con los originales de Cloudinary (T127), medir con una persona los tiempos de SC-001, SC-008 y SC-010, y publicar con el flujo de la Feature 007 cuando el responsable lo autorice (T131). El análisis y la revisión del 2026-11-13 agregaron las precisiones 16 a 21, que se anotan abajo y están ratificadas. El PDF maestro aprobado permanece intacto.

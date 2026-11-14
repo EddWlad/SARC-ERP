@@ -28,6 +28,8 @@ public record SessionResponse(
 		@Schema(nullable = true) Instant endedAt,
 		@Schema(nullable = true, description = "Desplazamiento UTC en minutos con que la fuente escribio el inicio;"
 				+ " nulo si no hay evidencia de origen (se muestra en hora de Ecuador)") Integer sourceUtcOffsetMinutes,
+		@Schema(nullable = true, description = "Desplazamiento UTC en minutos con que la fuente escribio el fin"
+				+ " cuando difiere del inicio; nulo = el mismo que el inicio") Integer sourceEndUtcOffsetMinutes,
 		@Schema(description = "Fecha de inicio segun la fuente: el dia en que se cuenta la sesion") LocalDate startDate,
 		@Schema(nullable = true) BigDecimal energyKwh,
 		SessionState state,
@@ -41,16 +43,18 @@ public record SessionResponse(
 		@Schema(nullable = true) String connector,
 		int revision,
 		UUID importBatchId,
+		@Schema(nullable = true, description = "Momento de la baja logica; nulo si la sesion esta activa") Instant deletedAt,
 		long version) {
 
 	public static SessionResponse from(SessionView view) {
 		EnergySession session = view.session();
 		SessionReading reading = session.reading();
 		return new SessionResponse(session.getId(), session.getSource(), session.getExternalSessionId(),
-				session.getStartedAt(), session.getEndedAt(), session.getSourceUtcOffsetMinutes(), session.getStartDate(),
+				session.getStartedAt(), session.getEndedAt(), session.getSourceUtcOffsetMinutes(),
+				session.getSourceEndUtcOffsetMinutes(), session.getStartDate(),
 				session.getEnergyKwh(),
 				session.getState(), session.getEnergyReview(), session.canApproveSource(), session.getLinkIssue(), EquipmentRefResponse.from(view.equipment()), reading.site(), reading.charger(),
 				reading.serial(), reading.connector(), session.getRevision(), session.getImportBatchId(),
-				session.getVersion());
+				session.getDeletedAt(), session.getVersion());
 	}
 }

@@ -32,7 +32,7 @@ export interface CloseWindowDialogData {
       <mat-dialog-content>
         <p class="target">{{ window.pointLabel }} · abierta desde {{ since }}</p>
         <div class="fields">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Fecha del fin</mat-label>
             <input
               matInput
@@ -43,7 +43,7 @@ export interface CloseWindowDialogData {
               (input)="endDate.set(valueOf($event))"
             />
           </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Hora del fin</mat-label>
             <input
               matInput

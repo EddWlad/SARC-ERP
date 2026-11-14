@@ -36,7 +36,12 @@ export interface JustificationDialogData {
         @if (data.target) {
           <p class="target">{{ data.target }}</p>
         }
-        <mat-form-field appearance="outline" class="field" subscriptSizing="dynamic">
+        <mat-form-field
+          floatLabel="always"
+          appearance="outline"
+          class="field"
+          subscriptSizing="dynamic"
+        >
           <mat-label>Justificación</mat-label>
           <textarea matInput rows="3" [formField]="field.text"></textarea>
           <mat-hint align="end">{{ model().text.length }}/{{ max }}</mat-hint>

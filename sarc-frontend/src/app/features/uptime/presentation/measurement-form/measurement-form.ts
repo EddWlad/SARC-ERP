@@ -31,7 +31,7 @@ import { CaptureFacade } from '../../application/capture-facade';
           </p>
         }
         <div class="block">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Bloque de Enerlink (opcional)</mat-label>
             <textarea #firstField matInput rows="3" [formField]="block.text"></textarea>
           </mat-form-field>
@@ -45,31 +45,36 @@ import { CaptureFacade } from '../../application/capture-facade';
           </button>
         </div>
         <div class="fields">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Desde (fecha)</mat-label>
             <input matInput type="date" [formField]="measurement.periodStart" />
           </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Hasta (fecha, inclusive)</mat-label>
             <input matInput type="date" [formField]="measurement.periodEnd" />
           </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Disponible (min)</mat-label>
             <input matInput inputmode="decimal" [formField]="measurement.available" />
           </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Ocupado (min)</mat-label>
             <input matInput inputmode="decimal" [formField]="measurement.occupied" />
           </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Con falla (min)</mat-label>
             <input matInput inputmode="decimal" [formField]="measurement.fault" />
           </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Fuera de línea (min)</mat-label>
             <input matInput inputmode="decimal" [formField]="measurement.offline" />
           </mat-form-field>
-          <mat-form-field appearance="outline" class="wide" subscriptSizing="dynamic">
+          <mat-form-field
+            floatLabel="always"
+            appearance="outline"
+            class="wide"
+            subscriptSizing="dynamic"
+          >
             <mat-label>Porcentaje de Enerlink (opcional)</mat-label>
             <input matInput inputmode="decimal" [formField]="measurement.reportedPercent" />
           </mat-form-field>
@@ -78,7 +83,12 @@ import { CaptureFacade } from '../../application/capture-facade';
           <div class="form-alert" role="alert"><p>Ingrese solo números en los tiempos.</p></div>
         }
         @if (facade.conflict()) {
-          <mat-form-field appearance="outline" class="justification" subscriptSizing="dynamic">
+          <mat-form-field
+            floatLabel="always"
+            appearance="outline"
+            class="justification"
+            subscriptSizing="dynamic"
+          >
             <mat-label>Justificación de la corrección</mat-label>
             <textarea matInput rows="2" [formField]="correction.text"></textarea>
           </mat-form-field>

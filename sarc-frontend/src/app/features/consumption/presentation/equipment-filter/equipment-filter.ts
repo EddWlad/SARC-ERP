@@ -17,7 +17,7 @@ import { EquipmentOptions } from '../../application/equipment-options';
   imports: [MatAutocompleteModule, MatButtonModule, MatFormFieldModule, MatInputModule, LucideX],
   providers: [EquipmentOptions],
   template: `
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
       <mat-label>Equipo</mat-label>
       <input
         matInput

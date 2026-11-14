@@ -16,7 +16,7 @@ import { PointOptions } from '../../application/point-options';
   imports: [MatAutocompleteModule, MatChipsModule, MatFormFieldModule, LucideX],
   providers: [PointOptions],
   template: `
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
       <mat-label>Puntos KIA</mat-label>
       <mat-chip-grid #grid aria-label="Puntos elegidos">
         @for (point of points(); track point.id) {

@@ -21,7 +21,7 @@ function labelOf(point: KiaPointResponse): string {
   imports: [MatAutocompleteModule, MatButtonModule, MatFormFieldModule, MatInputModule, LucideX],
   providers: [PointOptions],
   template: `
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
       <mat-label>Punto de carga KIA</mat-label>
       <input
         matInput

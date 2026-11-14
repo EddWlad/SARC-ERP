@@ -17,8 +17,13 @@ import {
   WINDOW_RESOLUTION_LABELS,
   WindowResolution,
 } from '../../domain/intermittency-import';
-import { CLASSIFICATION_LABELS } from '../../domain/intermittency-labels';
-import { durationText, formatInstant, present } from '../../domain/intermittency-time';
+import { CLASSIFICATION_LABELS, issueText } from '../../domain/intermittency-labels';
+import {
+  durationText,
+  formatInstant,
+  present,
+  sourceCellText,
+} from '../../domain/intermittency-time';
 import { PointPicker } from '../point-picker/point-picker';
 
 /** Una resolucion que se puede elegir para una ventana; deshabilitada si algo la impide, con el motivo. */
@@ -91,7 +96,7 @@ interface WindowChoice {
       <p class="target">
         <strong>{{ classificationLabels[row().classification] }}</strong>
         @for (issue of row().interpretation.rowIssues; track issue.code) {
-          <span class="issue">{{ issue.message }}</span>
+          <span class="issue">{{ issueText(issue) }}</span>
         }
       </p>
 
@@ -130,9 +135,9 @@ interface WindowChoice {
                   }
                 </p>
                 @for (issue of window.issues; track issue.code) {
-                  <p class="issue">{{ issue.message }}</p>
+                  <p class="issue">{{ issueText(issue) }}</p>
                 }
-                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
                   <mat-label>Qué hacer con la ventana {{ window.pair }}</mat-label>
                   <mat-select
                     [value]="choice(window.pair).resolution"
@@ -150,7 +155,11 @@ interface WindowChoice {
                   </mat-select>
                 </mat-form-field>
                 @if (choice(window.pair).resolution === 'REPLACE') {
-                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-form-field
+                    floatLabel="always"
+                    appearance="outline"
+                    subscriptSizing="dynamic"
+                  >
                     <mat-label>Justificación del reemplazo</mat-label>
                     <textarea
                       matInput
@@ -200,7 +209,7 @@ interface WindowChoice {
           }
         </mat-radio-group>
         @if (decision() === 'SKIP') {
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Motivo de la omisión</mat-label>
             <input
               matInput
@@ -291,6 +300,7 @@ export class RowDecisionPanel {
   protected readonly classificationLabels = CLASSIFICATION_LABELS;
   protected readonly durationText = durationText;
   protected readonly present = present;
+  protected readonly issueText = issueText;
   protected readonly linkTarget = signal<KiaPointResponse | null>(null);
   protected readonly resolving = this.data.resolving === true;
   // Una fila pendiente llega con KEEP_PENDING, que al resolverla el servidor rechaza: se parte de incorporar.
@@ -374,7 +384,7 @@ export class RowDecisionPanel {
     if (window.startAt) {
       return `${formatInstant(window.startAt)} → ${window.endAt ? formatInstant(window.endAt) : 'abierta'}`;
     }
-    return `${window.startText || '—'} → ${window.endText || '—'}`;
+    return `${sourceCellText(window.startText)} → ${sourceCellText(window.endText)}`;
   }
 
   protected minutesText(minutes: number | null | undefined): string {

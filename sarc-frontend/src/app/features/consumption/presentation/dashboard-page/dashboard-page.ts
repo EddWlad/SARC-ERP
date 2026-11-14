@@ -5,6 +5,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { LucideFileSpreadsheet, LucideFileText } from '@lucide/angular';
 
 import { SessionStore } from '../../../../core/auth/session-store';
+import { OPERATING_UTC_OFFSET } from '../../../../core/time/local-day';
 import { Problem } from '../../../../core/http/problem';
 import { Notifier } from '../../../../core/notifications/notifier';
 import { QuantityFormat } from '../../../../shared/format/quantity-format';
@@ -64,6 +65,8 @@ export class DashboardPage {
 
   protected readonly facade = inject(ConsumptionDashboardFacade);
   protected readonly quantities = inject(QuantityFormat);
+  /** La hora de calculo se lee en hora de Ecuador, sea cual sea la zona del navegador (FR-005). */
+  protected readonly operatingOffset = OPERATING_UTC_OFFSET;
   protected readonly formatKwh = (value: number) => this.quantities.kwh(value);
   protected readonly formatCount = (value: number) => this.quantities.count(value);
 

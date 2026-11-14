@@ -38,33 +38,58 @@ export interface JustificationData {
   template: `
     <h2 mat-dialog-title>{{ data.title }}</h2>
     <mat-dialog-content>
-      <mat-form-field appearance="outline" class="field" subscriptSizing="dynamic">
+      <mat-form-field
+        floatLabel="always"
+        appearance="outline"
+        class="field"
+        subscriptSizing="dynamic"
+      >
         <mat-label>Justificación</mat-label>
         <textarea matInput rows="3" [formField]="field.text"></textarea>
       </mat-form-field>
       @if (data.temporal) {
-        <mat-form-field appearance="outline" class="field" subscriptSizing="dynamic"
+        <mat-form-field
+          floatLabel="always"
+          appearance="outline"
+          class="field"
+          subscriptSizing="dynamic"
           ><mat-label>Tratamiento temporal</mat-label>
           <mat-select [formField]="field.precision"
             ><mat-option value="REFERENCE_WEEK">Informe sin horario real</mat-option
             ><mat-option value="KNOWN_RANGE">Rango real acreditado</mat-option></mat-select
           >
         </mat-form-field>
-        <mat-form-field appearance="outline" class="field" subscriptSizing="dynamic"
+        <mat-form-field
+          floatLabel="always"
+          appearance="outline"
+          class="field"
+          subscriptSizing="dynamic"
           ><mat-label>Semana de referencia (lunes)</mat-label
           ><input matInput type="date" [formField]="field.week"
         /></mat-form-field>
         @if (model().precision === 'KNOWN_RANGE') {
-          <mat-form-field appearance="outline" class="field" subscriptSizing="dynamic"
+          <mat-form-field
+            floatLabel="always"
+            appearance="outline"
+            class="field"
+            subscriptSizing="dynamic"
             ><mat-label>Desde real · Ecuador</mat-label
             ><input matInput type="datetime-local" step="1" [formField]="field.start"
           /></mat-form-field>
-          <mat-form-field appearance="outline" class="field" subscriptSizing="dynamic"
+          <mat-form-field
+            floatLabel="always"
+            appearance="outline"
+            class="field"
+            subscriptSizing="dynamic"
             ><mat-label>Hasta real · Ecuador</mat-label
             ><input matInput type="datetime-local" step="1" [formField]="field.end"
           /></mat-form-field>
         }
-        <mat-form-field appearance="outline" class="field" subscriptSizing="dynamic"
+        <mat-form-field
+          floatLabel="always"
+          appearance="outline"
+          class="field"
+          subscriptSizing="dynamic"
           ><mat-label>Evidencia que respalda la decisión</mat-label
           ><textarea matInput rows="3" [formField]="field.evidence"></textarea>
         </mat-form-field>

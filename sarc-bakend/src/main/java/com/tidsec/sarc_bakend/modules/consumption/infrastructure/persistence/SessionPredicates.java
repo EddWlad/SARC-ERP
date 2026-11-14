@@ -21,6 +21,8 @@ final class SessionPredicates {
 
 	static Predicate[] of(SessionCriteria criteria, Root<EnergySession> root, CriteriaBuilder cb) {
 		List<Predicate> predicates = new ArrayList<>();
+		// Una baja nunca cuenta en indicadores ni informes; solo se lista si se pide expresamente.
+		predicates.add(criteria.deleted() ? cb.isNotNull(root.get("deletedAt")) : cb.isNull(root.get("deletedAt")));
 		if (criteria.from() != null) {
 			predicates.add(cb.greaterThanOrEqualTo(root.get("startDate"), criteria.from()));
 		}

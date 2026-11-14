@@ -22,6 +22,8 @@ public record ImportRowResponse(
 		@Schema(nullable = true) Instant endedAt,
 		@Schema(nullable = true, description = "Desplazamiento UTC en minutos declarado por la fuente para el inicio")
 		Integer sourceUtcOffsetMinutes,
+		@Schema(nullable = true, description = "Desplazamiento declarado para el fin cuando difiere del inicio")
+		Integer sourceEndUtcOffsetMinutes,
 		@Schema(nullable = true) BigDecimal energyKwh,
 		@Schema(nullable = true) String site,
 		@Schema(nullable = true) String charger,
@@ -48,7 +50,7 @@ public record ImportRowResponse(
 
 	public static ImportRowResponse from(ImportRow row) {
 		return new ImportRowResponse(row.getId(), row.getRowNumber(), row.getExternalSessionId(), row.getStartedAt(),
-				row.getEndedAt(), row.getSourceUtcOffsetMinutes(), row.getEnergyKwh(), row.getSourceSite(), row.getSourceCharger(), row.getSourceSerial(),
+				row.getEndedAt(), row.getSourceUtcOffsetMinutes(), row.getSourceEndUtcOffsetMinutes(), row.getEnergyKwh(), row.getSourceSite(), row.getSourceCharger(), row.getSourceSerial(),
 				row.getSourceConnector(), row.getEquipmentId(), row.getNetwork(), row.getClassification(),
 				row.getIssues().stream().map(Issue::from).toList(), row.isNonPreferredSource(), row.requiresApproval(),
 				row.isTest(), row.isApproved(), row.isReassigned(), row.getOutcome(), row.getOutcomeDetail());

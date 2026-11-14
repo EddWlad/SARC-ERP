@@ -35,7 +35,7 @@ const SEARCH_DEBOUNCE_MS = 300;
     LucideX,
   ],
   template: `
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
       <mat-label>Equipo</mat-label>
       <input
         matInput
@@ -68,7 +68,7 @@ const SEARCH_DEBOUNCE_MS = 300;
       </mat-autocomplete>
     </mat-form-field>
     @if (equipmentId() !== '') {
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Conector</mat-label>
         <mat-select [value]="connectorId()" (selectionChange)="connectorChange.emit($event.value)">
           <mat-option value="">Todos</mat-option>

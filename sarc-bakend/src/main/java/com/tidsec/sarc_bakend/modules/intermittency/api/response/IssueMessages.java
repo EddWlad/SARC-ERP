@@ -28,7 +28,7 @@ final class IssueMessages {
 			case NOT_KIA_CHARGING_POINT -> "No es un punto de carga KIA";
 			case TOTAL_MISMATCH -> "El total del archivo no coincide con sus ventanas";
 			case LONG_WINDOW -> "Dura 4 horas o mas";
-			case NAME_DIFFERS -> "El nombre del archivo difiere del actual";
+			case NAME_DIFFERS -> "El nombre en el archivo no coincide con el de Inventario (se vincula por el codigo)";
 			case INACTIVE_EQUIPMENT -> "El punto esta inactivo";
 			case TOTAL_MISSING -> "La fila no trae total inactivo";
 		};

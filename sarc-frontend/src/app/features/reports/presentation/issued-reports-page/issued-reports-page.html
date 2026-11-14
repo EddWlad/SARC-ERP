@@ -9,7 +9,7 @@
 </header>
 
 <div class="filters">
-  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+  <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
     <mat-label>Tipo de reporte</mat-label>
     <mat-select [value]="facade.kind()" (selectionChange)="onKind($event.value)">
       <mat-option value="">Todos</mat-option>

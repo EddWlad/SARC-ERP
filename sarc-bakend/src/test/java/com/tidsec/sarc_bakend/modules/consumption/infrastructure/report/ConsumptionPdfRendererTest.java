@@ -47,6 +47,17 @@ class ConsumptionPdfRendererTest {
 		assertThat(text(renderer.render(ConsumptionExcelRendererTest.report(true)))).contains("Aprobadas sobre umbral");
 	}
 
+	/** Feature 009 (FR-006): el consolidado nombra su criterio de fecha y su propio corte en hora de Ecuador. */
+	@Test
+	void dailyTrendNamesTheSourceDateCriterionAndTheCutOff() throws Exception {
+		String text = text(new ConsumptionPdfRenderer(ConsumptionExcelRendererTest.branding())
+				.render(ConsumptionExcelRendererTest.withSourceTimes())).replaceAll("\\s+", " ");
+
+		assertThat(text).contains("Tendencia diaria · Fecha de inicio según la fuente",
+				"Fecha de inicio según la fuente; corte en hora de Ecuador", "Fecha de corte: 30/10/2026 21:12",
+				"UTC+00:00 o UTC-05:00").doesNotContain("Fecha de la sesión");
+	}
+
 	@Test
 	void aLongPeriodStillShowsEnergyExceptionsInTheOpeningSummary() throws Exception {
 		ZoneId zone = ZoneId.of("America/Guayaquil");

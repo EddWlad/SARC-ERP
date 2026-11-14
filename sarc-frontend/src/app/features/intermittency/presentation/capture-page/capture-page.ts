@@ -50,8 +50,17 @@ type FlagField = 'open' | 'endsNextDay';
 
     <form class="capture" aria-label="Captura de ventanas" (submit)="onSubmit($event, false)">
       <div class="target">
-        <sarc-point-picker [point]="facade.point()" (pointChange)="facade.selectPoint($event)" />
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <sarc-point-picker
+          class="point"
+          [point]="facade.point()"
+          (pointChange)="facade.selectPoint($event)"
+        />
+        <mat-form-field
+          floatLabel="always"
+          class="day"
+          appearance="outline"
+          subscriptSizing="dynamic"
+        >
           <mat-label>Día</mat-label>
           <input
             matInput
@@ -66,9 +75,18 @@ type FlagField = 'open' | 'endsNextDay';
 
       <ol class="windows" aria-label="Ventanas del día">
         @for (row of facade.rowViews(); track row.key; let index = $index) {
-          <li class="window" [class.invalid]="row.issue || facade.rowErrors()[row.key]">
+          <li
+            class="window"
+            [class.open]="row.open"
+            [class.invalid]="row.issue || facade.rowErrors()[row.key]"
+          >
             <div class="fields">
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-form-field
+                floatLabel="always"
+                class="start"
+                appearance="outline"
+                subscriptSizing="dynamic"
+              >
                 <mat-label>Inicio {{ index + 1 }}</mat-label>
                 <input
                   matInput
@@ -78,7 +96,12 @@ type FlagField = 'open' | 'endsNextDay';
                 />
               </mat-form-field>
               @if (!row.open) {
-                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-form-field
+                  floatLabel="always"
+                  class="end"
+                  appearance="outline"
+                  subscriptSizing="dynamic"
+                >
                   <mat-label>Fin {{ index + 1 }}</mat-label>
                   <input
                     matInput
@@ -87,8 +110,29 @@ type FlagField = 'open' | 'endsNextDay';
                     (input)="setText(row, 'end', $event)"
                   />
                 </mat-form-field>
+                <mat-form-field
+                  floatLabel="always"
+                  class="end-date"
+                  appearance="outline"
+                  subscriptSizing="dynamic"
+                >
+                  <mat-label>Fin en otra fecha (opcional)</mat-label>
+                  <input
+                    matInput
+                    type="date"
+                    [min]="facade.date()"
+                    [max]="today"
+                    [value]="row.endDate"
+                    (input)="setText(row, 'endDate', $event)"
+                  />
+                </mat-form-field>
               }
-              <mat-form-field class="comment" appearance="outline" subscriptSizing="dynamic">
+              <mat-form-field
+                floatLabel="always"
+                class="comment"
+                appearance="outline"
+                subscriptSizing="dynamic"
+              >
                 <mat-label>Comentario (opcional)</mat-label>
                 <input
                   matInput
@@ -119,17 +163,6 @@ type FlagField = 'open' | 'endsNextDay';
                 >
                   Termina el día siguiente
                 </mat-checkbox>
-                <mat-form-field class="end-date" appearance="outline" subscriptSizing="dynamic">
-                  <mat-label>Fin en otra fecha (opcional)</mat-label>
-                  <input
-                    matInput
-                    type="date"
-                    [min]="facade.date()"
-                    [max]="today"
-                    [value]="row.endDate"
-                    (input)="setText(row, 'endDate', $event)"
-                  />
-                </mat-form-field>
               }
             </div>
             <div class="summary" aria-live="polite">
@@ -265,15 +298,32 @@ type FlagField = 'open' | 'endsNextDay';
       }
     }
 
-    .target {
+    .capture {
+      container-type: inline-size;
+    }
+
+    // Áreas: p = punto, y = día, s = inicio, e = fin, d = fecha de fin, c = comentario, r = quitar.
+    // Punto y Día usan las mismas columnas que las ventanas (con el sangrado de su borde): Punto
+    // cubre Inicio, Fin y su fecha; Día queda sobre Comentario.
+    .target,
+    .fields {
       display: grid;
-      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.25fr) minmax(0, 2fr) 40px;
       gap: var(--sarc-space-3);
       align-items: start;
+    }
 
-      @media (max-width: 767.98px) {
-        grid-template-columns: minmax(0, 1fr);
-      }
+    .target {
+      grid-template-areas: 'p p p y .';
+      padding-inline: calc(var(--sarc-space-3) + 1px);
+    }
+
+    .point {
+      grid-area: p;
+    }
+
+    .day {
+      grid-area: y;
     }
 
     .windows {
@@ -298,34 +348,76 @@ type FlagField = 'open' | 'endsNextDay';
       }
     }
 
+    // Cada campo tiene su celda fija: marcar «Sin fin» oculta Fin y su fecha sin mover el
+    // comentario, y todas las ventanas quedan en las mismas columnas.
     .fields {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr) auto;
-      gap: var(--sarc-space-3);
-      align-items: start;
+      grid-template-areas: 's e d c r';
+    }
 
-      @media (max-width: 767.98px) {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    @container (max-width: 760px) {
+      .target,
+      .fields {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) 40px;
+      }
 
-        .comment {
-          grid-column: 1 / -1;
-        }
+      .target {
+        grid-template-areas: 'p p y .';
+      }
+
+      .fields {
+        grid-template-areas: 's e d r' 'c c c .';
       }
     }
 
-    .remove {
-      align-self: center;
+    @container (max-width: 480px) {
+      .target,
+      .fields {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) 40px;
+      }
+
+      .target {
+        grid-template-areas: 'p p p' 'y y y';
+      }
+
+      .fields {
+        grid-template-areas: 's e r' 'd d d' 'c c c';
+      }
+
+      .open .fields {
+        grid-template-areas: 's e r' 'c c c';
+      }
     }
 
+    .start {
+      grid-area: s;
+    }
+
+    .end {
+      grid-area: e;
+    }
+
+    .end-date {
+      grid-area: d;
+    }
+
+    .comment {
+      grid-area: c;
+    }
+
+    // Centrado sobre el contorno de 56px de la primera fila.
+    .remove {
+      grid-area: r;
+      margin-top: var(--sarc-space-2);
+    }
+
+    // La casilla de Material deja 11px de área táctil a su izquierda: se compensa para que su
+    // borde quede alineado con el contorno de Inicio.
     .options {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: var(--sarc-space-3);
-    }
-
-    .end-date {
-      min-width: 220px;
+      gap: 0 var(--sarc-space-5);
+      margin-inline-start: -11px;
     }
 
     .summary {
@@ -334,6 +426,13 @@ type FlagField = 'open' | 'endsNextDay';
       align-items: center;
       gap: var(--sarc-space-2) var(--sarc-space-3);
       min-height: 24px;
+
+      // Sin duración ni avisos no reserva una franja vacía al pie de la ventana; la región sigue en
+      // el DOM para anunciar lo que aparezca.
+      &:empty {
+        min-height: 0;
+        margin-top: calc(-1 * var(--sarc-space-2));
+      }
     }
 
     .issue {

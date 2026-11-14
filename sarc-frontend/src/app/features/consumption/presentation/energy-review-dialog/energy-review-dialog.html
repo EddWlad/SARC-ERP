@@ -20,10 +20,34 @@
         <dd>
           {{
             data.session.startedAt
-              | date: 'dd/MM/yyyy HH:mm:ss' : sourceOffset(data.session.sourceUtcOffsetMinutes)
+              | date: sourceDateTime : sourceOffset(data.session.sourceUtcOffsetMinutes)
           }}
           @if (sourceLabel(data.session.sourceUtcOffsetMinutes); as utc) {
             ({{ utc }})
+          }
+        </dd>
+      </div>
+      <div>
+        <dt>Término</dt>
+        <dd>
+          @if (data.session.endedAt) {
+            {{
+              data.session.endedAt
+                | date
+                  : sourceDateTime
+                  : endOffset(
+                      data.session.sourceUtcOffsetMinutes,
+                      data.session.sourceEndUtcOffsetMinutes
+                    )
+            }}
+            @if (
+              endLabel(data.session.sourceUtcOffsetMinutes, data.session.sourceEndUtcOffsetMinutes);
+              as utc
+            ) {
+              ({{ utc }})
+            }
+          } @else {
+            No informado
           }
         </dd>
       </div>
@@ -50,7 +74,7 @@
       </div>
     }
     @if (data.canEdit) {
-      <mat-form-field subscriptSizing="dynamic" appearance="outline">
+      <mat-form-field floatLabel="always" subscriptSizing="dynamic" appearance="outline">
         <mat-label>Decisión</mat-label>
         <mat-select [formField]="reviewForm.decision">
           <mat-option value="APPROVED">Aprobar energía</mat-option>
@@ -60,7 +84,7 @@
           <mat-error>{{ error.message }}</mat-error>
         }
       </mat-form-field>
-      <mat-form-field subscriptSizing="dynamic" appearance="outline">
+      <mat-form-field floatLabel="always" subscriptSizing="dynamic" appearance="outline">
         <mat-label>Justificación</mat-label>
         <textarea matInput [formField]="reviewForm.justification" rows="3"></textarea>
         <mat-hint>Obligatoria; se conserva en el historial.</mat-hint>

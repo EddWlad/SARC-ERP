@@ -27,6 +27,8 @@ final class ConsumptionLabels {
 	static final String NO_DATA = "Sin datos";
 	/** Energia o termino que la plataforma no informo en una sesion. */
 	static final String NOT_REPORTED = "No informado";
+	/** Criterio de atribucion del consolidado (Feature 009, FR-006): rotulo comun de PDF y Excel. */
+	static final String SOURCE_DATE_CRITERION = "Fecha de inicio según la fuente";
 
 	private static final Locale ES_EC = Locale.forLanguageTag("es-EC");
 	static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd/MM/yyyy", ES_EC);

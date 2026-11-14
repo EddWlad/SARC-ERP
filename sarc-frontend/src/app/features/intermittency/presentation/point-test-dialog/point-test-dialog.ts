@@ -84,11 +84,11 @@ export interface PointTestDialogData {
             <mat-radio-button [value]="false">Quitar la prueba</mat-radio-button>
           </mat-radio-group>
           <div class="fields">
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
               <mat-label>Primer día</mat-label>
               <input matInput type="date" [max]="today" [formField]="field.firstDay" />
             </mat-form-field>
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
               <mat-label>Último día (incluido)</mat-label>
               <input
                 matInput
@@ -119,7 +119,12 @@ export interface PointTestDialogData {
               }
             </p>
           }
-          <mat-form-field appearance="outline" class="wide" subscriptSizing="dynamic">
+          <mat-form-field
+            floatLabel="always"
+            appearance="outline"
+            class="wide"
+            subscriptSizing="dynamic"
+          >
             <mat-label>Justificación</mat-label>
             <textarea matInput rows="3" [formField]="field.justification"></textarea>
             <mat-hint align="end">{{ model().justification.length }}/{{ max }}</mat-hint>

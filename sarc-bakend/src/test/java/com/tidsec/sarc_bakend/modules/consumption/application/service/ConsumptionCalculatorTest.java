@@ -127,4 +127,45 @@ class ConsumptionCalculatorTest {
 		assertThat(summary.pendingLink()).isEqualTo(EnergyTotals.EMPTY);
 		assertThat(calculator.summarize(criteria, false).test()).isNull();
 	}
+
+	/** Feature 009, T008: el conjunto 5/8/13 kWh por fecha de origen; 0 kWh informado no es energia desconocida. */
+	@Test
+	void trendCountAndRankingAgreeOnTheSourceDateSetAndKeepZeroApartFromUnknown() {
+		var sessions = mock(EnergySessionRepository.class);
+		var directory = mock(EquipmentDirectory.class);
+		UUID wallbox = new UUID(0, 5);
+		UUID enerlink = new UUID(0, 8);
+		LocalDate day = LocalDate.of(2026, 11, 10);
+		when(sessions.aggregate(any())).thenReturn(List.of(
+				new SessionAggregate(day, ChargingNetwork.KIA, SessionSource.WALLBOX, InfrastructureType.CHARGING_POINT,
+						wallbox, null, 1, new BigDecimal("5.000"), 1),
+				new SessionAggregate(day.plusDays(1), ChargingNetwork.CONECTZ, SessionSource.ENERLINK,
+						InfrastructureType.CHARGING_STATION, enerlink, null, 1, new BigDecimal("8.000"), 1),
+				new SessionAggregate(day.plusDays(2), ChargingNetwork.CONECTZ, SessionSource.ENERLINK,
+						InfrastructureType.CHARGING_STATION, enerlink, null, 1, new BigDecimal("0.000"), 1),
+				new SessionAggregate(day.plusDays(3), ChargingNetwork.CONECTZ, SessionSource.ENERLINK,
+						InfrastructureType.CHARGING_STATION, enerlink, null, 1, null, 0)));
+		when(sessions.byEquipment(any())).thenReturn(List.of(new EquipmentEnergy(wallbox, 1, new BigDecimal("5.000")),
+				new EquipmentEnergy(enerlink, 3, new BigDecimal("8.000"))));
+		when(directory.findByIds(any())).thenReturn(Map.of(
+				wallbox, new EquipmentReference(wallbox, ChargingNetwork.KIA, InfrastructureType.CHARGING_POINT, "Punto", "P"),
+				enerlink, new EquipmentReference(enerlink, ChargingNetwork.CONECTZ, InfrastructureType.CHARGING_STATION,
+						"Estacion", "E")));
+		var criteria = new SessionCriteria(day, day.plusDays(4), null, null, null, null, null, null);
+
+		var summary = new ConsumptionCalculator(sessions, directory, Clock.systemUTC()).summarize(criteria, false);
+
+		assertThat(summary.official()).isEqualTo(new EnergyTotals(4, new BigDecimal("13.000"), 2, 1));
+		assertThat(summary.daily()).extracting(DailyEnergy::date)
+				.containsExactly(day, day.plusDays(1), day.plusDays(2), day.plusDays(3));
+		assertThat(summary.daily()).extracting(DailyEnergy::sessions).containsExactly(1L, 1L, 1L, 1L);
+		assertThat(summary.daily().get(0).energyKwh()).isEqualByComparingTo("5");
+		assertThat(summary.daily().get(1).energyKwh()).isEqualByComparingTo("8");
+		assertThat(summary.daily().get(2).energyKwh()).isEqualByComparingTo("0");
+		assertThat(summary.daily().get(3).energyKwh()).isNull();
+		assertThat(summary.bySource().get(SessionSource.WALLBOX)).isEqualTo(new EnergyTotals(1, new BigDecimal("5.000"), 1, 0));
+		assertThat(summary.bySource().get(SessionSource.ENERLINK)).isEqualTo(new EnergyTotals(3, new BigDecimal("8.000"), 1, 1));
+		assertThat(summary.top()).extracting(item -> item.equipment().name()).containsExactly("Estacion", "Punto");
+		assertThat(summary.top()).extracting(item -> item.position()).containsExactly(1, 2);
+	}
 }

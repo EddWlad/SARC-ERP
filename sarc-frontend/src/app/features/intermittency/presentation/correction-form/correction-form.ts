@@ -44,19 +44,19 @@ export interface CorrectionFormData {
       <mat-dialog-content>
         <p class="target">{{ window.pointLabel }} · {{ original }}</p>
         <div class="fields">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Fecha del inicio</mat-label>
             <input matInput type="date" [max]="today" [formField]="field.startDate" />
           </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Hora del inicio</mat-label>
             <input matInput type="time" [formField]="field.startTime" />
           </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Fecha del fin</mat-label>
             <input matInput type="date" [max]="today" [formField]="field.endDate" />
           </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Hora del fin</mat-label>
             <input matInput type="time" [formField]="field.endTime" />
           </mat-form-field>
@@ -73,11 +73,21 @@ export interface CorrectionFormData {
           <p class="issue" role="alert">El fin debe ser posterior al inicio.</p>
         }
 
-        <mat-form-field appearance="outline" class="wide" subscriptSizing="dynamic">
+        <mat-form-field
+          floatLabel="always"
+          appearance="outline"
+          class="wide"
+          subscriptSizing="dynamic"
+        >
           <mat-label>Comentario</mat-label>
           <textarea matInput rows="2" [formField]="field.comment"></textarea>
         </mat-form-field>
-        <mat-form-field appearance="outline" class="wide" subscriptSizing="dynamic">
+        <mat-form-field
+          floatLabel="always"
+          appearance="outline"
+          class="wide"
+          subscriptSizing="dynamic"
+        >
           <mat-label>Justificación de la corrección</mat-label>
           <textarea matInput rows="3" [formField]="field.justification"></textarea>
           <mat-hint align="end">{{ model().justification.length }}/{{ max }}</mat-hint>

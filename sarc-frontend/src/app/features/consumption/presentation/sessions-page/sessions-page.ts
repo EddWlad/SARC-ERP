@@ -6,6 +6,11 @@ import {
   EnergyReviewDialog,
   EnergyReviewDialogData,
 } from '../energy-review-dialog/energy-review-dialog';
+import {
+  SessionAction,
+  SessionActionDialog,
+  SessionActionDialogData,
+} from '../session-action-dialog/session-action-dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
@@ -32,7 +37,14 @@ import {
   SOURCE_LABELS,
 } from '../../domain/consumption';
 import { CONSUMPTION_EDITORS } from '../../domain/consumption-permissions';
-import { sourceUtcLabel, sourceUtcOffset } from '../../domain/source-time';
+import {
+  SOURCE_DATE_TIME,
+  SOURCE_TIME,
+  sourceEndUtcLabel,
+  sourceEndUtcOffset,
+  sourceUtcLabel,
+  sourceUtcOffset,
+} from '../../domain/source-time';
 import { ConsumptionFilterBar } from '../consumption-filter-bar/consumption-filter-bar';
 import { SessionStateBadge } from '../session-state-badge/session-state-badge';
 
@@ -84,6 +96,10 @@ export class SessionsPage {
   /** Hora tal como la escribio la fuente (Feature 009): misma base que la fecha de conteo. */
   protected readonly sourceOffset = sourceUtcOffset;
   protected readonly sourceLabel = sourceUtcLabel;
+  protected readonly endOffset = sourceEndUtcOffset;
+  protected readonly endLabel = sourceEndUtcLabel;
+  protected readonly sourceDateTime = SOURCE_DATE_TIME;
+  protected readonly sourceTime = SOURCE_TIME;
 
   protected onSearch(event: Event): void {
     this.facade.search((event.target as HTMLInputElement).value);
@@ -98,6 +114,9 @@ export class SessionsPage {
   }
 
   // Las filas de mat-table llegan sin tipo a la plantilla: estos metodos las tipan.
+  /** Un refresco conserva las filas (foco, menu abierto) y solo actualiza sus datos (US4). */
+  protected readonly trackSession = (_: number, session: Session) => session.id;
+
   protected sessionOf(row: Session): Session {
     return row;
   }
@@ -118,6 +137,34 @@ export class SessionsPage {
       stale: () => this.facade.reload(),
     };
     this.dialog.open(EnergyReviewDialog, { data, maxWidth: '95vw', width: '600px' });
+  }
+
+  /** Ver, editar o eliminar (Feature 009, US3); al guardar se recarga la consulta vigente. */
+  protected openAction(session: Session, action: SessionAction): void {
+    const data: SessionActionDialogData = {
+      action,
+      session,
+      detail: () => this.facade.detail(session.id),
+      edit: (changes, reason) => this.facade.edit(session, changes, reason),
+      delete: (reason) => this.facade.delete(session, reason),
+      stale: () => this.facade.reload(),
+    };
+    this.dialog
+      .open<SessionActionDialog, SessionActionDialogData, Session>(SessionActionDialog, {
+        data,
+        maxWidth: '95vw',
+        width: '640px',
+      })
+      .afterClosed()
+      .subscribe((saved) => {
+        if (saved) {
+          this.notifier.success(
+            action === 'delete'
+              ? 'Sesión eliminada. Ya no cuenta en los indicadores.'
+              : 'Sesión actualizada. El estado refleja los controles vigentes.',
+          );
+        }
+      });
   }
 
   protected async toggleTest(session: Session): Promise<void> {

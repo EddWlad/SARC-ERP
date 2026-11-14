@@ -2,6 +2,8 @@ package com.tidsec.sarc_bakend.modules.consumption.api.controller;
 
 import java.time.LocalDate;
 import java.util.List;
+import com.tidsec.sarc_bakend.modules.consumption.api.request.DeleteEnergySessionRequest;
+import com.tidsec.sarc_bakend.modules.consumption.api.request.EditEnergySessionRequest;
 import com.tidsec.sarc_bakend.modules.consumption.api.request.EnergyReviewRequest;
 import com.tidsec.sarc_bakend.modules.consumption.api.response.EnergyReviewResponse;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReviewStatus;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.tidsec.sarc_bakend.modules.consumption.api.request.MarkTestRequest;
 import com.tidsec.sarc_bakend.modules.consumption.api.response.PendingLinkResponse;
+import com.tidsec.sarc_bakend.modules.consumption.api.response.SessionDetailResponse;
 import com.tidsec.sarc_bakend.modules.consumption.api.response.SessionResponse;
 import com.tidsec.sarc_bakend.modules.consumption.application.service.SessionQueryService;
 import com.tidsec.sarc_bakend.modules.consumption.application.service.SessionService;
@@ -61,10 +64,30 @@ class EnergySessionController {
 			@RequestParam(required = false) SessionState state,
 			@RequestParam(required = false) EnergyReviewStatus energyReview,
 			@RequestParam(required = false) @Size(max = 100) String text,
+			@RequestParam(defaultValue = "false") boolean deleted,
 			@RequestParam(defaultValue = "0") @Min(0) int page,
 			@RequestParam(defaultValue = "20") @Min(1) @Max(PageQuery.MAX_SIZE) int size) {
-		return queries.search(new SessionCriteria(from, to, network, type, source, equipmentId, state, text, energyReview),
+		return queries.search(new SessionCriteria(from, to, network, type, source, equipmentId, state, text, energyReview,
+				deleted),
 				new PageQuery(page, size)).map(SessionResponse::from);
+	}
+
+	/** Detalle de la sesion; la baja y las revisiones solo para lectura operativa. */
+	@GetMapping("/{id}")
+	SessionDetailResponse detail(@PathVariable UUID id) {
+		return SessionDetailResponse.from(queries.detail(id));
+	}
+
+	/** Edicion con motivo y version; un campo ausente se conserva. */
+	@PatchMapping("/{id}")
+	SessionResponse edit(@PathVariable UUID id, @Valid @RequestBody EditEnergySessionRequest body) {
+		return SessionResponse.from(sessions.edit(body.toCommand(id)));
+	}
+
+	/** Baja logica con motivo: deja de contar en indicadores e informes y se conserva su historia. */
+	@PostMapping("/{id}/deletion")
+	SessionResponse delete(@PathVariable UUID id, @Valid @RequestBody DeleteEnergySessionRequest body) {
+		return SessionResponse.from(sessions.delete(id, body.version(), body.reason()));
 	}
 
 	@PostMapping("/{id}/energy-review")

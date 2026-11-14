@@ -50,7 +50,8 @@ export const REASON_LABELS: Readonly<Record<string, string>> = {
   NOT_KIA_CHARGING_POINT: 'No es un punto de carga KIA',
   TOTAL_MISMATCH: 'El total del archivo no coincide con sus ventanas',
   LONG_WINDOW: 'Dura 4 horas o más',
-  NAME_DIFFERS: 'El nombre del archivo difiere del actual',
+  NAME_DIFFERS:
+    'El nombre en el archivo no coincide con el de Inventario (se vincula por el código)',
   INACTIVE_EQUIPMENT: 'El punto está inactivo',
   TOTAL_MISSING: 'La fila no trae total inactivo',
 };
@@ -103,3 +104,8 @@ export const STATE_BADGES: Readonly<Record<WindowState, string>> = {
   TEST: 'badge badge-info',
   ANNULLED: 'badge badge-off',
 };
+
+/** Texto de un motivo con las tildes de la interfaz; si el código no se conoce, el del servidor. */
+export function issueText(issue: { code: string; message: string }): string {
+  return REASON_LABELS[issue.code] ?? issue.message;
+}

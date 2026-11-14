@@ -3,6 +3,7 @@ package com.tidsec.sarc_bakend.modules.consumption.domain.model.session;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.UUID;
 
 import com.tidsec.sarc_bakend.modules.consumption.domain.policy.PreferredSourcePolicy;
@@ -73,6 +74,9 @@ public class EnergySession extends BaseAuditableEntity {
 	/** Desplazamiento UTC en minutos con que la fuente escribio el inicio; nulo sin evidencia de origen. */
 	private Integer sourceUtcOffsetMinutes;
 
+	/** Desplazamiento del fin cuando la fuente lo escribio con otro distinto al del inicio; nulo = el mismo. */
+	private Integer sourceEndUtcOffsetMinutes;
+
 	/** Fecha de atribucion: el dia de inicio segun la fuente (Feature 009, FR-002 y FR-006). */
 	@Column(nullable = false)
 	private LocalDate startDate;
@@ -102,6 +106,14 @@ public class EnergySession extends BaseAuditableEntity {
 
 	@Column(nullable = false)
 	private UUID importBatchId;
+
+	/** Baja logica (Feature 009, US3): conserva datos y estado; la excluye de los indicadores oficiales. */
+	private Instant deletedAt;
+
+	private UUID deletedBy;
+
+	@Column(length = 500)
+	private String deletionReason;
 
 	protected EnergySession() {
 	}
@@ -159,6 +171,7 @@ public class EnergySession extends BaseAuditableEntity {
 	 */
 	public SessionRevision correct(SessionReading reading, UUID batchId, OperatingZone zone, UUID actorId,
 			Instant at) {
+		requireActive();
 		if (changesCharger(reading)) {
 			throw new BusinessRuleException("SESSION_EQUIPMENT_CHANGED",
 					"La correccion cambia el cargador de la sesion; debe reasignarse de forma explicita");
@@ -177,6 +190,7 @@ public class EnergySession extends BaseAuditableEntity {
 	 */
 	public SessionRevision reassign(SessionReading reading, EquipmentReference equipment, boolean sourceApproved,
 			UUID batchId, OperatingZone zone, UUID actorId, Instant at) {
+		requireActive();
 		SessionRevision previous = SessionRevision.of(this, batchId, actorId, at);
 		apply(reading, zone);
 		detach();
@@ -202,6 +216,7 @@ public class EnergySession extends BaseAuditableEntity {
 
 	/** {@code sourceApproved}: en la vista previa se aprobo la fuente no preferente del equipo. */
 	public void link(EquipmentReference equipment, boolean sourceApproved) {
+		requireActive();
 		if (equipmentId != null) {
 			throw new BusinessRuleException("SESSION_ALREADY_LINKED", "La sesion ya esta vinculada a un equipo");
 		}
@@ -221,6 +236,7 @@ public class EnergySession extends BaseAuditableEntity {
 
 	/** Un analista aprueba que esta fuente no preferente sume para su equipo. */
 	public void approveSource() {
+		requireActive();
 		if (!canApproveSource()) {
 			throw new BusinessRuleException("SESSION_NOT_AWAITING_APPROVAL",
 					"La sesion no espera aprobacion de fuente");
@@ -237,6 +253,7 @@ public class EnergySession extends BaseAuditableEntity {
 	}
 
 	public EnergyReview decideEnergy(EnergyReviewStatus decision, String justification, UUID actor, Instant at) {
+		requireActive();
 		if (energyReview == null) {
 			throw new BusinessRuleException("SESSION_NOT_UNDER_ENERGY_REVIEW", "La sesión no tiene observación energética");
 		}
@@ -254,12 +271,60 @@ public class EnergySession extends BaseAuditableEntity {
 
 	/** Marca o desmarca como prueba; al desmarcar vuelve a su estado segun la vinculacion. */
 	public void markTest(boolean test) {
+		requireActive();
 		state = test ? SessionState.TEST : officialState();
+	}
+
+	/**
+	 * Edicion individual (Feature 009, US3): inicio, fin, energia y equipo, con motivo. La identidad, la
+	 * fuente y los datos del cargador que reporto la fuente no cambian. Cambiar de equipo exige volver a
+	 * aprobar una fuente no preferente. Guarda la version anterior.
+	 */
+	public SessionRevision edit(SessionReading reading, EquipmentReference equipment, String reason, UUID actorId,
+			Instant at, OperatingZone zone) {
+		requireActive();
+		SessionRevision previous = SessionRevision.edited(this, reason, actorId, at);
+		apply(reading, zone);
+		UUID newEquipment = equipment == null ? null : equipment.id();
+		if (!Objects.equals(newEquipment, equipmentId)) {
+			detach();
+			if (equipment != null) {
+				attach(equipment);
+			}
+			sourceApproved = false;
+		}
+		this.revision++;
+		if (state != SessionState.TEST) {
+			state = officialState();
+		}
+		return previous;
+	}
+
+	/** Baja logica con motivo: no se borra, conserva su estado y deja de contar en los indicadores. */
+	public SessionRevision delete(String reason, UUID actorId, Instant at) {
+		requireActive();
+		SessionRevision previous = SessionRevision.deleted(this, reason, actorId, at);
+		this.deletedAt = at;
+		this.deletedBy = actorId;
+		this.deletionReason = reason;
+		this.revision++;
+		return previous;
+	}
+
+	public boolean isDeleted() {
+		return deletedAt != null;
+	}
+
+	private void requireActive() {
+		if (isDeleted()) {
+			throw new BusinessRuleException("SESSION_DELETED", "La sesion esta dada de baja y no admite cambios");
+		}
 	}
 
 	public SessionReading reading() {
 		return new SessionReading(startedAt, endedAt, energyKwh, sourceSite, sourceCharger, sourceSerial,
-				sourceConnector, SourceOffsets.toOffset(sourceUtcOffsetMinutes));
+				sourceConnector, SourceOffsets.toOffset(sourceUtcOffsetMinutes),
+				SourceOffsets.toOffset(sourceEndUtcOffsetMinutes));
 	}
 
 	private void apply(SessionReading reading, OperatingZone zone) {
@@ -273,6 +338,7 @@ public class EnergySession extends BaseAuditableEntity {
 		this.startedAt = reading.startedAt();
 		this.endedAt = reading.endedAt();
 		this.sourceUtcOffsetMinutes = SourceOffsets.toMinutes(reading.sourceOffset());
+		this.sourceEndUtcOffsetMinutes = SourceOffsets.toMinutes(reading.sourceEndOffset());
 		// La fuente fija el dia; sin evidencia de origen se conserva la fecha operativa de Ecuador.
 		this.startDate = reading.sourceOffset() != null ? reading.sourceStartDate() : zone.dateOf(reading.startedAt());
 		this.energyKwh = reading.energyKwh();
@@ -360,6 +426,22 @@ public class EnergySession extends BaseAuditableEntity {
 
 	public Integer getSourceUtcOffsetMinutes() {
 		return sourceUtcOffsetMinutes;
+	}
+
+	public Integer getSourceEndUtcOffsetMinutes() {
+		return sourceEndUtcOffsetMinutes;
+	}
+
+	public Instant getDeletedAt() {
+		return deletedAt;
+	}
+
+	public UUID getDeletedBy() {
+		return deletedBy;
+	}
+
+	public String getDeletionReason() {
+		return deletionReason;
 	}
 
 	public BigDecimal getEnergyKwh() {

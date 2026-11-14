@@ -42,4 +42,16 @@ describe('PeriodSelection', () => {
     expect(period.preset()).toBe('custom');
     expect(period.range()).toEqual({ from: '2026-03-01', to: '2026-04-01' });
   });
+
+  it('D13: the initial month starts on the first operating day and rolls with the month', () => {
+    today.set(new Date(2026, 10, 1));
+    const period = new PeriodSelection('thisMonth', today);
+    expect(period.range()).toEqual({ from: '2026-11-01', to: '2026-11-02' });
+
+    today.set(new Date(2026, 10, 30));
+    expect(period.range()).toEqual({ from: '2026-11-01', to: '2026-12-01' });
+
+    today.set(new Date(2026, 11, 1));
+    expect(period.range()).toEqual({ from: '2026-12-01', to: '2026-12-02' });
+  });
 });

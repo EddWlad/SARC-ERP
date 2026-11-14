@@ -45,8 +45,17 @@ abstract class TabularSessionParser implements SessionReportParser {
 	@Override
 	public List<ParsedSession> parse(List<TabularRow> rows) {
 		HeaderLayout layout = HeaderLayout.locate(rows, columns());
+		List<RowIssue> headerIssues = headerIssues(layout);
+		if (!headerIssues.isEmpty()) {
+			// Una zona mal declarada no se reemplaza por otra asumida: ninguna fila se incorpora (FR-004).
+			return layout.dataRows().stream()
+					.map(row -> new ParsedSession(row.number(), blankToNull(layout.value(row, ID)), null,
+							sourceFields(layout, row).lookup(), headerIssues))
+					.toList();
+		}
 		ZoneId zone = zone(layout);
-		return layout.dataRows().stream().map(row -> parseRow(layout, row, zone)).toList();
+		ZoneId endZone = endZone(layout, zone);
+		return layout.dataRows().stream().map(row -> parseRow(layout, row, zone, endZone)).toList();
 	}
 
 	protected abstract List<HeaderLayout.Column> columns();
@@ -55,8 +64,18 @@ abstract class TabularSessionParser implements SessionReportParser {
 
 	protected abstract List<DateTimeFormatter> dateFormats();
 
-	/** Zona en que estan escritas las fechas del reporte. */
+	/** Zona en que esta escrito el inicio. */
 	protected abstract ZoneId zone(HeaderLayout layout);
+
+	/** Zona en que esta escrito el fin: la del inicio salvo que la fuente declare otra. */
+	protected ZoneId endZone(HeaderLayout layout, ZoneId startZone) {
+		return startZone;
+	}
+
+	/** Problemas de los encabezados que invalidan todas las filas (p. ej. una zona ilegible). */
+	protected List<RowIssue> headerIssues(HeaderLayout layout) {
+		return List.of();
+	}
 
 	protected abstract SourceFields sourceFields(HeaderLayout layout, TabularRow row);
 
@@ -65,7 +84,7 @@ abstract class TabularSessionParser implements SessionReportParser {
 		return false;
 	}
 
-	private ParsedSession parseRow(HeaderLayout layout, TabularRow row, ZoneId zone) {
+	private ParsedSession parseRow(HeaderLayout layout, TabularRow row, ZoneId zone, ZoneId endZone) {
 		List<RowIssue> issues = new ArrayList<>();
 		String id = layout.value(row, ID);
 		if (id.isEmpty()) {
@@ -76,7 +95,7 @@ abstract class TabularSessionParser implements SessionReportParser {
 		}
 		Instant start = read("Inicio", () -> DateTimeText.parse(layout.value(row, START), dateFormats(), zone), issues);
 		Instant end = isAbsent(layout.value(row, END)) ? null
-				: read("Termino", () -> DateTimeText.parse(layout.value(row, END), dateFormats(), zone), issues);
+				: read("Termino", () -> DateTimeText.parse(layout.value(row, END), dateFormats(), endZone), issues);
 		BigDecimal energy = isAbsent(layout.value(row, ENERGY)) ? null
 				: read("Energia", () -> DecimalText.parse(layout.value(row, ENERGY), decimalSeparator()), issues);
 		SourceFields fields = sourceFields(layout, row);
@@ -90,9 +109,10 @@ abstract class TabularSessionParser implements SessionReportParser {
 		if (!issues.isEmpty()) {
 			return new ParsedSession(row.number(), blankToNull(id), null, fields.lookup(), issues);
 		}
-		// La fecha que vale es la que escribio la fuente: se guarda su desplazamiento en el inicio.
+		// La fecha que vale es la que escribio la fuente: se guarda el desplazamiento de cada extremo.
 		SessionReading reading = new SessionReading(start, end, energy, fields.site(), fields.charger(),
-				fields.serial(), fields.connector(), zone.getRules().getOffset(start));
+				fields.serial(), fields.connector(), zone.getRules().getOffset(start),
+				end == null ? null : endZone.getRules().getOffset(end));
 		issues.addAll(SessionRules.check(reading));
 		return new ParsedSession(row.number(), id,
 				issues.stream().anyMatch(SessionRules::isBlocking) ? null : reading, fields.lookup(), issues);

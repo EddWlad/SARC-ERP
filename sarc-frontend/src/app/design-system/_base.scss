@@ -33,6 +33,13 @@
     outline-offset: -2px;
   }
 
+  // El contorno de un campo mide siempre lo mismo que el control (56px). Si una rejilla o un alto
+  // mínimo estiran el mat-form-field (por ejemplo, porque el campo vecino tiene una ayuda de dos
+  // líneas), el espacio sobrante queda debajo del contorno y no lo agranda.
+  .mat-mdc-form-field > .mat-mdc-text-field-wrapper {
+    flex: none;
+  }
+
   // Formularios con campos apilados: cada campo conserva la altura que tenía con el tamaño fijo
   // (56px de caja + 19px de ayuda) para no cambiar el ritmo del formulario, pero la ayuda y los
   // errores crecen si ocupan varias líneas en vez de superponerse al control siguiente.

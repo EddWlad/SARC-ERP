@@ -14,14 +14,15 @@ import {
 } from './energy-import';
 
 /**
- * Lote con las ocho clasificaciones, como lo devuelve el backend. Las clasificaciones suman las 24
+ * Lote con las nueve clasificaciones, como lo devuelve el backend. Las clasificaciones suman las 25
  * filas; `energyReviewRows` es un conteo aparte y no entra en esa suma.
  */
 const BATCH = {
   fileName: 'SessionsReport.xlsx',
-  totalRows: 24,
+  totalRows: 25,
   newRows: 5,
   linkableRows: 2,
+  deletedRows: 1,
   modifiedRows: 3,
   equipmentChangedRows: 1,
   pendingLinkRows: 4,
@@ -67,6 +68,7 @@ describe('resumen de confirmación de una importación de sesiones', () => {
     expect(counts.get(CLASSIFICATION_LABELS.IDENTICAL)).toBe(BATCH.identicalRows);
     expect(counts.get(CLASSIFICATION_LABELS.DUPLICATE)).toBe(BATCH.duplicateRows);
     expect(counts.get(CLASSIFICATION_LABELS.INVALID)).toBe(BATCH.invalidRows);
+    expect(counts.get(CLASSIFICATION_LABELS.DELETED)).toBe(BATCH.deletedRows);
   });
 
   it('cubre el total del lote con sus clasificaciones', () => {
@@ -95,6 +97,7 @@ describe('resumen de confirmación de una importación de sesiones', () => {
     expect(labelsOf('untouched')).toEqual([
       CLASSIFICATION_LABELS.IDENTICAL,
       CLASSIFICATION_LABELS.DUPLICATE,
+      CLASSIFICATION_LABELS.DELETED,
       CLASSIFICATION_LABELS.INVALID,
     ]);
   });
@@ -119,7 +122,7 @@ describe('resumen de confirmación de una importación de sesiones', () => {
   });
 
   it('nombra el resto si el lote trae una clasificación que la pantalla no cubre', () => {
-    const conMas = { ...BATCH, totalRows: 26 } as ImportBatch;
+    const conMas = { ...BATCH, totalRows: 27 } as ImportBatch;
 
     expect(unclassifiedRows(sessionConfirmSummary(conMas))).toBe(2);
   });
@@ -129,6 +132,7 @@ describe('resumen de confirmación de una importación de sesiones', () => {
       ...BATCH,
       totalRows: 5,
       linkableRows: 0,
+      deletedRows: 0,
       modifiedRows: 0,
       equipmentChangedRows: 0,
       pendingLinkRows: 0,

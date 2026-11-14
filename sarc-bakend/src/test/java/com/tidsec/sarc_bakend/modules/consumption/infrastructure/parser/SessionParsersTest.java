@@ -96,6 +96,77 @@ class SessionParsersTest {
 	}
 
 	@Test
+	void eachEndpointUsesItsOwnDeclaredOffsetAndTheOrderIsCheckedByInstant() {
+		// Inicio en UTC y fin en hora de Ecuador: el fin "21:10" de Ecuador es posterior a las 01:36 UTC.
+		List<ParsedSession> parsed = enerlink.parse(reader.readText("""
+				ID\tINICIO (UTC+00:00)\tTÉRMINO (UTC-05:00)\tACTIVO\tCARGADOR\tCONECTOR\tENERGIA CARGADA (kWh)
+				1211\t11-11-2026 01:36:15\t10-11-2026 21:10:00\tConectz\tESTACION 4\tA - CCS1\t34.65
+				"""));
+
+		ParsedSession session = parsed.getFirst();
+		assertThat(session.isValid()).isTrue();
+		assertThat(session.reading().endedAt()).isEqualTo(Instant.parse("2026-11-11T02:10:00Z"));
+		assertThat(session.reading().sourceOffset()).isEqualTo(ZoneOffset.UTC);
+		assertThat(session.reading().sourceEndOffset()).isEqualTo(ZoneOffset.ofHours(-5));
+		// La fecha de atribucion sale del inicio.
+		assertThat(session.reading().sourceStartDate()).isEqualTo(LocalDate.of(2026, 11, 11));
+	}
+
+	@Test
+	void anEndWithoutDeclarationUsesTheOffsetResolvedForTheStart() {
+		List<ParsedSession> parsed = enerlink.parse(reader.readText("""
+				ID\tINICIO (UTC+00:00)\tTÉRMINO\tACTIVO\tCARGADOR\tCONECTOR\tENERGIA CARGADA (kWh)
+				1212\t11-11-2026 01:36:15\t11-11-2026 02:10:00\tConectz\tESTACION 4\tA - CCS1\t8
+				1213\t11-11-2026 03:00:00\t\tConectz\tESTACION 4\tA - CCS1\t
+				"""));
+
+		assertThat(parsed.get(0).reading().endedAt()).isEqualTo(Instant.parse("2026-11-11T02:10:00Z"));
+		assertThat(parsed.get(0).reading().sourceEndOffset()).isNull();
+		assertThat(parsed.get(0).reading().endOffset()).isEqualTo(ZoneOffset.UTC);
+		// Sin fin informado, el fin sigue ausente.
+		assertThat(parsed.get(1).reading().endedAt()).isNull();
+	}
+
+	@Test
+	void anotherAdmittedOffsetIsKept() {
+		List<ParsedSession> parsed = enerlink.parse(reader.readText("""
+				ID\tINICIO (UTC-03:00)\tTÉRMINO (UTC-03:00)\tACTIVO\tCARGADOR\tCONECTOR\tENERGIA CARGADA (kWh)
+				7\t11-11-2026 00:30:00\t11-11-2026 01:00:00\tConectz\tESTACION 4\tA - CCS1\t3
+				"""));
+
+		SessionReading reading = parsed.getFirst().reading();
+		assertThat(reading.startedAt()).isEqualTo(Instant.parse("2026-11-11T03:30:00Z"));
+		assertThat(reading.sourceOffset()).isEqualTo(ZoneOffset.ofHours(-3));
+		assertThat(reading.sourceStartDate()).isEqualTo(LocalDate.of(2026, 11, 11));
+	}
+
+	@Test
+	void anUnreadableOrContradictoryDeclarationInvalidatesTheRowsInsteadOfAssumingAZone() {
+		for (String header : List.of("INICIO (UTC+25:00)", "INICIO (UTC hora local)",
+				"INICIO (UTC-05:00 / UTC+00:00)")) {
+			List<ParsedSession> parsed = enerlink.parse(reader.readText("ID\t" + header
+					+ "\tTERMINO\tACTIVO\tCARGADOR\tCONECTOR\tENERGIA CARGADA\n"
+					+ "1\t11-11-2026 01:36:15\t\tConectz\tESTACION 4\tA\t\n"));
+
+			ParsedSession row = parsed.getFirst();
+			assertThat(row.isValid()).as(header).isFalse();
+			assertThat(row.reading()).as(header).isNull();
+			assertThat(row.externalSessionId()).isEqualTo("1");
+			assertThat(row.issues()).extracting(RowIssue::code).containsExactly("SOURCE_OFFSET_INVALID");
+		}
+	}
+
+	@Test
+	void anUnreadableEndDeclarationAlsoInvalidatesTheRows() {
+		List<ParsedSession> parsed = enerlink.parse(reader.readText(
+				"ID\tINICIO (UTC+00:00)\tTERMINO (UTC+99)\tACTIVO\tCARGADOR\tCONECTOR\tENERGIA CARGADA\n"
+						+ "1\t11-11-2026 01:36:15\t\tConectz\tESTACION 4\tA\t\n"));
+
+		assertThat(parsed.getFirst().isValid()).isFalse();
+		assertThat(parsed.getFirst().issues()).extracting(RowIssue::code).containsExactly("SOURCE_OFFSET_INVALID");
+	}
+
+	@Test
 	void invalidValuesAreReportedPerFieldWithoutGuessing() {
 		List<ParsedSession> parsed = wallbox.parse(reader.readText("""
 				Serial number\tCharger\tSession id\tStart\tEnd\tEnergy (kWh)

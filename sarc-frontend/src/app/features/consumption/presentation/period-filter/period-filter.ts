@@ -41,7 +41,12 @@ import {
     </mat-chip-listbox>
 
     @if (period().preset() === 'custom') {
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="range">
+      <mat-form-field
+        floatLabel="always"
+        appearance="outline"
+        subscriptSizing="dynamic"
+        class="range"
+      >
         <mat-label>Rango de fechas</mat-label>
         <mat-date-range-input [rangePicker]="picker">
           <input matStartDate placeholder="Desde" (dateChange)="start.set($event.value)" />

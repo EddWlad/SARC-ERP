@@ -20,7 +20,7 @@
   (filtersChange)="facade.updateFilters($event)"
   (cleared)="facade.clearFilters()"
 >
-  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+  <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
     <mat-label>Estado</mat-label>
     <mat-select [value]="facade.state()" (selectionChange)="onState($event.value)">
       <mat-option value="">{{ canEdit ? 'Todos' : 'Oficiales' }}</mat-option>
@@ -29,7 +29,7 @@
       }
     </mat-select>
   </mat-form-field>
-  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+  <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
     <mat-label>Revisión</mat-label>
     <mat-select
       [value]="facade.energyReview()"
@@ -45,7 +45,7 @@
       }
     </mat-select>
   </mat-form-field>
-  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+  <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
     <mat-label>Buscar</mat-label>
     <svg lucideSearch matPrefix [size]="18" class="prefix-icon"></svg>
     <input
@@ -77,6 +77,13 @@
   </p>
 }
 
+@if (facade.refreshFailed()) {
+  <div class="refresh-alert" role="status">
+    <p>No se pudo actualizar el histórico. Se muestran los resultados anteriores.</p>
+    <button matButton type="button" (click)="facade.reload()">Reintentar</button>
+  </div>
+}
+
 <section class="results" aria-label="Sesiones" [attr.aria-busy]="facade.loading()">
   @if (facade.loading()) {
     <mat-progress-bar mode="indeterminate" aria-label="Cargando sesiones" />
@@ -100,10 +107,29 @@
               <strong>{{ session.equipment?.name ?? session.charger ?? 'Sin vincular' }}</strong>
               <span class="muted">
                 {{
-                  session.startedAt | date: 'short' : sourceOffset(session.sourceUtcOffsetMinutes)
+                  session.startedAt
+                    | date: sourceDateTime : sourceOffset(session.sourceUtcOffsetMinutes)
                 }}
                 @if (sourceLabel(session.sourceUtcOffsetMinutes); as utc) {
                   ({{ utc }})
+                }
+                @if (session.endedAt) {
+                  –
+                  {{
+                    session.endedAt
+                      | date
+                        : sourceTime
+                        : endOffset(
+                            session.sourceUtcOffsetMinutes,
+                            session.sourceEndUtcOffsetMinutes
+                          )
+                  }}
+                  @if (
+                    endLabel(session.sourceUtcOffsetMinutes, session.sourceEndUtcOffsetMinutes);
+                    as utc
+                  ) {
+                    ({{ utc }})
+                  }
                 }
               </span>
             </div>
@@ -117,6 +143,14 @@
           }
           <div class="card-foot">
             <sarc-session-state-badge [state]="session.state" />
+            <button
+              matButton
+              type="button"
+              [attr.aria-label]="'Ver la sesión ' + session.externalSessionId"
+              (click)="openAction(session, 'view')"
+            >
+              Ver
+            </button>
             @if (canEdit || session.energyReview === 'APPROVED') {
               <button matButton type="button" (click)="openEnergyReview(session)">
                 {{ energyAction(session) }}
@@ -132,6 +166,22 @@
                 <button matButton type="button" (click)="toggleTest(session)">
                   {{ session.state === 'TEST' ? 'Reincorporar' : 'Marcar prueba' }}
                 </button>
+                <button
+                  matButton
+                  type="button"
+                  [attr.aria-label]="'Editar la sesión ' + session.externalSessionId"
+                  (click)="openAction(session, 'edit')"
+                >
+                  Editar
+                </button>
+                <button
+                  matButton
+                  type="button"
+                  [attr.aria-label]="'Eliminar la sesión ' + session.externalSessionId"
+                  (click)="openAction(session, 'delete')"
+                >
+                  Eliminar
+                </button>
               </span>
             }
           </div>
@@ -139,12 +189,14 @@
       }
     </ul>
   } @else {
-    <table mat-table [dataSource]="facade.sessions()" class="table">
+    <table mat-table [dataSource]="facade.sessions()" [trackBy]="trackSession" class="table">
       <ng-container matColumnDef="start">
         <th mat-header-cell *matHeaderCellDef>Inicio</th>
         <td mat-cell *matCellDef="let row">
           @let session = sessionOf(row);
-          {{ session.startedAt | date: 'short' : sourceOffset(session.sourceUtcOffsetMinutes) }}
+          {{
+            session.startedAt | date: sourceDateTime : sourceOffset(session.sourceUtcOffsetMinutes)
+          }}
           @if (sourceLabel(session.sourceUtcOffsetMinutes); as utc) {
             <span class="muted">({{ utc }})</span>
           }
@@ -152,8 +204,17 @@
             <span class="muted block">
               hasta
               {{
-                session.endedAt | date: 'shortTime' : sourceOffset(session.sourceUtcOffsetMinutes)
+                session.endedAt
+                  | date
+                    : sourceTime
+                    : endOffset(session.sourceUtcOffsetMinutes, session.sourceEndUtcOffsetMinutes)
               }}
+              @if (
+                endLabel(session.sourceUtcOffsetMinutes, session.sourceEndUtcOffsetMinutes);
+                as utc
+              ) {
+                ({{ utc }})
+              }
             </span>
           } @else {
             <span class="muted block">Término no informado</span>
@@ -208,6 +269,14 @@
           <span class="sarc-visually-hidden">Acciones</span>
         </th>
         <td mat-cell *matCellDef="let row" class="actions-cell">
+          <button
+            matButton
+            type="button"
+            [attr.aria-label]="'Ver la sesión ' + sessionOf(row).externalSessionId"
+            (click)="openAction(sessionOf(row), 'view')"
+          >
+            Ver
+          </button>
           @if (canEdit || sessionOf(row).energyReview === 'APPROVED') {
             <button matButton type="button" (click)="openEnergyReview(sessionOf(row))">
               {{ energyAction(sessionOf(row)) }}
@@ -233,6 +302,12 @@
                 {{
                   session.state === 'TEST' ? 'Reincorporar a los indicadores' : 'Marcar como prueba'
                 }}
+              </button>
+              <button mat-menu-item type="button" (click)="openAction(session, 'edit')">
+                Editar sesión
+              </button>
+              <button mat-menu-item type="button" (click)="openAction(session, 'delete')">
+                Eliminar sesión
               </button>
             </mat-menu>
           }

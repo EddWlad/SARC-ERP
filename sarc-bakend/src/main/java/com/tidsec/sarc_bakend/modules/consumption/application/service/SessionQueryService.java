@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionSummary;
+import com.tidsec.sarc_bakend.modules.consumption.application.result.SessionDetail;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.SessionView;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReview;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergyReviewStatus;
@@ -50,7 +51,7 @@ public class SessionQueryService {
 	public PageResult<SessionView> search(SessionCriteria criteria, PageQuery pageQuery) {
 		SessionCriteria visible = criteria;
 		if (!access.canReadOperational()) {
-			if ((criteria.state() != null && criteria.state() != SessionState.VALIDATED)
+			if (criteria.deleted() || (criteria.state() != null && criteria.state() != SessionState.VALIDATED)
 					|| (criteria.energyReview() != null && criteria.energyReview() != EnergyReviewStatus.APPROVED)) {
 				throw new OperationalAccessDeniedException("CONSUMPTION_OPERATIONAL_ACCESS_DENIED",
 						"Los filtros operativos requieren Administrador o Analista de Monitoreo");
@@ -62,6 +63,23 @@ public class SessionQueryService {
 				.map(EnergySession::getEquipmentId).filter(Objects::nonNull).distinct().toList());
 		return page.map(session -> new SessionView(session,
 				session.getEquipmentId() == null ? null : equipment.get(session.getEquipmentId())));
+	}
+
+	/**
+	 * Detalle de una sesion (Feature 009, FR-011). Quien no lee datos operativos solo ve sesiones validadas y
+	 * activas, sin baja ni revisiones; cualquier otra le responde 404, como si no existiera.
+	 */
+	public SessionDetail detail(UUID id) {
+		EnergySession session = sessions.findById(id)
+				.orElseThrow(() -> new NotFoundException("SESSION_NOT_FOUND", "La sesión no existe"));
+		boolean operational = access.canReadOperational();
+		if (!operational && (session.isDeleted() || session.getState() != SessionState.VALIDATED)) {
+			throw new NotFoundException("SESSION_NOT_FOUND", "La sesión no existe");
+		}
+		EquipmentReference equipment = session.getEquipmentId() == null ? null
+				: directory.findByIds(List.of(session.getEquipmentId())).get(session.getEquipmentId());
+		return new SessionDetail(new SessionView(session, equipment),
+				operational ? sessions.history(id) : List.of(), operational);
 	}
 
 	public List<EnergyReview> energyReviews(UUID id) {

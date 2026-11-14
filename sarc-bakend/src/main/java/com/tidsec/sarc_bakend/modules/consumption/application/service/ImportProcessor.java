@@ -157,7 +157,13 @@ class ImportProcessor {
 		}
 		EnergySession current = existing.get(id);
 		RowClassification classification;
-		if (current != null && current.changesCharger(parsed.reading())) {
+		if (current != null && current.isDeleted()) {
+			// FR-015: la identidad se respeta y la baja no se reactiva ni se corrige desde un archivo.
+			classification = RowClassification.DELETED;
+			issues.add(new RowIssue("SESSION_DELETED", "La sesion " + id
+					+ " fue dada de baja; la reimportacion no la reactiva ni la modifica"));
+		}
+		else if (current != null && current.changesCharger(parsed.reading())) {
 			classification = RowClassification.EQUIPMENT_CHANGED;
 			issues.add(new RowIssue("SESSION_EQUIPMENT_CHANGED", "La sesion estaba en "
 					+ chargerOf(batch.getSource(), current.reading()) + " y ahora llega en "
@@ -295,6 +301,10 @@ class ImportProcessor {
 			sessions.save(created);
 			return new Outcome(RowOutcome.INSERTED, row.equipment() != null && resolution.equipment() == null
 					? "El inventario cambio despues de la vista previa; la sesion queda pendiente de vincular" : null);
+		}
+		if (session.isDeleted()) {
+			// Dada de baja despues de la vista previa o en un lote antiguo: nunca se reactiva.
+			return Outcome.skipped("La sesion esta dada de baja; la reimportacion no la reactiva");
 		}
 		if (row.getExistingSessionRevision() != null && row.getExistingSessionRevision() != session.getRevision()) {
 			// La decision se tomo sobre otra version: aplicarla seria corregir algo que nadie reviso.

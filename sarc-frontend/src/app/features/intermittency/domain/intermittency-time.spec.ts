@@ -10,6 +10,7 @@ import {
   operatingInstant,
   periodLabel,
   periodRange,
+  sourceCellText,
   splitByDay,
   todayInOperatingZone,
 } from './intermittency-time';
@@ -151,6 +152,20 @@ describe('intermittency-time', () => {
       // 2026-10-16T03:00Z son las 22:00 del dia 15 en Guayaquil.
       expect(todayInOperatingZone(new Date('2026-10-16T03:00:00Z'))).toBe('2026-10-15');
       expect(todayInOperatingZone(new Date('2026-10-16T05:00:00Z'))).toBe('2026-10-16');
+    });
+  });
+
+  describe('sourceCellText', () => {
+    it('shows only the time of an Excel time-only cell', () => {
+      expect(sourceCellText('1899-12-31 09:05:00')).toBe('09:05:00');
+      expect(sourceCellText('1899-12-30 16:28:00')).toBe('16:28:00');
+    });
+
+    it('keeps any other value and marks a missing one', () => {
+      expect(sourceCellText('2026-11-13 09:05:00')).toBe('2026-11-13 09:05:00');
+      expect(sourceCellText('19:41')).toBe('19:41');
+      expect(sourceCellText(null)).toBe('—');
+      expect(sourceCellText('')).toBe('—');
     });
   });
 });

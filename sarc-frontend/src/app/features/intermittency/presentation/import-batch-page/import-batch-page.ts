@@ -32,8 +32,18 @@ import {
   WINDOW_RESOLUTION_LABELS,
   WindowResolution,
 } from '../../domain/intermittency-import';
-import { CLASSIFICATION_LABELS, RowClassification } from '../../domain/intermittency-labels';
-import { durationText, formatDay, formatInstant, present } from '../../domain/intermittency-time';
+import {
+  CLASSIFICATION_LABELS,
+  issueText,
+  RowClassification,
+} from '../../domain/intermittency-labels';
+import {
+  durationText,
+  formatDay,
+  formatInstant,
+  present,
+  sourceCellText,
+} from '../../domain/intermittency-time';
 import { ImportRowEditor } from '../import-row-editor/import-row-editor';
 import { RowDecisionPanel } from '../row-decision-panel/row-decision-panel';
 
@@ -143,7 +153,9 @@ import { RowDecisionPanel } from '../row-decision-panel/row-decision-panel';
                   <td mat-cell *matCellDef="let row">
                     <ng-container *ngTemplateOutlet="classification; context: { $implicit: row }" />
                     @for (issue of row.interpretation.rowIssues; track issue.code) {
-                      <span class="issue">{{ issue.message }}</span>
+                      <span class="issue" [class.info]="issue.code === 'NAME_DIFFERS'">
+                        {{ issueText(issue) }}
+                      </span>
                     }
                   </td>
                 </ng-container>
@@ -193,11 +205,12 @@ import { RowDecisionPanel } from '../row-decision-panel/row-decision-panel';
               <li [class.ignored]="present(window.mergedIntoPair) || window.decision === 'OMIT'">
                 <span class="pair">Par {{ window.pair }}</span>
                 <span class="original">
-                  Original: {{ window.startText || '—' }} → {{ window.endText || '—' }}
+                  Original: {{ sourceCellText(window.startText) }} →
+                  {{ sourceCellText(window.endText) }}
                 </span>
                 <span class="interpreted">{{ windowText(window) }}</span>
                 @for (issue of window.issues; track issue.code) {
-                  <span class="issue">{{ issue.message }}</span>
+                  <span class="issue">{{ issueText(issue) }}</span>
                 }
                 @if (window.test) {
                   <span class="badge badge-off">Prueba</span>
@@ -298,6 +311,29 @@ import { RowDecisionPanel } from '../row-decision-panel/row-decision-panel';
     .issue {
       color: var(--mat-sys-error);
     }
+
+    // Aviso que no bloquea: la fila se vincula por el código.
+    .issue.info {
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    // Corregir y Resolver apilados, del mismo ancho y separados; en la tarjeta del teléfono, lado a
+    // lado y a todo el ancho.
+    .decision {
+      display: inline-grid;
+      gap: var(--sarc-space-2);
+    }
+
+    // Una fila tiene varias ventanas: fila, clasificación y decisión empiezan arriba, junto al Par 1.
+    td.mat-mdc-cell {
+      vertical-align: top;
+      padding-block: var(--sarc-space-3);
+    }
+
+    .card .decision {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
   `,
 })
 export class IntermittencyImportBatchPage {
@@ -307,6 +343,8 @@ export class IntermittencyImportBatchPage {
   protected readonly quantities = inject(QuantityFormat);
   protected readonly formatDay = formatDay;
   protected readonly present = present;
+  protected readonly issueText = issueText;
+  protected readonly sourceCellText = sourceCellText;
   protected readonly durationText = durationText;
   protected readonly pageSizeOptions = [25, 50, 100];
   protected readonly isHandset = injectIsHandset();

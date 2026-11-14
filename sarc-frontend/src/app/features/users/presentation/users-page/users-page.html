@@ -10,13 +10,13 @@
 </header>
 
 <section class="filters" aria-label="Filtros">
-  <mat-form-field appearance="outline" class="search" subscriptSizing="dynamic">
+  <mat-form-field floatLabel="always" appearance="outline" class="search" subscriptSizing="dynamic">
     <mat-label>Buscar por nombre o correo</mat-label>
     <svg lucideSearch matPrefix [size]="18" class="prefix-icon"></svg>
     <input matInput type="search" [value]="facade.filters().text" (input)="onSearch($event)" />
   </mat-form-field>
 
-  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+  <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
     <mat-label>Rol</mat-label>
     <mat-select [value]="facade.filters().role" (selectionChange)="onRoleFilter($event.value)">
       <mat-option value="">Todos</mat-option>
@@ -26,7 +26,7 @@
     </mat-select>
   </mat-form-field>
 
-  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+  <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
     <mat-label>Estado</mat-label>
     <mat-select [value]="facade.filters().status" (selectionChange)="onStatusFilter($event.value)">
       <mat-option value="">Todos</mat-option>
