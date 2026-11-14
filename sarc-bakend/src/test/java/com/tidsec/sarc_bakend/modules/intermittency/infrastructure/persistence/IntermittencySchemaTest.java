@@ -208,8 +208,9 @@ class IntermittencySchemaTest {
 			assertThat(before).anyMatch(column -> column.startsWith("upt_measurement."))
 					.anyMatch(column -> column.startsWith("energy_session.")).anyMatch(column -> column.startsWith("asset_equipment."));
 
+			// Solo V018 (Feature 008): migraciones posteriores pueden evolucionar otras tablas (V019, Feature 009).
 			Flyway.configure().dataSource(db.getJdbcUrl(), db.getUsername(), db.getPassword())
-					.locations("classpath:db/migration").load().migrate();
+					.locations("classpath:db/migration").target("018").load().migrate();
 
 			assertThat(legacy.queryForList(COLUMNS, String.class)).isEqualTo(before);
 			assertThat(legacy.queryForList("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"

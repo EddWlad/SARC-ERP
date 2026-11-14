@@ -219,6 +219,10 @@ export type ImportRowResponse = {
     externalSessionId?: string | null;
     startedAt?: string | null;
     endedAt?: string | null;
+    /**
+     * Desplazamiento UTC en minutos declarado por la fuente para el inicio
+     */
+    sourceUtcOffsetMinutes?: number | null;
     energyKwh?: number | null;
     site?: string | null;
     charger?: string | null;
@@ -812,6 +816,13 @@ export type SessionResponse = {
     externalSessionId: string;
     startedAt: string;
     endedAt?: string | null;
+    /**
+     * Desplazamiento UTC en minutos con que la fuente escribio el inicio; nulo si no hay evidencia de origen (se muestra en hora de Ecuador)
+     */
+    sourceUtcOffsetMinutes?: number | null;
+    /**
+     * Fecha de inicio segun la fuente: el dia en que se cuenta la sesion
+     */
     startDate: string;
     energyKwh?: number | null;
     state: 'VALIDATED' | 'PENDING_LINK' | 'AWAITING_APPROVAL' | 'TEST' | 'ENERGY_REVIEW' | 'ENERGY_REJECTED';

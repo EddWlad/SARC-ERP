@@ -32,6 +32,7 @@ import {
   SOURCE_LABELS,
 } from '../../domain/consumption';
 import { CONSUMPTION_EDITORS } from '../../domain/consumption-permissions';
+import { sourceUtcLabel, sourceUtcOffset } from '../../domain/source-time';
 import { ConsumptionFilterBar } from '../consumption-filter-bar/consumption-filter-bar';
 import { SessionStateBadge } from '../session-state-badge/session-state-badge';
 
@@ -80,6 +81,9 @@ export class SessionsPage {
   protected readonly linkIssueLabels = LINK_ISSUE_LABELS;
   protected readonly sourceLabels = SOURCE_LABELS;
   protected readonly networkLabels = NETWORK_LABELS;
+  /** Hora tal como la escribio la fuente (Feature 009): misma base que la fecha de conteo. */
+  protected readonly sourceOffset = sourceUtcOffset;
+  protected readonly sourceLabel = sourceUtcLabel;
 
   protected onSearch(event: Event): void {
     this.facade.search((event.target as HTMLInputElement).value);

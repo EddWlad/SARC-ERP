@@ -12,6 +12,7 @@ import { toProblem } from '../../../../core/http/problem';
 import { QuantityFormat } from '../../../../shared/format/quantity-format';
 import { guardUnsavedChanges } from '../../../../shared/ui/unsaved-changes';
 import { EnergyReview, EnergyDecision, Session } from '../../domain/consumption';
+import { sourceUtcLabel, sourceUtcOffset } from '../../domain/source-time';
 
 const MAX_JUSTIFICATION = 500;
 
@@ -108,6 +109,8 @@ export interface EnergyReviewDialogData {
 })
 export class EnergyReviewDialog {
   readonly data = inject<EnergyReviewDialogData>(MAT_DIALOG_DATA);
+  protected readonly sourceOffset = sourceUtcOffset;
+  protected readonly sourceLabel = sourceUtcLabel;
   private readonly dialog = inject<MatDialogRef<EnergyReviewDialog, Session>>(MatDialogRef);
   protected readonly quantities = inject(QuantityFormat);
   protected readonly maxLength = MAX_JUSTIFICATION;

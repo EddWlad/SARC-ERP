@@ -3,16 +3,21 @@ package com.tidsec.sarc_bakend.modules.consumption.domain.model.session;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Objects;
 
 /**
  * Lo que la plataforma reporta de una sesion. {@code site}/{@code charger} identifican el equipo en
  * Enerlink (ACTIVO/CARGADOR); {@code serial} lo identifica en Wallbox. La energia se guarda con 3
  * decimales (Wh), suficiente para kWh de sesiones de carga. {@code endedAt} y {@code energyKwh} son
- * nulos si la plataforma no los informo: nulo significa ausente, nunca cero.
+ * nulos si la plataforma no los informo: nulo significa ausente, nunca cero. {@code sourceOffset} es el
+ * desplazamiento UTC con que la fuente escribio el inicio (Feature 009): fija la fecha de atribucion y la
+ * hora que se muestra. Nulo solo en sesiones historicas sin evidencia de origen, que conservan la fecha
+ * operativa de Ecuador.
  */
 public record SessionReading(Instant startedAt, Instant endedAt, BigDecimal energyKwh, String site, String charger,
-		String serial, String connector) {
+		String serial, String connector, ZoneOffset sourceOffset) {
 
 	public static final int ENERGY_SCALE = 3;
 
@@ -24,12 +29,23 @@ public record SessionReading(Instant startedAt, Instant endedAt, BigDecimal ener
 		connector = blankToNull(connector);
 	}
 
+	/** Lectura sin desplazamiento de origen conocido. */
+	public SessionReading(Instant startedAt, Instant endedAt, BigDecimal energyKwh, String site, String charger,
+			String serial, String connector) {
+		this(startedAt, endedAt, energyKwh, site, charger, serial, connector, null);
+	}
+
+	/** Fecha de inicio tal como la escribio la fuente; nula si no se conoce su desplazamiento. */
+	public LocalDate sourceStartDate() {
+		return startedAt == null || sourceOffset == null ? null : startedAt.atOffset(sourceOffset).toLocalDate();
+	}
+
 	/** Mismos valores; la energia se compara por magnitud, no por escala. */
 	public boolean sameAs(SessionReading other) {
 		return Objects.equals(startedAt, other.startedAt) && Objects.equals(endedAt, other.endedAt)
 				&& sameEnergy(energyKwh, other.energyKwh) && Objects.equals(site, other.site)
 				&& Objects.equals(charger, other.charger) && Objects.equals(serial, other.serial)
-				&& Objects.equals(connector, other.connector);
+				&& Objects.equals(connector, other.connector) && Objects.equals(sourceOffset, other.sourceOffset);
 	}
 
 	private static boolean sameEnergy(BigDecimal current, BigDecimal incoming) {
