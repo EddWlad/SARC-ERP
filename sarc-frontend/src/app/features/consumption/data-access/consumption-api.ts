@@ -14,6 +14,8 @@ import {
   EnergyReview,
   EnergyReviewStatus,
   EnergyDecision,
+  SessionChanges,
+  SessionDetail,
 } from '../domain/consumption';
 import { DateRange } from '../domain/period';
 
@@ -85,6 +87,28 @@ export class ConsumptionApi {
     return this.http.post<Session>(`${this.baseUrl}/sessions/${session.id}/energy-review`, {
       decision,
       justification: justification.trim(),
+      version: session.version,
+    });
+  }
+
+  /** Detalle con baja y revisiones cuando la cuenta puede verlas (Feature 009). */
+  detail(id: string) {
+    return this.http.get<SessionDetail>(`${this.baseUrl}/sessions/${id}`);
+  }
+
+  /** Edicion con motivo sobre la version que se abrio; solo viajan los campos cambiados. */
+  edit(session: Session, changes: SessionChanges, reason: string) {
+    return this.http.patch<Session>(`${this.baseUrl}/sessions/${session.id}`, {
+      ...changes,
+      reason: reason.trim(),
+      version: session.version,
+    });
+  }
+
+  /** Baja logica con motivo: deja de contar en indicadores e informes. */
+  delete(session: Session, reason: string) {
+    return this.http.post<Session>(`${this.baseUrl}/sessions/${session.id}/deletion`, {
+      reason: reason.trim(),
       version: session.version,
     });
   }

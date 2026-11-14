@@ -32,6 +32,7 @@ export const CLASSIFICATION_LABELS: Readonly<Record<RowClassification, string>> 
   INVALID: 'Inválidas',
   DUPLICATE: 'Duplicadas',
   PENDING_LINK: 'Pendientes de vincular',
+  DELETED: 'Dadas de baja',
 };
 
 /** Que pasa con cada clasificacion al confirmar (PRD 3.1). */
@@ -44,6 +45,7 @@ export const CLASSIFICATION_HINTS: Readonly<Record<RowClassification, string>> =
   INVALID: 'No se pudieron interpretar; no se incorporan',
   DUPLICATE: 'Repiten una sesión anterior del mismo lote; se ignoran',
   PENDING_LINK: 'Se guardan sin equipo hasta vincularlas; no suman',
+  DELETED: 'La sesión fue dada de baja; la reimportación no la reactiva ni la modifica',
 };
 
 export const CLASSIFICATIONS = Object.keys(CLASSIFICATION_LABELS) as readonly RowClassification[];
@@ -76,6 +78,8 @@ export function classificationCount(batch: ImportBatch, classification: RowClass
       return batch.duplicateRows;
     case 'PENDING_LINK':
       return batch.pendingLinkRows;
+    case 'DELETED':
+      return batch.deletedRows;
   }
 }
 
@@ -141,6 +145,11 @@ export function sessionConfirmSummary(batch: ImportBatch): ImportConfirmSummary 
         items: [
           { label: CLASSIFICATION_LABELS.IDENTICAL, count: batch.identicalRows },
           { label: CLASSIFICATION_LABELS.DUPLICATE, count: batch.duplicateRows },
+          {
+            label: CLASSIFICATION_LABELS.DELETED,
+            count: batch.deletedRows,
+            detail: 'sesiones dadas de baja; no se reactivan',
+          },
           {
             label: CLASSIFICATION_LABELS.INVALID,
             count: batch.invalidRows,

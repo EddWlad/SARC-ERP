@@ -83,6 +83,24 @@
         "../sarc-bakend/target/feature008-browser-proxy.json"
       ],
       "port": 4204
+    },
+    {
+      "name": "sarc-frontend-qa009",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "start",
+        "--prefix",
+        "sarc-frontend",
+        "--",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "4205",
+        "--proxy-config",
+        "../sarc-bakend/target/feature009-browser-proxy.json"
+      ],
+      "port": 4205
     }
   ]
 }

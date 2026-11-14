@@ -35,7 +35,7 @@ import { ConnectorAlias, UptimeImportRow } from '../../domain/uptime-import';
     </header>
 
     <section class="filters" aria-label="Filtros">
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Buscar equipo o conector</mat-label>
         <svg lucideSearch matPrefix [size]="18" class="prefix-icon"></svg>
         <input matInput type="search" #search (input)="facade.search(search.value)" />
@@ -73,7 +73,7 @@ import { ConnectorAlias, UptimeImportRow } from '../../domain/uptime-import';
               <span class="muted">{{ issue.message }}</span>
             }
             <div class="actions">
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
                 <mat-label>Conector</mat-label>
                 <mat-select [value]="chosen(row)" (selectionChange)="choose(row.id, $event.value)">
                   @for (option of facade.optionsFor(row.equipmentId); track option.connectorId) {
@@ -122,7 +122,7 @@ import { ConnectorAlias, UptimeImportRow } from '../../domain/uptime-import';
           <li class="card">
             <strong class="wrap">{{ alias.label }}</strong>
             <div class="actions">
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
                 <mat-label>Conector</mat-label>
                 <mat-select
                   [value]="alias.connectorId"

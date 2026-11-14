@@ -28,6 +28,7 @@ function batch(status: ImportStatus): ImportBatch {
     duplicateRows: 0,
     pendingLinkRows: 0,
     linkableRows: 0,
+    deletedRows: 0,
     energyReviewRows: 0,
     appliedRows: 0,
     createdAt: '2026-10-23T10:00:00Z',

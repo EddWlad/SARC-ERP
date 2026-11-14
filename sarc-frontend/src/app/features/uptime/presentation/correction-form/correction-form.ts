@@ -30,7 +30,12 @@ const text = (value: number | null | undefined) => (value == null ? '' : String(
     <form novalidate (submit)="onSubmit($event)">
       <mat-dialog-content>
         <div class="fields">
-          <mat-form-field appearance="outline" class="wide" subscriptSizing="dynamic">
+          <mat-form-field
+            floatLabel="always"
+            appearance="outline"
+            class="wide"
+            subscriptSizing="dynamic"
+          >
             <mat-label>Tipo de período</mat-label>
             <mat-select [formField]="correction.periodType">
               @for (type of types; track type) {
@@ -43,25 +48,30 @@ const text = (value: number | null | undefined) => (value == null ? '' : String(
               Confirmo que el período es la semana exacta
             </mat-checkbox>
           }
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Disponible (min)</mat-label>
             <input matInput inputmode="decimal" [formField]="correction.available" />
           </mat-form-field>
           @if (!reported) {
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
               <mat-label>Ocupado (min)</mat-label>
               <input matInput inputmode="decimal" [formField]="correction.occupied" />
             </mat-form-field>
           }
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Con falla (min)</mat-label>
             <input matInput inputmode="decimal" [formField]="correction.fault" />
           </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Fuera de línea (min)</mat-label>
             <input matInput inputmode="decimal" [formField]="correction.offline" />
           </mat-form-field>
-          <mat-form-field appearance="outline" class="wide" subscriptSizing="dynamic">
+          <mat-form-field
+            floatLabel="always"
+            appearance="outline"
+            class="wide"
+            subscriptSizing="dynamic"
+          >
             <mat-label>Justificación</mat-label>
             <textarea matInput rows="2" [formField]="correction.justification"></textarea>
           </mat-form-field>

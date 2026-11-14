@@ -51,4 +51,41 @@ describe('SessionsFacade', () => {
     expect(facade.summary()?.official.energyKwh).toBe(3.75);
     expect(facade.summary()?.official.sessionsWithoutEnergy).toBe(2);
   });
+
+  it('keeps the list and warns when a refresh of the same query fails (Feature 009, US4)', async () => {
+    const page = (id: string) => ({
+      content: [{ id, externalSessionId: id }],
+      page: 0,
+      size: 20,
+      totalElements: 1,
+      totalPages: 1,
+    });
+    const flushList = async (body: object, options?: { status: number; statusText: string }) => {
+      TestBed.tick();
+      http.expectOne((request) => request.url === SESSIONS_URL).flush(body, options);
+      http
+        .match((request) => request.url === SUMMARY_URL)
+        .forEach((request) =>
+          request.flush({
+            official: { sessions: 1, energyKwh: 1, equipment: 1, sessionsWithoutEnergy: 0 },
+          }),
+        );
+      await vi.advanceTimersByTimeAsync(0);
+      TestBed.tick();
+    };
+    await flushList(page('S-1'));
+    const shown = facade.sessions();
+
+    facade.reload();
+    await flushList({ detail: 'Caido' }, { status: 503, statusText: 'Down' });
+    expect(facade.sessions()).toBe(shown);
+    expect(facade.failed()).toBe(false);
+    expect(facade.refreshFailed()).toBe(true);
+
+    // Otra consulta que falla no presenta la lista anterior como vigente.
+    facade.filterState('TEST');
+    await flushList({ detail: 'Caido' }, { status: 503, statusText: 'Down' });
+    expect(facade.failed()).toBe(true);
+    expect(facade.refreshFailed()).toBe(false);
+  });
 });

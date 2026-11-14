@@ -41,7 +41,7 @@ import {
     </header>
 
     <section class="period" aria-label="Período">
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Mes</mat-label>
         <input
           matInput

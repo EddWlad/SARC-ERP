@@ -19,6 +19,30 @@
   margin: 0 var(--sarc-space-2) 0 var(--sarc-space-3);
 }
 
+// Aviso de un refresco fallido: los resultados anteriores siguen a la vista debajo.
+.refresh-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sarc-space-2) var(--sarc-space-3);
+  margin-bottom: var(--sarc-space-3);
+  padding: var(--sarc-space-2) var(--sarc-space-3);
+  border-radius: var(--sarc-radius-md);
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+
+  p {
+    margin: 0;
+    font: var(--mat-sys-body-medium);
+  }
+
+  // El color primario no contrasta sobre el contenedor de error.
+  button {
+    --mat-button-text-label-text-color: currentColor;
+  }
+}
+
 .results {
   overflow: hidden;
   border: 1px solid var(--mat-sys-outline-variant);

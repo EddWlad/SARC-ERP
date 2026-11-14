@@ -9,6 +9,18 @@
   white-space: nowrap;
 }
 
+// En tablet las acciones (Ver, historial y menú) se apilan para que la tabla quepa sin recortar
+// la columna de inicio; si aun así no cabe, la tabla se desplaza en vez de ocultar columnas.
+@media (max-width: 1199.98px) {
+  .actions-cell {
+    white-space: normal;
+  }
+}
+
+.results {
+  overflow-x: auto;
+}
+
 .number {
   text-align: end;
 }

@@ -82,6 +82,11 @@ class EnergySessionRepositoryAdapter implements EnergySessionRepository {
 	}
 
 	@Override
+	public List<SessionRevision> history(UUID sessionId) {
+		return revisions.findBySessionIdOrderByRevisionDesc(sessionId);
+	}
+
+	@Override
 	public Optional<EnergySession> findById(UUID id) {
 		return jpa.findById(id);
 	}

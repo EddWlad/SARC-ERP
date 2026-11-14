@@ -21,7 +21,9 @@ public enum RowClassification {
 	/** El mismo ID de sesion aparece antes en el mismo lote: se ignora. */
 	DUPLICATE,
 	/** Sesion nueva de un equipo que no se pudo identificar: se guarda pendiente de vinculacion. */
-	PENDING_LINK;
+	PENDING_LINK,
+	/** Ya existe pero esta dada de baja: se informa y no se aplica; la reimportacion no la reactiva (Feature 009). */
+	DELETED;
 
 	/** Clasificaciones que pueden terminar escribiendo una sesion. */
 	public boolean writesSession() {

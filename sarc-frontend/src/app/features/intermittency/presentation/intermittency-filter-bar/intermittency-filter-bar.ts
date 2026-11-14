@@ -47,7 +47,7 @@ const PRESETS: readonly PeriodPreset[] = ['FIRST_HALF', 'SECOND_HALF', 'LAST_15_
 
     <section class="fields" aria-label="Filtros">
       @if (usesMonth()) {
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
           <mat-label>Mes</mat-label>
           <input
             matInput
@@ -59,7 +59,7 @@ const PRESETS: readonly PeriodPreset[] = ['FIRST_HALF', 'SECOND_HALF', 'LAST_15_
         </mat-form-field>
       }
       @if (preset() === 'CUSTOM') {
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
           <mat-label>Primer día</mat-label>
           <input
             matInput
@@ -69,7 +69,7 @@ const PRESETS: readonly PeriodPreset[] = ['FIRST_HALF', 'SECOND_HALF', 'LAST_15_
             (change)="rangeChange.emit({ firstDay: valueOf($event), lastDay: lastDay() })"
           />
         </mat-form-field>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
           <mat-label>Último día (incluido)</mat-label>
           <input
             matInput
@@ -107,13 +107,16 @@ const PRESETS: readonly PeriodPreset[] = ['FIRST_HALF', 'SECOND_HALF', 'LAST_15_
 
     .fields {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
       gap: var(--sarc-space-3);
-      align-items: center;
+      // Arriba y no al centro: una ayuda bajo un campo no debe subir su contorno respecto de los demás.
+      align-items: start;
     }
 
+    // Botón de 40px centrado sobre el contorno de 56px de los campos.
     .clear {
       justify-self: start;
+      margin-top: var(--sarc-space-2);
     }
 
     .issue {

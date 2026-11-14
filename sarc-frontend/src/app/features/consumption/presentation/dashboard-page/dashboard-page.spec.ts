@@ -43,6 +43,7 @@ describe('DashboardPage', () => {
       summary: signal(summary),
       loading: signal(false),
       error: signal(''),
+      refreshError: signal<string | undefined>(undefined),
       downloading: signal(undefined),
       filters: signal({}),
     };
@@ -62,8 +63,34 @@ describe('DashboardPage', () => {
     });
     const fixture = TestBed.createComponent(DashboardPage);
     fixture.detectChanges();
-    return fixture.nativeElement as HTMLElement;
+    host = fixture.nativeElement as HTMLElement;
+    refresh = (message: string | undefined) => {
+      facade.refreshError.set(message);
+      fixture.detectChanges();
+    };
+    return host;
   }
+  let host: HTMLElement;
+  let refresh: (message: string | undefined) => void;
+
+  it('keeps the indicators and charts when only a background refresh failed (Feature 009, US4)', () => {
+    render(true);
+    const kpis = host.querySelector('section[aria-label="Indicadores oficiales"]');
+    const charts = Array.from(host.querySelectorAll('sarc-chart-view'));
+
+    refresh('Servicio no disponible');
+
+    expect(host.querySelector('[role="status"]')?.textContent).toContain(
+      'No se pudieron actualizar las cifras; se muestran las anteriores. Servicio no disponible',
+    );
+    expect(host.querySelector('section[aria-label="Indicadores oficiales"]')).toBe(kpis);
+    expect(Array.from(host.querySelectorAll('sarc-chart-view'))).toEqual(charts);
+    expect(host.querySelector('[role="alert"]')).toBeNull();
+
+    refresh(undefined);
+    expect(host.querySelector('[role="status"]')).toBeNull();
+    expect(host.querySelector('section[aria-label="Indicadores oficiales"]')).toBe(kpis);
+  });
 
   it('renders exclusive backend totals and labels approved high readings as an official subset', () => {
     const host = render(true);
@@ -75,6 +102,12 @@ describe('DashboardPage', () => {
     expect(rows.find((row) => row?.includes('Energía por revisar'))).toContain('2');
     expect(rows.find((row) => row?.includes('Energía rechazada'))).toContain('3');
     expect(host.textContent).toContain('incluidas en los indicadores oficiales');
+  });
+
+  it('states its calculation time in Ecuador time and its date criterion (Feature 009, FR-005)', () => {
+    const note = render(true).querySelector('.generated')?.textContent?.replace(/\s+/g, ' ');
+    expect(note).toContain('Calculado 21/10/2026 10:00 (hora de Ecuador)');
+    expect(note).toContain('Fecha de inicio según la fuente');
   });
 
   it('keeps zero operational categories visible to operators', () => {

@@ -25,6 +25,7 @@ interface EnergySessionJpaRepository extends JpaRepository<EnergySession, UUID>,
 	@Query("""
 			select s from EnergySession s
 			where s.state = com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState.PENDING_LINK
+			  and s.deletedAt is null
 			  and (:afterId is null or s.id > :afterId)
 			order by s.id""")
 	List<EnergySession> findPendingLink(@Param("afterId") UUID afterId, Pageable pageable);

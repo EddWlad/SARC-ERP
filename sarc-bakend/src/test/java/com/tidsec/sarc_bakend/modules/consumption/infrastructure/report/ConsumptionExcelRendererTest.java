@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,9 @@ import org.springframework.beans.BeanUtils;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionReport;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.ConsumptionSummary;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.RankedEquipment;
+import com.tidsec.sarc_bakend.modules.consumption.application.result.SessionView;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergySession;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionReading;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.DailyEnergy;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyTotals;
@@ -128,6 +132,54 @@ class ConsumptionExcelRendererTest {
 				.doesNotContain("Aprobadas sobre umbral");
 		assertThat(packageText(new ConsumptionExcelRenderer(branding()).render(report(true))))
 				.contains("Aprobadas sobre umbral (sesiones, incluidas en oficiales)");
+	}
+
+	/** Enerlink en UTC con el fin declarado en UTC-05:00 y Wallbox en hora de Ecuador sin termino (Feature 009). */
+	static ConsumptionReport withSourceTimes() {
+		var zone = new OperatingZone(ZoneId.of("America/Guayaquil"));
+		var station = new EquipmentReference(new UUID(0, 99), ChargingNetwork.JAC, InfrastructureType.CHARGING_STATION,
+				"QA Estacion", "Q99");
+		var enerlink = EnergySession.record(SessionSource.ENERLINK, "", "1211",
+				new SessionReading(Instant.parse("2026-11-11T00:30:00Z"), Instant.parse("2026-11-11T02:10:05Z"),
+						new BigDecimal("8"), "QA", "C1", null, null, ZoneOffset.UTC, ZoneOffset.ofHours(-5)),
+				station, false, false, UUID.randomUUID(), zone);
+		var wallbox = EnergySession.record(SessionSource.WALLBOX, "", "W-77",
+				new SessionReading(Instant.parse("2026-11-11T03:00:00Z"), null, new BigDecimal("5"), null, null,
+						"SERIE", null, ZoneOffset.ofHours(-5), null),
+				station, false, false, UUID.randomUUID(), zone);
+		ConsumptionReport base = report(false);
+		return new ConsumptionReport(base.scope(), base.cutOff(), base.summary(), base.ranking(),
+				List.of(new SessionView(enerlink, station), new SessionView(wallbox, station)), List.of(), Map.of());
+	}
+
+	@Test
+	void transactionsShowEachEndInItsOwnSourceOffsetAndTheSourceStartDate() throws Exception {
+		byte[] bytes = new ConsumptionExcelRenderer(branding()).render(withSourceTimes());
+
+		try (var book = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
+			Map<String, List<String>> rows = new java.util.HashMap<>();
+			List<String> header = null;
+			for (var row : book.getSheet("Transacciones")) {
+				List<String> cells = new ArrayList<>();
+				row.forEach(cell -> cells.add(cell.getCellType() == CellType.NUMERIC
+						? BigDecimal.valueOf(cell.getNumericCellValue()).stripTrailingZeros().toPlainString()
+						: cell.getStringCellValue()));
+				if (cells.contains("ID sesión")) {
+					header = cells;
+				}
+				if (!cells.isEmpty()) {
+					rows.put(cells.get(0), cells);
+				}
+			}
+			assertThat(header).containsSubsequence("Inicio (hora de la fuente)", "Término (hora de la fuente)",
+					"Fecha de inicio según la fuente", "kWh");
+			assertThat(rows.get("1211")).containsSubsequence("11/11/2026 00:30:00 (UTC+00:00)",
+					"10/11/2026 21:10:05 (UTC-05:00)", "11/11/2026", "8");
+			assertThat(rows.get("W-77")).containsSubsequence("10/11/2026 22:00:00 (UTC-05:00)", "No informado",
+					"10/11/2026", "5");
+		}
+		assertThat(packageText(bytes)).contains("Consumo por fecha de inicio según la fuente",
+				"Fecha de corte: 30/10/2026 21:12");
 	}
 
 	@Test

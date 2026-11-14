@@ -64,7 +64,7 @@
       </div>
     }
 
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
       <mat-label>Lecturas superiores a 1.000 kWh</mat-label>
       <mat-select
         [value]="facade.aboveThreshold() ?? ''"
@@ -181,12 +181,21 @@
       @let item = rowOf(row);
       @if (item.startedAt) {
         <span class="muted block">
-          {{ item.startedAt | date: 'short' : sourceOffset(item.sourceUtcOffsetMinutes) }}
+          {{ item.startedAt | date: sourceDateTime : sourceOffset(item.sourceUtcOffsetMinutes) }}
           @if (sourceLabel(item.sourceUtcOffsetMinutes); as utc) {
             ({{ utc }})
           }
           @if (item.endedAt) {
-            – {{ item.endedAt | date: 'shortTime' : sourceOffset(item.sourceUtcOffsetMinutes) }}
+            –
+            {{
+              item.endedAt
+                | date
+                  : sourceTime
+                  : endOffset(item.sourceUtcOffsetMinutes, item.sourceEndUtcOffsetMinutes)
+            }}
+            @if (endLabel(item.sourceUtcOffsetMinutes, item.sourceEndUtcOffsetMinutes); as utc) {
+              ({{ utc }})
+            }
           } @else {
             · Término no informado
           }

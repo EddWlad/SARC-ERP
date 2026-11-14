@@ -51,7 +51,7 @@ export interface ConnectorTypeDialogData {
             <p>{{ message }}</p>
           </div>
         }
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
           <mat-label>Código</mat-label>
           <input matInput autocomplete="off" [formField]="typeForm.code" />
           <mat-hint>{{
@@ -63,7 +63,7 @@ export interface ConnectorTypeDialogData {
             <mat-error>{{ error.message }}</mat-error>
           }
         </mat-form-field>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
           <mat-label>Nombre</mat-label>
           <input matInput autocomplete="off" [formField]="typeForm.name" />
           @for (error of typeForm.name().errors(); track error.kind) {

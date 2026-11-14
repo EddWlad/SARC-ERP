@@ -85,6 +85,8 @@ export class InventoryPage {
   protected readonly isHandset = injectIsHandset();
   protected readonly columns = ['equipment', 'network', 'type', 'status', 'connectors', 'location'];
   protected readonly pageSizeOptions = [10, 20, 50, 100];
+  /** El refresco periodico conserva las filas y solo actualiza sus datos (Feature 009, US4). */
+  protected readonly trackEquipment = (_: number, item: EquipmentSummary) => item.id;
 
   protected readonly networks = NETWORKS;
   protected readonly networkLabels = NETWORK_LABELS;

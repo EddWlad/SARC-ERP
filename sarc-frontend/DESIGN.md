@@ -309,7 +309,8 @@ de una pantalla, 12px separa controles de filtro entre sí, 8px separa acciones 
 separa una cifra de su rótulo.
 
 Cada listado se compone con el mismo parcial (`shared/ui/_list-page.scss`): `.page-header` con
-título, descripción y acciones a la derecha; `.filters` en una rejilla cuyas columnas define cada
+título, descripción y acciones a la derecha (el título reserva 28rem; si las acciones no caben, pasan
+a la línea siguiente sin dejar de estar a la derecha); `.filters` en una rejilla cuyas columnas define cada
 pantalla con `--sarc-filter-columns`; `.results` como tarjeta con borde; `.state` para vacío y
 error, centrado con su icono y su acción de reintento.
 
@@ -449,6 +450,13 @@ partirse ni desbordar. Sin sombra y sin borde.
 
 - **Estilo:** `mat-form-field appearance="outline"`, con `mat-label` siempre presente. Icono de
   prefijo con 8px a la derecha y 12px a la izquierda (`.prefix-icon`).
+- **Etiqueta siempre arriba:** todo campo declara `floatLabel="always"`. Los campos de fecha y hora
+  la muestran arriba por su marcador nativo; mezclar etiquetas dentro y fuera del contorno descuadra
+  las filas. No se usa `MAT_FORM_FIELD_DEFAULT_OPTIONS` en `app.config.ts`: arrastra el módulo de
+  campos al bundle inicial (+180 kB).
+- **Alto fijo:** el contorno mide siempre 56px. `_base.scss` impide que el contorno crezca cuando una
+  rejilla o un alto mínimo estiran el `mat-form-field`; el espacio sobrante (una ayuda de dos líneas
+  en el campo vecino) queda debajo.
 - **Error:** `mat-error` por cada error del campo, recorriendo `field().errors()` de Signal Forms.
   El mensaje va en español y describe qué corregir.
 - **Error del servidor:** no se inyecta en un campo. Va en `.form-alert` al inicio del formulario:

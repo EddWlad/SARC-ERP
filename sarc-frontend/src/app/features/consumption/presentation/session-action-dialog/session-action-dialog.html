@@ -1,0 +1,233 @@
+<h2 mat-dialog-title>{{ title }}</h2>
+<form novalidate (submit)="onSubmit($event)">
+  <mat-dialog-content
+    class="fields sarc-stacked-fields"
+    [attr.tabindex]="data.action === 'view' ? 0 : null"
+  >
+    @let session = data.session;
+    <dl class="summary" aria-label="Datos de la sesión">
+      <div>
+        <dt>Fuente</dt>
+        <dd>
+          {{ sourceLabels[session.source] }}
+          <span class="muted mono">· {{ session.externalSessionId }}</span>
+        </dd>
+      </div>
+      <div>
+        <dt>Equipo</dt>
+        <dd>
+          @if (session.equipment; as equipment) {
+            {{ equipment.name }}
+            @if (equipment.assignedCode) {
+              <span class="muted">· {{ equipment.assignedCode }}</span>
+            }
+          } @else {
+            <span class="muted">Sin vincular</span>
+          }
+        </dd>
+      </div>
+      <div>
+        <dt>Inicio (hora de la fuente)</dt>
+        <dd>
+          {{
+            session.startedAt | date: sourceDateTime : sourceOffset(session.sourceUtcOffsetMinutes)
+          }}
+          @if (sourceLabel(session.sourceUtcOffsetMinutes); as utc) {
+            ({{ utc }})
+          }
+        </dd>
+      </div>
+      <div>
+        <dt>Término (hora de la fuente)</dt>
+        <dd>
+          @if (session.endedAt) {
+            {{
+              session.endedAt
+                | date
+                  : sourceDateTime
+                  : endOffset(session.sourceUtcOffsetMinutes, session.sourceEndUtcOffsetMinutes)
+            }}
+            @if (
+              endLabel(session.sourceUtcOffsetMinutes, session.sourceEndUtcOffsetMinutes);
+              as utc
+            ) {
+              ({{ utc }})
+            }
+          } @else {
+            No informado
+          }
+        </dd>
+      </div>
+      <div>
+        <dt>Fecha de inicio según la fuente</dt>
+        <dd>{{ session.startDate | date: 'dd/MM/yyyy' : 'UTC' }}</dd>
+      </div>
+      <div>
+        <dt>Energía</dt>
+        <dd class="energy">{{ quantities.reportedEnergy(session.energyKwh) }}</dd>
+      </div>
+      <div>
+        <dt>Estado</dt>
+        <dd>
+          {{ session.deletedAt ? 'Dada de baja' : stateLabels[session.state] }}
+          <span class="muted">· revisión {{ session.revision }}</span>
+        </dd>
+      </div>
+      @if (session.site || session.charger || session.serial) {
+        <div>
+          <dt>Cargador (origen)</dt>
+          <dd class="mono">
+            {{ session.site ?? '' }} {{ session.charger ?? '' }} {{ session.serial ?? '' }}
+          </dd>
+        </div>
+      }
+    </dl>
+
+    @if (detail()?.deletionReason; as reason) {
+      <p class="note" role="note">
+        Dada de baja el {{ session.deletedAt | date: 'dd/MM/yyyy HH:mm' : operatingOffset }} (hora
+        de Ecuador): {{ reason }}
+      </p>
+    }
+
+    @if (error()) {
+      <div class="form-alert" role="alert">
+        <svg lucideTriangleAlert [size]="20" aria-hidden="true"></svg>
+        <p>{{ error() }}</p>
+        @if (stale()) {
+          <button matButton type="button" (click)="reload()">Recargar sesiones</button>
+        }
+      </div>
+    }
+
+    @if (data.action === 'edit') {
+      <p class="note">
+        Cada hora se escribe en la zona que declara la fuente para ese extremo. Deje la energía o el
+        término vacíos si la fuente no los informó: no equivale a 0.
+      </p>
+      <div class="pair">
+        <mat-form-field floatLabel="always" subscriptSizing="dynamic" appearance="outline">
+          <mat-label>Inicio ({{ startZone }})</mat-label>
+          <input matInput type="datetime-local" step="1" [formField]="actionForm.start" />
+          @for (error of actionForm.start().errors(); track error.kind) {
+            <mat-error>{{ error.message }}</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field floatLabel="always" subscriptSizing="dynamic" appearance="outline">
+          <mat-label>Término ({{ endZone }})</mat-label>
+          <input matInput type="datetime-local" step="1" [formField]="actionForm.end" />
+          <mat-hint>Vacío = no informado</mat-hint>
+        </mat-form-field>
+      </div>
+      <mat-form-field floatLabel="always" subscriptSizing="dynamic" appearance="outline">
+        <mat-label>Energía (kWh)</mat-label>
+        <input matInput inputmode="decimal" [formField]="actionForm.energy" />
+        <mat-hint>Vacío = no informada; más de 1.000 kWh queda por revisar</mat-hint>
+        @for (error of actionForm.energy().errors(); track error.kind) {
+          <mat-error>{{ error.message }}</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field floatLabel="always" subscriptSizing="dynamic" appearance="outline">
+        <mat-label>Equipo vinculado</mat-label>
+        <input
+          matInput
+          type="search"
+          placeholder="Nombre, código o serie"
+          [value]="model().equipment"
+          [matAutocomplete]="auto"
+          (input)="onEquipmentType($event)"
+        />
+        @if (model().equipment !== '') {
+          <button
+            matIconButton
+            matSuffix
+            type="button"
+            aria-label="Quitar el equipo vinculado"
+            (click)="unlinkEquipment()"
+          >
+            <svg lucideX [size]="18"></svg>
+          </button>
+        }
+        <mat-hint>Sin equipo, la sesión queda pendiente de vincular</mat-hint>
+        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onEquipmentSelect($event)">
+          @for (option of equipmentOptions.options(); track option.id) {
+            <mat-option [value]="option">
+              {{ option.name }}
+              @if (option.assignedCode) {
+                <span class="muted">· {{ option.assignedCode }}</span>
+              }
+            </mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+    }
+
+    @if (data.action === 'delete') {
+      <p class="note">
+        La sesión dejará de contar en los indicadores e informes oficiales. Se conservan su
+        identidad, sus datos y su historial, y una reimportación no la reactiva.
+      </p>
+    }
+
+    @if (data.action !== 'view') {
+      <mat-form-field floatLabel="always" subscriptSizing="dynamic" appearance="outline">
+        <mat-label>Motivo</mat-label>
+        <textarea matInput [formField]="actionForm.reason" rows="3"></textarea>
+        <mat-hint>Obligatorio; se conserva en el historial.</mat-hint>
+        <mat-hint align="end">{{ remaining() }} / {{ maxLength }}</mat-hint>
+        @for (error of actionForm.reason().errors(); track error.kind) {
+          <mat-error>{{ error.message }}</mat-error>
+        }
+      </mat-form-field>
+    }
+
+    @if (data.action === 'view') {
+      @if (loading()) {
+        <p role="status">Cargando historial…</p>
+      } @else if (detail(); as loaded) {
+        @if (loaded.revisions.length > 0) {
+          <h3>Versiones anteriores</h3>
+          <ol class="history">
+            @for (item of loaded.revisions; track item.revision) {
+              <li>
+                <p>
+                  <strong>{{ kindLabels[item.kind] }}</strong>
+                  · {{ item.supersededAt | date: 'dd/MM/yyyy HH:mm' : operatingOffset }}
+                </p>
+                @if (item.reason) {
+                  <p>{{ item.reason }}</p>
+                }
+                <p class="muted">
+                  Revisión {{ item.revision }}: inicio
+                  {{
+                    item.startedAt
+                      | date: sourceDateTime : sourceOffset(item.sourceUtcOffsetMinutes)
+                  }}
+                  · {{ quantities.reportedEnergy(item.energyKwh) }}
+                  @if (item.state) {
+                    · {{ stateLabels[item.state] }}
+                  }
+                </p>
+              </li>
+            }
+          </ol>
+        }
+      }
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button matButton type="button" [disabled]="busy()" (click)="unsaved.cancel()">
+      {{ data.action === 'view' ? 'Cerrar' : 'Cancelar' }}
+    </button>
+    @if (data.action === 'edit') {
+      <button matButton="filled" type="submit" [disabled]="busy() || stale()">
+        {{ busy() ? 'Guardando…' : 'Guardar cambios' }}
+      </button>
+    }
+    @if (data.action === 'delete') {
+      <button matButton="filled" type="submit" class="danger" [disabled]="busy() || stale()">
+        {{ busy() ? 'Eliminando…' : 'Eliminar sesión' }}
+      </button>
+    }
+  </mat-dialog-actions>
+</form>

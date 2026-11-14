@@ -1,6 +1,9 @@
 package com.tidsec.sarc_bakend.modules.consumption.application.service;
 
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Objects;
 import java.time.Clock;
 import com.tidsec.sarc_bakend.modules.consumption.application.command.DecideEnergyReviewCommand;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergyReviewRepository;
@@ -13,21 +16,25 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tidsec.sarc_bakend.modules.consumption.application.command.EditSessionCommand;
 import com.tidsec.sarc_bakend.modules.consumption.application.command.MarkSessionTestCommand;
 import com.tidsec.sarc_bakend.modules.consumption.application.port.EquipmentLookup;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.PendingLinkResult;
 import com.tidsec.sarc_bakend.modules.consumption.application.result.SessionView;
 import com.tidsec.sarc_bakend.modules.consumption.application.service.EquipmentResolver.Resolution;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.EnergySession;
+import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionReading;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionSource;
 import com.tidsec.sarc_bakend.modules.consumption.domain.model.session.SessionState;
 import com.tidsec.sarc_bakend.modules.consumption.domain.repository.EnergySessionRepository;
 import com.tidsec.sarc_bakend.shared.audit.AuditTrail;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentDirectory;
 import com.tidsec.sarc_bakend.shared.catalog.EquipmentReference;
+import com.tidsec.sarc_bakend.shared.error.BusinessRuleException;
 import com.tidsec.sarc_bakend.shared.error.NotFoundException;
+import com.tidsec.sarc_bakend.shared.time.OperatingZone;
 
-/** Operaciones sobre sesiones ya importadas: marcar prueba y conciliar pendientes. */
+/** Operaciones sobre sesiones ya importadas: marcar prueba, conciliar pendientes, editar y dar de baja. */
 @Service
 @Transactional
 @PreAuthorize(ConsumptionPermissions.EDITORS)
@@ -42,9 +49,10 @@ public class SessionService {
 	private final EnergyReviewRepository reviews;
 	private final CurrentActor actor;
 	private final Clock clock;
+	private final OperatingZone zone;
 
 	SessionService(EnergySessionRepository sessions, EquipmentResolver resolver, EquipmentDirectory directory,
-			AuditTrail audit, EnergyReviewRepository reviews, CurrentActor actor, Clock clock) {
+			AuditTrail audit, EnergyReviewRepository reviews, CurrentActor actor, Clock clock, OperatingZone zone) {
 		this.sessions = sessions;
 		this.resolver = resolver;
 		this.directory = directory;
@@ -52,6 +60,7 @@ public class SessionService {
 		this.reviews = reviews;
 		this.actor = actor;
 		this.clock = clock;
+		this.zone = zone;
 	}
 
 	/** Excluye o reincorpora una sesion de los indicadores oficiales sin eliminarla (PRD RF-003.9). */
@@ -143,6 +152,85 @@ public class SessionService {
 		return view(session);
 	}
 
+	/**
+	 * Edicion individual con motivo (Feature 009, FR-012 y FR-013): aplica las mismas reglas que una
+	 * importacion (validez, umbral de energia, vinculo y fuente preferente) y guarda la version anterior.
+	 */
+	public SessionView edit(EditSessionCommand command) {
+		EnergySession session = loadForChange(command.id(), command.version());
+		SessionReading before = session.reading();
+		SessionReading after = command.applyTo(before);
+		EquipmentReference current = equipmentOf(session.getEquipmentId());
+		EquipmentReference equipment = command.equipmentId() == null ? current
+				: command.equipmentId().map(this::requireEquipment).orElse(null);
+		UUID beforeEquipment = session.getEquipmentId();
+		if (after.sameAs(before) && Objects.equals(beforeEquipment, equipment == null ? null : equipment.id())) {
+			throw new BusinessRuleException("SESSION_UNCHANGED", "La edición no cambia ningún dato de la sesión");
+		}
+		String beforeState = session.getState().name();
+		sessions.saveRevision(session.edit(after, equipment, command.reason(), actor.id().orElse(null),
+				clock.instant(), zone));
+		sessions.save(session);
+		Map<String, String> details = new LinkedHashMap<>();
+		details.put("reason", command.reason());
+		details.put("revision", Integer.toString(session.getRevision()));
+		changed(details, "startedAt", before.startedAt(), after.startedAt());
+		changed(details, "endedAt", before.endedAt(), after.endedAt());
+		changed(details, "energyKwh", before.energyKwh(), after.energyKwh());
+		changed(details, "equipmentId", beforeEquipment, session.getEquipmentId());
+		changed(details, "state", beforeState, session.getState().name());
+		audit.record("ENERGY_SESSION_EDITED", EnergySession.AUDIT_ENTITY_TYPE, session.getId(), details);
+		return new SessionView(session, equipment);
+	}
+
+	/**
+	 * Baja logica con motivo (Feature 009, FR-014): sale de los indicadores e informes y conserva identidad,
+	 * datos y auditoria. Repetirla devuelve la baja vigente sin crear otra revision.
+	 */
+	public SessionView delete(UUID id, long version, String reason) {
+		EnergySession session = sessions.findById(id)
+				.orElseThrow(() -> new NotFoundException("SESSION_NOT_FOUND", "La sesion no existe"));
+		if (session.isDeleted()) {
+			return view(session);
+		}
+		session.requireVersion(version);
+		sessions.saveRevision(session.delete(reason, actor.id().orElse(null), clock.instant()));
+		sessions.save(session);
+		audit.record("ENERGY_SESSION_DELETED", EnergySession.AUDIT_ENTITY_TYPE, session.getId(),
+				Map.of("reason", reason, "state", session.getState().name(),
+						"energyKwh", text(session.getEnergyKwh()), "revision", Integer.toString(session.getRevision())));
+		return view(session);
+	}
+
+	private EquipmentReference requireEquipment(UUID id) {
+		EquipmentReference equipment = directory.findByIds(List.of(id)).get(id);
+		if (equipment == null) {
+			throw new NotFoundException("EQUIPMENT_NOT_FOUND", "El equipo no existe en el inventario");
+		}
+		return equipment;
+	}
+
+	private EquipmentReference equipmentOf(UUID id) {
+		return id == null ? null : directory.findByIds(List.of(id)).get(id);
+	}
+
+	private static void changed(Map<String, String> details, String field, Object before, Object after) {
+		boolean same = before instanceof BigDecimal a && after instanceof BigDecimal b ? a.compareTo(b) == 0
+				: Objects.equals(before, after);
+		if (!same) {
+			details.put(field + ".from", text(before));
+			details.put(field + ".to", text(after));
+		}
+	}
+
+	private static String text(Object value) {
+		return switch (value) {
+			case null -> "";
+			case BigDecimal decimal -> decimal.toPlainString();
+			default -> value.toString();
+		};
+	}
+
 	private EnergySession loadForChange(UUID id, long version) {
 		EnergySession session = sessions.findById(id)
 				.orElseThrow(() -> new NotFoundException("SESSION_NOT_FOUND", "La sesion no existe"));
@@ -151,8 +239,6 @@ public class SessionService {
 	}
 
 	private SessionView view(EnergySession session) {
-		EquipmentReference equipment = session.getEquipmentId() == null ? null
-				: directory.findByIds(List.of(session.getEquipmentId())).get(session.getEquipmentId());
-		return new SessionView(session, equipment);
+		return new SessionView(session, equipmentOf(session.getEquipmentId()));
 	}
 }

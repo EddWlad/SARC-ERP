@@ -12,13 +12,15 @@ import {
   NO_CONSUMPTION_FILTERS,
   ConsumptionSummary,
   Session,
+  SessionChanges,
+  SessionDetail,
   SessionPage,
   SessionState,
   EnergyReviewStatus,
   EnergyDecision,
 } from '../domain/consumption';
 import { PeriodSelection } from './period-selection';
-import { retainedValue } from '../../../core/http/retained-value';
+import { retainedQuery, retainedValue } from '../../../core/http/retained-value';
 
 const SEARCH_DEBOUNCE_MS = 300;
 const DEFAULT_PAGE_SIZE = 20;
@@ -41,7 +43,7 @@ export class SessionsFacade {
     { initialValue: '' },
   );
 
-  private readonly result = httpResource<SessionPage>(() =>
+  private readonly request = computed(() =>
     this.api.sessionsRequest({
       range: this.period.range(),
       filters: this.filters(),
@@ -52,6 +54,7 @@ export class SessionsFacade {
       size: this.pageSize(),
     }),
   );
+  private readonly result = httpResource<SessionPage>(() => this.request());
 
   /** Indicadores oficiales del periodo y filtros compartidos; no dependen de estado ni busqueda. */
   private readonly summaryResult = httpResource<ConsumptionSummary>(() =>
@@ -59,11 +62,15 @@ export class SessionsFacade {
   );
 
   readonly summary = retainedValue(this.summaryResult);
-  private readonly latest = retainedValue(this.result);
-  readonly sessions = computed(() => this.latest()?.content ?? []);
-  readonly totalElements = computed(() => this.latest()?.totalElements ?? 0);
+  private readonly latest = retainedQuery(this.result, this.request);
+  readonly sessions = computed(() => this.latest.value()?.content ?? []);
+  readonly totalElements = computed(() => this.latest.value()?.totalElements ?? 0);
   readonly loading = this.result.isLoading;
-  readonly failed = computed(() => this.result.error() !== undefined);
+  private readonly errored = computed(() => this.result.error() !== undefined);
+  /** No hay resultados de esta consulta: el error ocupa la lista. */
+  readonly failed = computed(() => this.errored() && !this.latest.current());
+  /** Fallo el refresco de la misma consulta: la lista sigue a la vista (Feature 009, US4). */
+  readonly refreshFailed = computed(() => this.errored() && this.latest.current());
   /** Filtros propios del historico (estado y busqueda), ademas de los compartidos. */
   readonly hasOwnFilters = computed(
     () => this.state() !== '' || this.text() !== '' || this.energyReview() !== '',
@@ -123,6 +130,22 @@ export class SessionsFacade {
   reload(): void {
     this.result.reload();
     this.summaryResult.reload();
+  }
+
+  detail(id: string): Promise<SessionDetail> {
+    return firstValueFrom(this.api.detail(id));
+  }
+
+  async edit(session: Session, changes: SessionChanges, reason: string): Promise<Session> {
+    const updated = await firstValueFrom(this.api.edit(session, changes, reason));
+    this.reload();
+    return updated;
+  }
+
+  async delete(session: Session, reason: string): Promise<Session> {
+    const updated = await firstValueFrom(this.api.delete(session, reason));
+    this.reload();
+    return updated;
   }
 
   async markTest(session: Session, test: boolean): Promise<Session> {

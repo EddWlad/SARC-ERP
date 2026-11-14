@@ -2431,6 +2431,43 @@
         }
       }
     },
+    "/api/v1/energy/sessions/{id}/deletion" : {
+      "post" : {
+        "tags" : [ "energy-session-controller" ],
+        "operationId" : "delete",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DeleteEnergySessionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/energy/sessions/link-pending" : {
       "post" : {
         "tags" : [ "energy-session-controller" ],
@@ -2948,6 +2985,68 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/EquipmentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/energy/sessions/{id}" : {
+      "get" : {
+        "tags" : [ "energy-session-controller" ],
+        "operationId" : "detail_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "energy-session-controller" ],
+        "operationId" : "edit_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EditEnergySessionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SessionResponse"
                 }
               }
             }
@@ -3725,7 +3824,7 @@
     "/api/v1/uptime/measurements/{id}" : {
       "get" : {
         "tags" : [ "uptime-measurement-controller" ],
-        "operationId" : "detail_1",
+        "operationId" : "detail_2",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -5007,6 +5106,14 @@
             "minLength" : 0
           }
         }, {
+          "name" : "deleted",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        }, {
           "name" : "page",
           "in" : "query",
           "required" : false,
@@ -5215,7 +5322,7 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "EQUIPMENT_CHANGED", "LINKABLE", "INVALID", "DUPLICATE", "PENDING_LINK" ]
+            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "EQUIPMENT_CHANGED", "LINKABLE", "INVALID", "DUPLICATE", "PENDING_LINK", "DELETED" ]
           }
         }, {
           "name" : "aboveThreshold",
@@ -6043,6 +6150,11 @@
             "format" : "int32",
             "description" : "Desplazamiento UTC en minutos declarado por la fuente para el inicio"
           },
+          "sourceEndUtcOffsetMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "Desplazamiento declarado para el fin cuando difiere del inicio"
+          },
           "energyKwh" : {
             "type" : [ "number", "null" ]
           },
@@ -6068,7 +6180,7 @@
           },
           "classification" : {
             "type" : "string",
-            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "EQUIPMENT_CHANGED", "LINKABLE", "INVALID", "DUPLICATE", "PENDING_LINK" ]
+            "enum" : [ "NEW", "IDENTICAL", "MODIFIED", "EQUIPMENT_CHANGED", "LINKABLE", "INVALID", "DUPLICATE", "PENDING_LINK", "DELETED" ]
           },
           "issues" : {
             "type" : "array",
@@ -8028,6 +8140,11 @@
             "format" : "int32",
             "description" : "Desplazamiento UTC en minutos con que la fuente escribio el inicio; nulo si no hay evidencia de origen (se muestra en hora de Ecuador)"
           },
+          "sourceEndUtcOffsetMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "Desplazamiento UTC en minutos con que la fuente escribio el fin cuando difiere del inicio; nulo = el mismo que el inicio"
+          },
           "startDate" : {
             "type" : "string",
             "format" : "date",
@@ -8075,6 +8192,11 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "deletedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "Momento de la baja logica; nulo si la sesion esta activa"
+          },
           "version" : {
             "type" : "integer",
             "format" : "int64"
@@ -8100,6 +8222,21 @@
           }
         },
         "required" : [ "decision", "justification", "version" ]
+      },
+      "DeleteEnergySessionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "reason" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "reason", "version" ]
       },
       "PendingLinkResponse" : {
         "type" : "object",
@@ -8193,6 +8330,11 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "deletedRows" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Filas de sesiones dadas de baja: se informan y no se aplican"
+          },
           "energyReviewRows" : {
             "type" : "integer",
             "format" : "int32"
@@ -8214,7 +8356,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "appliedRows", "checksum", "createdAt", "duplicateRows", "energyReviewRows", "equipmentChangedRows", "fileName", "id", "identicalRows", "invalidRows", "linkableRows", "modifiedRows", "newRows", "origin", "pendingLinkRows", "scope", "source", "status", "totalRows", "version" ]
+        "required" : [ "appliedRows", "checksum", "createdAt", "deletedRows", "duplicateRows", "energyReviewRows", "equipmentChangedRows", "fileName", "id", "identicalRows", "invalidRows", "linkableRows", "modifiedRows", "newRows", "origin", "pendingLinkRows", "scope", "source", "status", "totalRows", "version" ]
       },
       "PasteImportRequest" : {
         "type" : "object",
@@ -8447,6 +8589,40 @@
           }
         },
         "required" : [ "status", "version" ]
+      },
+      "EditEnergySessionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "reason" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "startedAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Inicio con su desplazamiento, p. ej. 2026-11-11T00:30:00Z o 2026-11-10T19:30:00-05:00"
+          },
+          "endedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "Fin con su desplazamiento; null = no informado"
+          },
+          "energyKwh" : {
+            "type" : [ "number", "null" ],
+            "description" : "kWh; null = no informado (distinto de 0)"
+          },
+          "equipmentId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Equipo del inventario; null = pendiente de vincular"
+          }
+        },
+        "required" : [ "reason", "version" ]
       },
       "MarkTestRequest" : {
         "type" : "object",
@@ -10683,6 +10859,86 @@
           }
         },
         "required" : [ "content", "page", "size", "totalElements", "totalPages" ]
+      },
+      "SessionDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "session" : {
+            "$ref" : "#/components/schemas/SessionResponse"
+          },
+          "deletionReason" : {
+            "type" : [ "string", "null" ],
+            "description" : "Motivo de la baja; solo para lectura operativa"
+          },
+          "deletedBy" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Usuario que dio de baja; solo para lectura operativa"
+          },
+          "revisions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SessionRevisionEntry"
+            }
+          }
+        },
+        "required" : [ "revisions", "session" ]
+      },
+      "SessionRevisionEntry" : {
+        "type" : "object",
+        "properties" : {
+          "revision" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "IMPORT", "EDIT", "DELETION" ]
+          },
+          "reason" : {
+            "type" : [ "string", "null" ]
+          },
+          "supersededAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "supersededBy" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "startedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "endedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "sourceUtcOffsetMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "sourceEndUtcOffsetMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "energyKwh" : {
+            "type" : [ "number", "null" ]
+          },
+          "state" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "VALIDATED", "PENDING_LINK", "AWAITING_APPROVAL", "TEST", "ENERGY_REVIEW", "ENERGY_REJECTED" ]
+          },
+          "energyReview" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "PENDING", "APPROVED", "REJECTED" ]
+          },
+          "equipmentId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "kind", "revision", "startedAt", "supersededAt" ]
       },
       "EnergyReviewResponse" : {
         "type" : "object",

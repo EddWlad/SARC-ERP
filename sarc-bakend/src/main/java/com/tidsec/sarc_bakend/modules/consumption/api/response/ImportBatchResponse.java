@@ -30,6 +30,7 @@ public record ImportBatchResponse(
 		int duplicateRows,
 		int pendingLinkRows,
 		int linkableRows,
+		@Schema(description = "Filas de sesiones dadas de baja: se informan y no se aplican") int deletedRows,
 		int energyReviewRows,
 		int appliedRows,
 		Instant createdAt,
@@ -41,7 +42,7 @@ public record ImportBatchResponse(
 		return new ImportBatchResponse(batch.getId(), batch.getSource(), batch.getSourceScope(), batch.getOrigin(),
 				batch.getFileName(), batch.getChecksum(), batch.getStatus(), batch.getFailureCode(),
 				batch.getFailureMessage(), counts.total(), counts.newRows(), counts.identical(), counts.modified(), counts.equipmentChanged(),
-				counts.invalid(), counts.duplicate(), counts.pendingLink(), counts.linkable(), batch.getEnergyReviewRows(), batch.getAppliedRows(),
+				counts.invalid(), counts.duplicate(), counts.pendingLink(), counts.linkable(), counts.deleted(), batch.getEnergyReviewRows(), batch.getAppliedRows(),
 				batch.getCreatedAt(), batch.getConfirmedAt(), batch.getVersion());
 	}
 }

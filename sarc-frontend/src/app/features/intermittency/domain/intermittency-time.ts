@@ -195,3 +195,13 @@ export function formatDay(date: string): string {
 export function periodLabel(preset: PeriodPreset, range: DateRange): string {
   return `${presetLabel(preset)} · ${formatDay(range.from)}–${formatDay(range.to)} (fin exclusivo)`;
 }
+
+/**
+ * Valor original de una celda de hora tal como lo lee el importador. Excel guarda una hora sin
+ * fecha como un instante del 30 o 31/12/1899; esa fecha no es del archivo y solo confunde, así que
+ * se muestra la hora. Cualquier otro valor se muestra igual.
+ */
+export function sourceCellText(text: string | null | undefined): string {
+  if (!text) return '—';
+  return text.replace(/^1899-12-3[01][ T]/, '');
+}

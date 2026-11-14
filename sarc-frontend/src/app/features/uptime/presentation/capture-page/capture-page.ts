@@ -52,7 +52,7 @@ const SITUATION_LABELS: Readonly<Record<string, string>> = {
     </header>
 
     <form class="filters" aria-label="Período de captura" (submit)="load($event)">
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Tipo de período</mat-label>
         <mat-select [(ngModel)]="periodType" name="periodType">
           @for (type of types; track type) {
@@ -61,17 +61,17 @@ const SITUATION_LABELS: Readonly<Record<string, string>> = {
         </mat-select>
       </mat-form-field>
       @if (periodType() === 'ROLLING_7D') {
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
           <mat-label>Semana de referencia del informe</mat-label>
           <input matInput type="date" [(ngModel)]="referenceWeek" name="referenceWeek" required />
           <mat-hint>Elija el lunes de la semana.</mat-hint>
         </mat-form-field>
       } @else {
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
           <mat-label>Desde</mat-label>
           <input matInput type="datetime-local" [(ngModel)]="start" name="start" required />
         </mat-form-field>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
           <mat-label>Hasta</mat-label>
           <input matInput type="datetime-local" [(ngModel)]="end" name="end" required />
         </mat-form-field>

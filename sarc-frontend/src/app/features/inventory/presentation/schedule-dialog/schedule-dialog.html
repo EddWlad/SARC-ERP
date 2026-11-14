@@ -9,7 +9,7 @@
       </div>
     }
 
-    <mat-form-field subscriptSizing="dynamic" appearance="outline" class="mode">
+    <mat-form-field floatLabel="always" subscriptSizing="dynamic" appearance="outline" class="mode">
       <mat-label>Modo</mat-label>
       <mat-select [formField]="scheduleForm.mode">
         @for (mode of modes; track mode) {
@@ -36,7 +36,7 @@
         }
         @for (interval of scheduleForm.intervals; track $index; let index = $index) {
           <div class="row">
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
               <mat-label>Día</mat-label>
               <mat-select [formField]="interval.day">
                 @for (day of days; track day) {
@@ -44,14 +44,14 @@
                 }
               </mat-select>
             </mat-form-field>
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
               <mat-label>Abre</mat-label>
               <input matInput type="time" [formField]="interval.opensAt" />
               @for (error of interval.opensAt().errors(); track error.kind) {
                 <mat-error>{{ error.message }}</mat-error>
               }
             </mat-form-field>
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
               <mat-label>Cierra</mat-label>
               <input matInput type="time" [formField]="interval.closesAt" />
               @for (error of interval.closesAt().errors(); track error.kind) {
@@ -82,14 +82,14 @@
       <p class="note">Prevalecen sobre el horario habitual (feriados, mantenimientos).</p>
       @for (exception of scheduleForm.exceptions; track $index; let index = $index) {
         <div class="row exception">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Fecha</mat-label>
             <input matInput type="date" [formField]="exception.date" />
             @for (error of exception.date().errors(); track error.kind) {
               <mat-error>{{ error.message }}</mat-error>
             }
           </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
             <mat-label>Atención</mat-label>
             <mat-select [formField]="exception.kind">
               <mat-option value="CLOSED">Cerrado</mat-option>
@@ -97,14 +97,14 @@
             </mat-select>
           </mat-form-field>
           @if (exception.kind().value() === 'HOURS') {
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
               <mat-label>Abre</mat-label>
               <input matInput type="time" [formField]="exception.opensAt" />
               @for (error of exception.opensAt().errors(); track error.kind) {
                 <mat-error>{{ error.message }}</mat-error>
               }
             </mat-form-field>
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
               <mat-label>Cierra</mat-label>
               <input matInput type="time" [formField]="exception.closesAt" />
               @for (error of exception.closesAt().errors(); track error.kind) {
@@ -112,7 +112,12 @@
               }
             </mat-form-field>
           }
-          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="note-field">
+          <mat-form-field
+            floatLabel="always"
+            appearance="outline"
+            subscriptSizing="dynamic"
+            class="note-field"
+          >
             <mat-label>Nota</mat-label>
             <input matInput autocomplete="off" [formField]="exception.note" />
             @for (error of exception.note().errors(); track error.kind) {

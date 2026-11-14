@@ -7,7 +7,7 @@
       </div>
     }
 
-    <mat-form-field subscriptSizing="dynamic" appearance="outline">
+    <mat-form-field floatLabel="always" subscriptSizing="dynamic" appearance="outline">
       <mat-label>Correo electrónico</mat-label>
       <input matInput type="email" autocomplete="username" [formField]="loginForm.email" />
       @for (error of loginForm.email().errors(); track error.kind) {
@@ -15,7 +15,7 @@
       }
     </mat-form-field>
 
-    <mat-form-field subscriptSizing="dynamic" appearance="outline">
+    <mat-form-field floatLabel="always" subscriptSizing="dynamic" appearance="outline">
       <mat-label>Contraseña</mat-label>
       <input
         matInput

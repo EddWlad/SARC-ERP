@@ -1,6 +1,7 @@
 import {
   CLASSIFICATION_LABELS,
   DURATION_BAND_LABELS,
+  issueText,
   PENDING_LINK_LABEL,
   reasonLabel,
   STATE_LABELS,
@@ -43,5 +44,15 @@ describe('intermittency-labels', () => {
       '1 h a menos de 4 h',
       '4 h o más',
     ]);
+  });
+
+  it('usa el texto con tildes de la interfaz y, si no conoce el motivo, el del servidor', () => {
+    expect(issueText({ code: 'UNKNOWN_CODE', message: 'No hay un punto con ese codigo' })).toBe(
+      'No hay un punto con ese código',
+    );
+    expect(issueText({ code: 'NAME_DIFFERS', message: '' })).toContain('se vincula por el código');
+    expect(issueText({ code: 'NUEVO_MOTIVO', message: 'Texto del servidor' })).toBe(
+      'Texto del servidor',
+    );
   });
 });

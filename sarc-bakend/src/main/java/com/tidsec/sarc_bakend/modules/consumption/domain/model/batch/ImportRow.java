@@ -71,6 +71,10 @@ public class ImportRow {
 	@Column(updatable = false)
 	private Integer sourceUtcOffsetMinutes;
 
+	/** Desplazamiento declarado para el fin cuando difiere del inicio; nulo = el mismo. */
+	@Column(updatable = false)
+	private Integer sourceEndUtcOffsetMinutes;
+
 	@Column(updatable = false)
 	private UUID equipmentId;
 
@@ -143,6 +147,7 @@ public class ImportRow {
 		row.sourceSerial = reading.serial();
 		row.sourceConnector = reading.connector();
 		row.sourceUtcOffsetMinutes = SourceOffsets.toMinutes(reading.sourceOffset());
+		row.sourceEndUtcOffsetMinutes = SourceOffsets.toMinutes(reading.sourceEndOffset());
 		if (equipment != null) {
 			row.equipmentId = equipment.id();
 			row.network = equipment.network();
@@ -209,7 +214,8 @@ public class ImportRow {
 
 	public SessionReading reading() {
 		return new SessionReading(startedAt, endedAt, energyKwh, sourceSite, sourceCharger, sourceSerial,
-				sourceConnector, SourceOffsets.toOffset(sourceUtcOffsetMinutes));
+				sourceConnector, SourceOffsets.toOffset(sourceUtcOffsetMinutes),
+				SourceOffsets.toOffset(sourceEndUtcOffsetMinutes));
 	}
 
 	/**
@@ -247,6 +253,10 @@ public class ImportRow {
 
 	public Integer getSourceUtcOffsetMinutes() {
 		return sourceUtcOffsetMinutes;
+	}
+
+	public Integer getSourceEndUtcOffsetMinutes() {
+		return sourceEndUtcOffsetMinutes;
 	}
 
 	public Instant getEndedAt() {

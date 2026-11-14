@@ -4,6 +4,7 @@ import static com.tidsec.sarc_bakend.support.WebSessions.login;
 import static com.tidsec.sarc_bakend.support.WebSessions.xsrf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.hamcrest.Matchers.contains;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -794,6 +795,42 @@ class ConsumptionApiTest {
 		assertOfficial("2026-11-10", "2026-11-12", 2, 13.0);
 		mvc.perform(summary("2026-11-10", "2026-11-11").param("source", "ENERLINK").cookie(analyst))
 				.andExpect(jsonPath("$.official.sessions").value(0));
+		// T008: el filtro de fuente no mueve fechas; tendencia y ranking usan el mismo conjunto 5/8/13.
+		mvc.perform(summary("2026-11-11", "2026-11-12").param("source", "ENERLINK").cookie(analyst))
+				.andExpect(jsonPath("$.official.sessions").value(1))
+				.andExpect(jsonPath("$.official.energyKwh").value(8.0));
+		mvc.perform(summary("2026-11-10", "2026-11-11").param("source", "WALLBOX").cookie(analyst))
+				.andExpect(jsonPath("$.official.energyKwh").value(5.0));
+		mvc.perform(summary("2026-11-10", "2026-11-12").cookie(analyst))
+				.andExpect(jsonPath("$.daily[*].date").value(contains("2026-11-10", "2026-11-11")))
+				.andExpect(jsonPath("$.daily[*].sessions").value(contains(1, 1)))
+				.andExpect(jsonPath("$.daily[*].energyKwh").value(contains(5.0, 8.0)))
+				.andExpect(jsonPath("$.top[*].energyKwh").value(contains(8.0, 5.0)))
+				.andExpect(jsonPath("$.top[*].position").value(contains(1, 2)));
+	}
+
+	@Test
+	void monthBoundariesAreHalfOpenOnTheSourceStartDate() throws Exception {
+		// Feature 009, T008: 20:00 de Ecuador del 31/10 escrito en UTC cuenta en noviembre; 23:59:59 de Wallbox, en octubre.
+		conectzStationWithEnerlinkIdentity("Conectz", "ESTACION 4");
+		confirm(
+				upload(
+						"ENERLINK",
+						"Transacciones_UTC.csv",
+						"ID\tINICIO (UTC+00:00)\tTÉRMINO (UTC+00:00)\tACTIVO\tCARGADOR\tCONECTOR"
+								+ "\tSOC FINAL (%)\tENERGIA CARGADA (kWh)\n"
+								+ "2001\t01-11-2026 01:00:00\t01-11-2026 02:00:00\tConectz\tESTACION 4"
+								+ "\tA - CCS1\t80\t8\n"));
+		confirm(
+				upload(
+						"WALLBOX",
+						"wallbox.csv",
+						WALLBOX_HEADER
+								+ "WB-1001\tPlaza\tS-31\t2026-10-31 23:59:59\t2026-11-01 00:40:00\t5,00\n"));
+
+		assertOfficial("2026-10-01", "2026-11-01", 1, 5.0);
+		assertOfficial("2026-11-01", "2026-12-01", 1, 8.0);
+		assertOfficial("2026-10-31", "2026-11-02", 2, 13.0);
 	}
 
 	@Test

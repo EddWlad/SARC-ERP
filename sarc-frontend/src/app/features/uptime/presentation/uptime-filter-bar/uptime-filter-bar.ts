@@ -73,7 +73,7 @@ const isoDate = (date: Date): string =>
         }
       </mat-chip-listbox>
       @if (choice() === 'ROLLING_7D') {
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
           <mat-label>Semana de referencia (lunes)</mat-label>
           <input
             matInput
@@ -88,7 +88,12 @@ const isoDate = (date: Date): string =>
         </mat-form-field>
       }
       @if (choice() === 'CUSTOM') {
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="range">
+        <mat-form-field
+          floatLabel="always"
+          appearance="outline"
+          subscriptSizing="dynamic"
+          class="range"
+        >
           <mat-label>Rango de fechas</mat-label>
           <mat-date-range-input [rangePicker]="picker">
             <input matStartDate placeholder="Desde" (dateChange)="start.set($event.value)" />
@@ -103,7 +108,7 @@ const isoDate = (date: Date): string =>
       }
     </div>
     <section class="fields" aria-label="Filtros">
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Red</mat-label>
         <mat-select
           [value]="filters().network ?? ''"
@@ -116,7 +121,7 @@ const isoDate = (date: Date): string =>
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Tipo</mat-label>
         <mat-select
           [value]="filters().type ?? ''"
@@ -129,7 +134,7 @@ const isoDate = (date: Date): string =>
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Marca</mat-label>
         <mat-select
           [value]="filters().brand ?? ''"
@@ -180,13 +185,16 @@ const isoDate = (date: Date): string =>
 
     .fields {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
       gap: var(--sarc-space-3);
-      align-items: center;
+      // Arriba y no al centro: una ayuda bajo un campo no debe subir su contorno respecto de los demás.
+      align-items: start;
     }
 
+    // Botón de 40px centrado sobre el contorno de 56px de los campos.
     .clear {
       justify-self: start;
+      margin-top: var(--sarc-space-2);
     }
   `,
 })

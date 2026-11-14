@@ -9,7 +9,7 @@
       </div>
     }
 
-    <mat-form-field subscriptSizing="dynamic" appearance="outline">
+    <mat-form-field floatLabel="always" subscriptSizing="dynamic" appearance="outline">
       <mat-label>Correo electrónico</mat-label>
       <input matInput type="email" autocomplete="off" [formField]="userForm.email" />
       @if (editing) {
@@ -20,7 +20,7 @@
       }
     </mat-form-field>
 
-    <mat-form-field subscriptSizing="dynamic" appearance="outline">
+    <mat-form-field floatLabel="always" subscriptSizing="dynamic" appearance="outline">
       <mat-label>Nombre completo</mat-label>
       <input matInput autocomplete="off" [formField]="userForm.fullName" />
       @for (error of userForm.fullName().errors(); track error.kind) {
@@ -28,7 +28,7 @@
       }
     </mat-form-field>
 
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
       <mat-label>Roles</mat-label>
       <mat-select multiple [formField]="userForm.roles">
         @for (role of roles; track role) {
@@ -42,7 +42,7 @@
     </mat-form-field>
 
     @if (editing) {
-      <mat-form-field subscriptSizing="dynamic" appearance="outline">
+      <mat-form-field floatLabel="always" subscriptSizing="dynamic" appearance="outline">
         <mat-label>Estado</mat-label>
         <mat-select [formField]="userForm.status">
           @for (status of statuses; track status) {

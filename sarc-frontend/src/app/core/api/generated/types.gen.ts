@@ -223,6 +223,10 @@ export type ImportRowResponse = {
      * Desplazamiento UTC en minutos declarado por la fuente para el inicio
      */
     sourceUtcOffsetMinutes?: number | null;
+    /**
+     * Desplazamiento declarado para el fin cuando difiere del inicio
+     */
+    sourceEndUtcOffsetMinutes?: number | null;
     energyKwh?: number | null;
     site?: string | null;
     charger?: string | null;
@@ -230,7 +234,7 @@ export type ImportRowResponse = {
     connector?: string | null;
     equipmentId?: string | null;
     network?: 'KIA' | 'JAC' | 'CONECTZ';
-    classification: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'EQUIPMENT_CHANGED' | 'LINKABLE' | 'INVALID' | 'DUPLICATE' | 'PENDING_LINK';
+    classification: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'EQUIPMENT_CHANGED' | 'LINKABLE' | 'INVALID' | 'DUPLICATE' | 'PENDING_LINK' | 'DELETED';
     issues: Array<Issue>;
     nonPreferredSource: boolean;
     requiresApproval: boolean;
@@ -821,6 +825,10 @@ export type SessionResponse = {
      */
     sourceUtcOffsetMinutes?: number | null;
     /**
+     * Desplazamiento UTC en minutos con que la fuente escribio el fin cuando difiere del inicio; nulo = el mismo que el inicio
+     */
+    sourceEndUtcOffsetMinutes?: number | null;
+    /**
      * Fecha de inicio segun la fuente: el dia en que se cuenta la sesion
      */
     startDate: string;
@@ -836,6 +844,10 @@ export type SessionResponse = {
     connector?: string | null;
     revision: number;
     importBatchId: string;
+    /**
+     * Momento de la baja logica; nulo si la sesion esta activa
+     */
+    deletedAt?: string | null;
     version: number;
 };
 
@@ -843,6 +855,11 @@ export type EnergyReviewRequest = {
     decision: 'PENDING' | 'APPROVED' | 'REJECTED';
     justification: string;
     version: number;
+};
+
+export type DeleteEnergySessionRequest = {
+    version: number;
+    reason: string;
 };
 
 export type PendingLinkResponse = {
@@ -871,6 +888,10 @@ export type ImportBatchResponse = {
     duplicateRows: number;
     pendingLinkRows: number;
     linkableRows: number;
+    /**
+     * Filas de sesiones dadas de baja: se informan y no se aplican
+     */
+    deletedRows: number;
     energyReviewRows: number;
     appliedRows: number;
     createdAt: string;
@@ -945,6 +966,27 @@ export type NewWindow = {
 export type ChangeStatusRequest = {
     version: number;
     status: 'DELETED' | 'ACTIVE' | 'INACTIVE';
+};
+
+export type EditEnergySessionRequest = {
+    version: number;
+    reason: string;
+    /**
+     * Inicio con su desplazamiento, p. ej. 2026-11-11T00:30:00Z o 2026-11-10T19:30:00-05:00
+     */
+    startedAt?: string;
+    /**
+     * Fin con su desplazamiento; null = no informado
+     */
+    endedAt?: string | null;
+    /**
+     * kWh; null = no informado (distinto de 0)
+     */
+    energyKwh?: number | null;
+    /**
+     * Equipo del inventario; null = pendiente de vincular
+     */
+    equipmentId?: string | null;
 };
 
 export type MarkTestRequest = {
@@ -1634,6 +1676,35 @@ export type PageResultSessionResponse = {
     size: number;
     totalElements: number;
     totalPages: number;
+};
+
+export type SessionDetailResponse = {
+    session: SessionResponse;
+    /**
+     * Motivo de la baja; solo para lectura operativa
+     */
+    deletionReason?: string | null;
+    /**
+     * Usuario que dio de baja; solo para lectura operativa
+     */
+    deletedBy?: string | null;
+    revisions: Array<SessionRevisionEntry>;
+};
+
+export type SessionRevisionEntry = {
+    revision: number;
+    kind: 'IMPORT' | 'EDIT' | 'DELETION';
+    reason?: string | null;
+    supersededAt: string;
+    supersededBy?: string | null;
+    startedAt: string;
+    endedAt?: string | null;
+    sourceUtcOffsetMinutes?: number | null;
+    sourceEndUtcOffsetMinutes?: number | null;
+    energyKwh?: number | null;
+    state?: 'VALIDATED' | 'PENDING_LINK' | 'AWAITING_APPROVAL' | 'TEST' | 'ENERGY_REVIEW' | 'ENERGY_REJECTED';
+    energyReview?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    equipmentId?: string | null;
 };
 
 export type EnergyReviewResponse = {
@@ -2829,6 +2900,24 @@ export type DecideEnergyResponses = {
 
 export type DecideEnergyResponse = DecideEnergyResponses[keyof DecideEnergyResponses];
 
+export type DeleteData = {
+    body: DeleteEnergySessionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/energy/sessions/{id}/deletion';
+};
+
+export type DeleteResponses = {
+    /**
+     * OK
+     */
+    200: SessionResponse;
+};
+
+export type DeleteResponse = DeleteResponses[keyof DeleteResponses];
+
 export type LinkPendingData = {
     body?: never;
     path?: never;
@@ -3110,6 +3199,42 @@ export type ChangeStatusResponses = {
 
 export type ChangeStatusResponse = ChangeStatusResponses[keyof ChangeStatusResponses];
 
+export type Detail1Data = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/energy/sessions/{id}';
+};
+
+export type Detail1Responses = {
+    /**
+     * OK
+     */
+    200: SessionDetailResponse;
+};
+
+export type Detail1Response = Detail1Responses[keyof Detail1Responses];
+
+export type Edit1Data = {
+    body: EditEnergySessionRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/energy/sessions/{id}';
+};
+
+export type Edit1Responses = {
+    /**
+     * OK
+     */
+    200: SessionResponse;
+};
+
+export type Edit1Response = Edit1Responses[keyof Edit1Responses];
+
 export type MarkTest2Data = {
     body: MarkTestRequest;
     path: {
@@ -3330,7 +3455,7 @@ export type PendingResponses = {
 
 export type PendingResponse = PendingResponses[keyof PendingResponses];
 
-export type Detail1Data = {
+export type Detail2Data = {
     body?: never;
     path: {
         id: string;
@@ -3339,14 +3464,14 @@ export type Detail1Data = {
     url: '/api/v1/uptime/measurements/{id}';
 };
 
-export type Detail1Responses = {
+export type Detail2Responses = {
     /**
      * OK
      */
     200: MeasurementDetailResponse;
 };
 
-export type Detail1Response = Detail1Responses[keyof Detail1Responses];
+export type Detail2Response = Detail2Responses[keyof Detail2Responses];
 
 export type RevisionsData = {
     body?: never;
@@ -3835,6 +3960,7 @@ export type Search2Data = {
         state?: 'VALIDATED' | 'PENDING_LINK' | 'AWAITING_APPROVAL' | 'TEST' | 'ENERGY_REVIEW' | 'ENERGY_REJECTED';
         energyReview?: 'PENDING' | 'APPROVED' | 'REJECTED';
         text?: string;
+        deleted?: boolean;
         page?: number;
         size?: number;
     };
@@ -3916,7 +4042,7 @@ export type Rows2Data = {
         id: string;
     };
     query?: {
-        classification?: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'EQUIPMENT_CHANGED' | 'LINKABLE' | 'INVALID' | 'DUPLICATE' | 'PENDING_LINK';
+        classification?: 'NEW' | 'IDENTICAL' | 'MODIFIED' | 'EQUIPMENT_CHANGED' | 'LINKABLE' | 'INVALID' | 'DUPLICATE' | 'PENDING_LINK' | 'DELETED';
         aboveThreshold?: boolean;
         page?: number;
         size?: number;

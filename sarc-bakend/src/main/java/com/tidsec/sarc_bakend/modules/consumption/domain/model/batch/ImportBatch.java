@@ -38,6 +38,8 @@ public class ImportBatch extends BaseImportBatch {
 	private int duplicateRows;
 	private int pendingLinkRows;
 	private int linkableRows;
+	private int deletedRows;
+
 	@Column(nullable = false)
 	private int energyReviewRows;
 
@@ -70,6 +72,7 @@ public class ImportBatch extends BaseImportBatch {
 		this.duplicateRows = counts.duplicate();
 		this.pendingLinkRows = counts.pendingLink();
 		this.linkableRows = counts.linkable();
+		this.deletedRows = counts.deleted();
 	}
 
 	public SessionSource getSource() {
@@ -82,6 +85,6 @@ public class ImportBatch extends BaseImportBatch {
 
 	public RowCounts getCounts() {
 		return new RowCounts(totalRows, newRows, identicalRows, modifiedRows, equipmentChangedRows, invalidRows,
-				duplicateRows, pendingLinkRows, linkableRows);
+				duplicateRows, pendingLinkRows, linkableRows, deletedRows);
 	}
 }

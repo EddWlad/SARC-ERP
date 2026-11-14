@@ -25,6 +25,9 @@ public interface EnergySessionRepository {
 
 	void saveRevision(SessionRevision revision);
 
+	/** Versiones anteriores de una sesion, de la mas reciente a la mas antigua. */
+	List<SessionRevision> history(UUID sessionId);
+
 	Optional<EnergySession> findById(UUID id);
 
 	Optional<EnergySession> findByKey(SessionSource source, String scope, String externalSessionId);

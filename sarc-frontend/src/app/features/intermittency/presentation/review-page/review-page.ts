@@ -12,6 +12,7 @@ import { ImportRowDialogData } from '../../application/import-row-actions';
 import { ReviewFacade, ReviewSection } from '../../application/review-facade';
 import {
   CLASSIFICATION_LABELS,
+  issueText,
   REASON_LABELS,
   STATE_BADGES,
   STATE_LABELS,
@@ -141,7 +142,7 @@ const ACTIONS: Readonly<
                 <p class="muted">
                   Confirmado el {{ clock(item.batchCreatedAt) }}
                   @for (issue of item.row.interpretation.rowIssues; track issue.code) {
-                    · {{ issue.message }}
+                    · {{ issueText(issue) }}
                   }
                 </p>
               </div>
@@ -291,6 +292,7 @@ export class IntermittencyReviewPage implements OnInit {
   protected readonly badges = STATE_BADGES;
   protected readonly stateLabels = STATE_LABELS;
   protected readonly reasons = REASON_LABELS;
+  protected readonly issueText = issueText;
   protected readonly classifications = CLASSIFICATION_LABELS;
 
   ngOnInit(): void {

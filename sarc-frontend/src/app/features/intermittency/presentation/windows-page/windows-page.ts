@@ -74,7 +74,7 @@ const FILTERABLE_STATES: readonly WindowState[] = [
 
     <section class="filters" aria-label="Filtros">
       <sarc-point-picker [point]="facade.point()" (pointChange)="onPoint($event)" />
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Primer día</mat-label>
         <input
           matInput
@@ -84,7 +84,7 @@ const FILTERABLE_STATES: readonly WindowState[] = [
           (change)="onFirst($event)"
         />
       </mat-form-field>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Último día (incluido)</mat-label>
         <input
           matInput
@@ -96,7 +96,7 @@ const FILTERABLE_STATES: readonly WindowState[] = [
         />
       </mat-form-field>
       @if (canEdit) {
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
           <mat-label>Estado</mat-label>
           <mat-select
             multiple

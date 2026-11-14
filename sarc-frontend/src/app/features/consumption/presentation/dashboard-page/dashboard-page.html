@@ -38,6 +38,13 @@
   }
 </div>
 
+@if (facade.refreshError(); as message) {
+  <div class="refresh-alert" role="status">
+    <p>No se pudieron actualizar las cifras; se muestran las anteriores. {{ message }}</p>
+    <button matButton type="button" (click)="facade.reload()">Reintentar</button>
+  </div>
+}
+
 @if (facade.error(); as message) {
   <div class="state" role="alert">
     <p>{{ message }}</p>
@@ -229,7 +236,8 @@
   }
 
   <p class="dashboard-note generated">
-    Calculado {{ summary.generatedAt | date: 'short' }} · Solo sesiones validadas; la red y el tipo
-    salen del inventario.
+    Calculado {{ summary.generatedAt | date: 'dd/MM/yyyy HH:mm' : operatingOffset }} (hora de
+    Ecuador) · Fecha de inicio según la fuente · Solo sesiones validadas; la red y el tipo salen del
+    inventario.
   </p>
 }

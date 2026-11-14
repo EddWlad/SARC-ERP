@@ -32,7 +32,7 @@ import { PeriodFilter } from '../period-filter/period-filter';
   template: `
     <sarc-period-filter [period]="period()" />
     <section class="fields" aria-label="Filtros">
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Red</mat-label>
         <mat-select
           [value]="filters().network"
@@ -45,7 +45,7 @@ import { PeriodFilter } from '../period-filter/period-filter';
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Plataforma</mat-label>
         <mat-select [value]="filters().source" (selectionChange)="change({ source: $event.value })">
           <mat-option value="">Todas</mat-option>
@@ -55,7 +55,7 @@ import { PeriodFilter } from '../period-filter/period-filter';
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-form-field floatLabel="always" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Tipo</mat-label>
         <mat-select [value]="filters().type" (selectionChange)="change({ type: $event.value })">
           <mat-option value="">Todos</mat-option>
@@ -90,13 +90,16 @@ import { PeriodFilter } from '../period-filter/period-filter';
 
     .fields {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
       gap: var(--sarc-space-3);
-      align-items: center;
+      // Arriba y no al centro: una ayuda bajo un campo no debe subir su contorno respecto de los demás.
+      align-items: start;
     }
 
+    // Botón de 40px centrado sobre el contorno de 56px de los campos.
     .clear {
       justify-self: start;
+      margin-top: var(--sarc-space-2);
     }
   `,
 })

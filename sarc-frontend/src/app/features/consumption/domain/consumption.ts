@@ -1,7 +1,9 @@
 import {
   ConsumptionSummaryResponse,
   EnergyReviewResponse,
+  EditEnergySessionRequest,
   PageResultSessionResponse,
+  SessionDetailResponse,
   SessionResponse,
 } from '../../../core/api/generated';
 import {
@@ -22,6 +24,19 @@ export type EnergyReview = EnergyReviewResponse;
 export type EnergyReviewStatus = NonNullable<Session['energyReview']>;
 export type EnergyDecision = Exclude<EnergyReviewStatus, 'PENDING'>;
 export type LinkIssue = NonNullable<Session['linkIssue']>;
+export type SessionDetail = SessionDetailResponse;
+export type SessionRevision = SessionDetail['revisions'][number];
+/** Campos editables (Feature 009): un campo ausente se conserva; `null` lo deja sin informar. */
+export type SessionChanges = Partial<
+  Pick<EditEnergySessionRequest, 'startedAt' | 'endedAt' | 'energyKwh' | 'equipmentId'>
+>;
+
+/** Origen de cada version anterior de una sesion. */
+export const REVISION_KIND_LABELS: Readonly<Record<SessionRevision['kind'], string>> = {
+  IMPORT: 'Corrección por reimportación',
+  EDIT: 'Edición',
+  DELETION: 'Baja',
+};
 
 export const SOURCE_LABELS: Readonly<Record<SessionSource, string>> = {
   ENERLINK: 'Enerlink',

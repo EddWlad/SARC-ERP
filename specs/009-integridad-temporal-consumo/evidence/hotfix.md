@@ -80,10 +80,28 @@ Riesgo que sigue abierto (US2): la fecha depende del desplazamiento con que se e
 de un lote UTC se reimporta desde un archivo UTC-05:00, queda como modificada y vuelve a la fecha de Ecuador.
 Conviene exportar Enerlink siempre con la misma zona.
 
-## Pendiente (H007)
+## Publicación (H007)
 
-Publicar con el flujo de Feature 007 (respaldo previo y versión candidata), después de que el usuario apruebe
-el resultado del ensayo.
+El responsable aprobó el resultado del ensayo y pidió publicar.
+
+- **PR**: EddWlad/SARC-ERP#12 (commit `8c54b7c`), con las seis comprobaciones de CI en verde. Integrado en `main` como
+  `793e92f`.
+- **Versión**: `2026.11.14-41-793e92f`, creada por `version-candidata` tras el CI verde de `main`.
+- **Publicación**: flujo `publicar`, ejecución 4, modo `normal`, aprobación del entorno `production` por EddWlad.
+  Resultado `COMPLETADA` (2026-11-14 00:56:25–00:57:10 UTC). La versión anterior era `2026.11.13-35-9937edb`.
+- **Comprobaciones previas**: bloqueo, sumas, configuración, prueba de recepción, certificado, copia local,
+  esquema y copia previa (`sarc-20261114T0056Z-previa.dump.age`), todas en `ok`. Migración aplicada: `V019`.
+- **Comprobaciones posteriores**: disponibilidad, base de datos, versión, ingreso, usuarios, inventario, consumo,
+  uptime, reportes y archivos, todas en OK.
+- **Datos en producción** (consulta de solo lectura en el VPS): última migración 19. 16 130 sesiones y
+  310 603,48 kWh. Desplazamientos: Enerlink 0 = 700, Enerlink −300 = 11 019, Wallbox −300 = 4 411. Ninguna sesión
+  queda fuera de la fecha que le corresponde. 1211 y 1212 el 11/11 y 1230 el 12/11. Totales mensuales iguales
+  al ensayo: octubre 11 606 / 223 028,11 kWh y noviembre 4 524 / 87 575,37 kWh. Días 10, 11 y 12/11: 315 / 5 916,85,
+  370 / 7 257,63 y 385 / 7 391,94 kWh, iguales al ensayo.
+- **Pendiente tras publicar**: el flujo abrió el *issue* #13 `ensayo-restauracion` `pendiente` (cambio crítico con
+  migración). Debe cerrarse con un ensayo aprobado en 7 días.
+- **Observación que sigue abierta** (igual que en la Feature 008): `runId` y `approvedBy` quedan vacíos en
+  `deploy-history.jsonl`. La aprobación consta en GitHub Actions.
 
 ## Ejecución
 

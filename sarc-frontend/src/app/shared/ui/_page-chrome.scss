@@ -1,12 +1,19 @@
 // Cabecera de pagina y estados vacio/error, comunes a listados y tableros.
 
+// Título y descripción a la izquierda y acciones a la derecha. El bloque de título reserva un ancho
+// legible (28rem) y crece; si las acciones no caben a su lado, pasan a la línea siguiente pero
+// siguen alineadas a la derecha (antes quedaban a la izquierda, bajo la descripción).
 .page-header {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
   gap: var(--sarc-space-3);
   margin-bottom: var(--sarc-space-5);
+
+  > :first-child {
+    flex: 1 1 28rem;
+    min-width: 0;
+  }
 
   h1 {
     margin: 0;
@@ -22,7 +29,9 @@
 .header-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--sarc-space-2);
+  margin-inline-start: auto;
 }
 
 .state {
