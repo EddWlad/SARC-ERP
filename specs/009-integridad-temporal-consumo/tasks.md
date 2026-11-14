@@ -42,7 +42,7 @@ description: "Tareas de implementación de la Feature 009"
 - [x] H004 [US1] API (`SessionResponse.sourceUtcOffsetMinutes`), Excel y lista Angular muestran inicio y fin con el desplazamiento de origen e incluyen segundos donde ya se muestran detalles. Regenerar OpenAPI y tipos.
 - [x] H005 Ejecutar `./mvnw test`, `npm test` y `npm run build`; registrar resultados en `specs/009-integridad-temporal-consumo/evidence/hotfix.md` (nuevo).
 - [x] H006 Diagnóstico de solo lectura sobre una copia restaurada de producción y sus archivos originales: confirmar que cada lote Enerlink declara `UTC+00:00`, contar sesiones y kWh que cambian de día por mes, y ensayar V019 sobre la copia. Si algún lote declara otro desplazamiento, ajustar H002 antes de publicar.
-- [ ] H007 Publicar con el flujo de Feature 007 (respaldo previo, versión candidata) y verificar en producción el reparto diario de un rango con sesiones afectadas.
+- [x] H007 **[Publicada el 2026-11-14 00:57 UTC: versión `2026.11.14-41-793e92f`, ejecución 4 del flujo `publicar`, resultado `COMPLETADA`; ver «Publicación» en evidence/hotfix.md]** Publicar con el flujo de Feature 007 (respaldo previo, versión candidata) y verificar en producción el reparto diario de un rango con sesiones afectadas.
 
 **Checkpoint**: Con la fixture 1212/Wallbox el 10/11 suma 5 kWh y el 11/11 8 kWh en histórico, tablero, PDF y Excel; V019 ensayada sobre copia de producción.
 
