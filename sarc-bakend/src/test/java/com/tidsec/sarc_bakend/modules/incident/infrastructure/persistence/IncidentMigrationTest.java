@@ -74,11 +74,23 @@ class IncidentMigrationTest {
 	}
 
 	@Test
+	void v022OnlyRelabelsTheInitialReferenceVersion() throws IOException {
+		assertThat(jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE version = '022' AND success",
+				Integer.class)).isEqualTo(1);
+		String sql = new ClassPathResource("db/migration/V022__incidencias_rotulo_protocolo.sql")
+				.getContentAsString(StandardCharsets.UTF_8);
+		assertThat(sql).containsIgnoringCase("UPDATE inc_reference_version").containsIgnoringCase("SET label");
+		assertThat(sql).doesNotContainIgnoringCase("inc_reference_rule").doesNotContainIgnoringCase("DELETE")
+				.doesNotContainIgnoringCase("DROP ").doesNotContainIgnoringCase("ALTER TABLE");
+		assertThat(jdbc.queryForObject("SELECT count(*) FROM inc_reference_version", Integer.class)).isEqualTo(1);
+	}
+
+	@Test
 	void seedsTheInitialReferenceVersionWithOneRulePerSupportedType() {
 		Map<String, Object> version = jdbc.queryForMap(
 				"SELECT code, label, source_note FROM inc_reference_version WHERE id = ?", REFERENCE_VERSION);
 		assertThat(version.get("code")).isEqualTo("PROTOCOLO-FIRMADO-1");
-		assertThat(version.get("label")).isEqualTo("Protocolo de monitoreo firmado (versión por confirmar)");
+		assertThat(version.get("label")).isEqualTo("Protocolo de monitoreo firmado, versión 2.0");
 		assertThat(version.get("source_note")).isEqualTo("PRD §10.3, Protocolo §5");
 
 		Map<String, Map<String, Object>> rules = new LinkedHashMap<>();

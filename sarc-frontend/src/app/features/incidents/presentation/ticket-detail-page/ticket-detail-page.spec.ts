@@ -47,7 +47,7 @@ function detail(overrides: Partial<TicketDetailResponse> = {}): TicketDetailResp
     mapsUrl: 'https://maps.example.test/x',
     referenceVersion: {
       code: 'P1',
-      label: 'Protocolo de monitoreo firmado (versión por confirmar)',
+      label: 'Protocolo de monitoreo firmado, versión 2.0',
     },
     episodes: [
       {

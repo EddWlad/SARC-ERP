@@ -47,7 +47,7 @@ class ReferenceCatalogTest {
 	void theInitialVersionIsInForceForAnyT0() {
 		ReferenceVersion version = catalog.versionAt(Instant.parse("2026-11-20T12:00:00Z"));
 		assertThat(version.getCode()).isEqualTo("PROTOCOLO-FIRMADO-1");
-		assertThat(version.getLabel()).isEqualTo("Protocolo de monitoreo firmado (versión por confirmar)");
+		assertThat(version.getLabel()).isEqualTo("Protocolo de monitoreo firmado, versión 2.0");
 		assertThat(catalog.versionAt(Instant.parse("2001-01-01T00:00:00Z")).getCode())
 				.isEqualTo("PROTOCOLO-FIRMADO-1");
 	}
