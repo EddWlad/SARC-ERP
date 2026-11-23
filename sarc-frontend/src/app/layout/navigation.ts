@@ -5,6 +5,7 @@ import {
   LucideHouse,
   LucideIconData,
   LucidePlugZap,
+  LucideTicket,
   LucideUsers,
   LucideZapOff,
 } from '@lucide/angular';
@@ -27,6 +28,8 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'Uptime', path: '/uptime', icon: LucideActivity.icon },
   // Todos los roles consultan el historial de ventanas; las secciones de edicion se filtran dentro del modulo.
   { label: 'Intermitencias', path: '/intermitencias', icon: LucideZapOff.icon },
+  // Todos los roles consultan los tickets; las acciones de edicion se filtran dentro del modulo.
+  { label: 'Incidencias', path: '/incidencias', icon: LucideTicket.icon },
   { label: 'Reportes', path: '/reportes', icon: LucideFileArchive.icon },
   { label: 'Usuarios', path: '/usuarios', icon: LucideUsers.icon, roles: ['ADMINISTRADOR'] },
 ];

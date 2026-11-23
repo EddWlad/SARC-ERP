@@ -1,5 +1,6 @@
 import { DOCUMENT } from '@angular/common';
-import { DestroyRef, inject, Service } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { DestroyRef, inject, Service, signal } from '@angular/core';
 
 /** Cada cuanto se actualiza una pantalla de consulta mientras esta a la vista. */
 export const AUTO_REFRESH_MS = 60_000;
@@ -76,4 +77,34 @@ export function refreshWhileVisible(reload: () => void, intervalMs = AUTO_REFRES
     stop();
     document.removeEventListener('visibilitychange', onVisibility);
   });
+}
+
+/**
+ * Estado de la ultima actualizacion de una pantalla de consulta (FR-063): cuando fue la ultima respuesta correcta y si
+ * la ultima consulta fallo por falta de conectividad. La pantalla lo muestra para que nadie tome por vigente un dato
+ * que no se pudo refrescar. No cambia {@link refreshWhileVisible}: las facades lo actualizan al cargar.
+ */
+export class RefreshStatus {
+  /** Cuando llego la ultima respuesta correcta; nulo si todavia no hubo ninguna. */
+  readonly lastUpdatedAt = signal<Date | null>(null);
+  /** La ultima consulta no llego al servidor: se muestran los datos de la anterior. */
+  readonly connectionLost = signal(false);
+
+  markSuccess(now: Date = new Date()): void {
+    this.lastUpdatedAt.set(now);
+    this.connectionLost.set(false);
+  }
+
+  /** Una falla de red o de pasarela es perdida de conectividad; otro error no lo es (lo explica la pantalla). */
+  markFailure(error: unknown): void {
+    this.connectionLost.set(isConnectionProblem(error));
+  }
+}
+
+/** Sin respuesta del servidor (estado 0) o pasarela caida (502, 503, 504). */
+export function isConnectionProblem(error: unknown): boolean {
+  return (
+    error instanceof HttpErrorResponse &&
+    (error.status === 0 || error.status === 502 || error.status === 503 || error.status === 504)
+  );
 }

@@ -3,7 +3,11 @@
  * es como los espera la API. Todo se calcula con la fecha local del navegador (hora de Ecuador en
  * operacion), nunca con UTC, para que "hoy" sea el dia que ve el usuario.
  */
-export type PeriodPreset = 'today' | 'last7' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'custom';
+export type PeriodPreset =
+  'today' | 'last7' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'custom' | 'allHistory';
+
+/** Acceso rapido con un rango propio: ni el personalizado ni «Todo el historial», que no tiene rango. */
+export type QuickPreset = Exclude<PeriodPreset, 'custom' | 'allHistory'>;
 
 export interface DateRange {
   /** Primer dia, ISO yyyy-MM-dd, inclusivo. */
@@ -19,14 +23,21 @@ export const PERIOD_LABELS: Readonly<Record<PeriodPreset, string>> = {
   lastMonth: 'Mes anterior',
   thisYear: 'Este año',
   custom: 'Personalizado',
+  allHistory: 'Todo el historial',
 };
 
-export const PERIOD_PRESETS = Object.keys(PERIOD_LABELS) as readonly PeriodPreset[];
+/**
+ * Los accesos que ofrece el selector de siempre. «Todo el historial» (informes de incidencias, FR-072) queda aparte:
+ * solo lo muestra una pantalla que lo pide, para que Consumo no cambie.
+ */
+export const PERIOD_PRESETS = Object.keys(PERIOD_LABELS).filter(
+  (preset) => preset !== 'allHistory',
+) as readonly PeriodPreset[];
 
 /** El backend rechaza periodos mas largos. */
 export const MAX_PERIOD_DAYS = 366;
 
-export function presetRange(preset: Exclude<PeriodPreset, 'custom'>, today: Date): DateRange {
+export function presetRange(preset: QuickPreset, today: Date): DateRange {
   const day = startOfDay(today);
   switch (preset) {
     case 'today':
