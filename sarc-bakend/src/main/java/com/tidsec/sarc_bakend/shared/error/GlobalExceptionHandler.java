@@ -40,6 +40,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 			case BusinessRuleException _ -> HttpStatus.UNPROCESSABLE_CONTENT;
 			case ServiceUnavailableException _ -> HttpStatus.SERVICE_UNAVAILABLE;
 			case TooManyRequestsException _ -> HttpStatus.TOO_MANY_REQUESTS;
+			case PayloadTooLargeException _ -> HttpStatus.CONTENT_TOO_LARGE;
 		};
 		ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, ex.getMessage());
 		ex.properties().forEach(problem::setProperty);

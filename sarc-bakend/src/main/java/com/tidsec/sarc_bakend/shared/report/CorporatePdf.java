@@ -54,24 +54,40 @@ public final class CorporatePdf {
 	public record Bar(String label, Float ratio, String value) {
 	}
 
+	/**
+	 * Presentacion del documento. El estandar es A4 horizontal con el encabezado de siempre; un informe puede pedir A4
+	 * vertical, un subtitulo bajo el titulo, una banda de color con un rotulo y «Pagina x de y» en el pie.
+	 */
+	public record Layout(boolean portrait, String subtitle, String band, boolean pageCount) {
+
+		public static Layout standard() {
+			return new Layout(false, null, null, false);
+		}
+	}
+
 	private final ByteArrayOutputStream output = new ByteArrayOutputStream();
 	private final Document document;
 	private final PdfWriter writer;
 
-	private CorporatePdf(CorporateBranding branding, String title, String scope, Instant cutOff) {
-		this.document = new Document(PageSize.A4.rotate(), 32, 32, 32, 40);
+	private CorporatePdf(CorporateBranding branding, String title, String scope, Instant cutOff, Layout layout) {
+		this.document = new Document(layout.portrait() ? PageSize.A4 : PageSize.A4.rotate(), 32, 32, 32, 40);
 		this.writer = PdfWriter.getInstance(document, output);
 		String generated = "Fecha de corte: " + branding.dateTimeFormatter().format(cutOff) + " ("
 				+ branding.zone().getId() + ")";
-		writer.setPageEvent(new Footer(title, generated));
+		writer.setPageEvent(new Footer(title, generated, layout.pageCount()));
 		document.addTitle(title);
 		document.addCreator("SARC - EOS Tech Company / Autoeastern");
 		document.open();
-		header(branding, title, scope, generated);
+		header(branding, title, scope, generated, layout);
 	}
 
 	public static CorporatePdf create(CorporateBranding branding, String title, String scope, Instant cutOff) {
-		return new CorporatePdf(branding, title, scope, cutOff);
+		return new CorporatePdf(branding, title, scope, cutOff, Layout.standard());
+	}
+
+	public static CorporatePdf create(CorporateBranding branding, String title, String scope, Instant cutOff,
+			Layout layout) {
+		return new CorporatePdf(branding, title, scope, cutOff, layout);
 	}
 
 	/** Pasa de pagina si no caben {@code needed} puntos: evita titulos separados de su contenido. */
@@ -133,6 +149,36 @@ public final class CorporatePdf {
 				table.addCell(cell);
 			}
 			shaded = !shaded;
+		}
+		document.add(table);
+		return this;
+	}
+
+	/**
+	 * Como {@link #table}, con una columna de estado: el texto va siempre y las celdas cuyo valor esta en
+	 * {@code highlighted} llevan ademas un relleno suave, para que el color nunca sea el unico indicador.
+	 */
+	public CorporatePdf statusTable(List<String> headers, List<List<String>> rows, float[] relativeWidths,
+			int statusColumn, java.util.Set<String> highlighted) {
+		PdfPTable table = new PdfPTable(relativeWidths);
+		table.setWidthPercentage(100);
+		table.setHeaderRows(1);
+		for (String header : headers) {
+			PdfPCell cell = new PdfPCell(new Phrase(header, HEADER_CELL));
+			cell.setBackgroundColor(BRAND);
+			cell.setPadding(5);
+			table.addCell(cell);
+		}
+		for (List<String> row : rows) {
+			for (int column = 0; column < row.size(); column++) {
+				PdfPCell cell = new PdfPCell(new Phrase(row.get(column), BODY));
+				cell.setPadding(4);
+				cell.setBorderColor(BRAND_LIGHT);
+				if (column == statusColumn && highlighted.contains(row.get(column))) {
+					cell.setBackgroundColor(BRAND_LIGHT);
+				}
+				table.addCell(cell);
+			}
 		}
 		document.add(table);
 		return this;
@@ -270,7 +316,7 @@ public final class CorporatePdf {
 		canvas.setColorFill(BRAND);
 	}
 
-	private void header(CorporateBranding branding, String title, String scope, String generated) {
+	private void header(CorporateBranding branding, String title, String scope, String generated, Layout layout) {
 		PdfPTable header = new PdfPTable(new float[] { 2, 6, 2 });
 		header.setWidthPercentage(100);
 		header.addCell(logoCell(branding.eosLogo(), Element.ALIGN_LEFT));
@@ -283,12 +329,29 @@ public final class CorporatePdf {
 		Paragraph generatedParagraph = new Paragraph(generated, SUBTITLE);
 		generatedParagraph.setAlignment(Element.ALIGN_CENTER);
 		center.addElement(titleParagraph);
+		if (layout.subtitle() != null) {
+			Paragraph subtitle = new Paragraph(layout.subtitle(), SUBTITLE);
+			subtitle.setAlignment(Element.ALIGN_CENTER);
+			center.addElement(subtitle);
+		}
 		center.addElement(scopeParagraph);
 		center.addElement(generatedParagraph);
 		header.addCell(center);
 		header.addCell(logoCell(branding.autoeasternLogo(), Element.ALIGN_RIGHT));
 		header.setSpacingAfter(8);
 		document.add(header);
+		if (layout.band() != null) {
+			PdfPTable band = new PdfPTable(1);
+			band.setWidthPercentage(100);
+			PdfPCell cell = new PdfPCell(new Phrase(layout.band(), HEADER_CELL));
+			cell.setBackgroundColor(BRAND);
+			cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+			cell.setPadding(5);
+			cell.setBorder(Rectangle.NO_BORDER);
+			band.addCell(cell);
+			band.setSpacingAfter(8);
+			document.add(band);
+		}
 	}
 
 	private static PdfPCell logoCell(byte[] logo, int alignment) {
@@ -310,10 +373,18 @@ public final class CorporatePdf {
 
 		private final String title;
 		private final String generated;
+		private final boolean pageCount;
+		private PdfTemplate total;
 
-		Footer(String title, String generated) {
+		Footer(String title, String generated, boolean pageCount) {
 			this.title = title;
 			this.generated = generated;
+			this.pageCount = pageCount;
+		}
+
+		@Override
+		public void onOpenDocument(PdfWriter writer, Document document) {
+			total = pageCount ? writer.getDirectContent().createTemplate(30, 12) : null;
 		}
 
 		@Override
@@ -321,8 +392,25 @@ public final class CorporatePdf {
 			float y = document.bottom() - 18;
 			ColumnText.showTextAligned(writer.getDirectContent(), Element.ALIGN_LEFT,
 					new Phrase(title + " - " + generated, NOTE), document.left(), y, 0);
-			ColumnText.showTextAligned(writer.getDirectContent(), Element.ALIGN_RIGHT,
-					new Phrase("Página " + writer.getPageNumber(), NOTE), document.right(), y, 0);
+			if (total == null) {
+				ColumnText.showTextAligned(writer.getDirectContent(), Element.ALIGN_RIGHT,
+						new Phrase("Página " + writer.getPageNumber(), NOTE), document.right(), y, 0);
+				return;
+			}
+			// «Página x de y»: el total se completa al cerrar el documento, en una plantilla reservada junto al numero.
+			String page = "Página " + writer.getPageNumber() + " de ";
+			float width = NOTE.getBaseFont().getWidthPoint(page, NOTE.getSize());
+			ColumnText.showTextAligned(writer.getDirectContent(), Element.ALIGN_LEFT, new Phrase(page, NOTE),
+					document.right() - width - 18, y, 0);
+			writer.getDirectContent().addTemplate(total, document.right() - 18, y);
+		}
+
+		@Override
+		public void onCloseDocument(PdfWriter writer, Document document) {
+			if (total != null) {
+				ColumnText.showTextAligned(total, Element.ALIGN_LEFT,
+						new Phrase(String.valueOf(writer.getPageNumber() - 1), NOTE), 0, 0, 0);
+			}
 		}
 	}
 }

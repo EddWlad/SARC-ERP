@@ -32,8 +32,9 @@ Dependencias: `api -> application -> domain <- infrastructure`.
 
 ## Modulos
 
-- `identity`, `inventory`, `consumption`, `uptime`, `reporting` e `intermittency` (Feature 008). Ninguno importa clases de otro: se comunican por puertos de `shared/catalog`.
+- `identity`, `inventory`, `consumption`, `uptime`, `reporting`, `intermittency` (Feature 008) e `incident` (Feature 010). Ninguno importa clases de otro: se comunican por puertos de `shared/catalog`.
 - `intermittency` registra y consulta las ventanas de intermitencia de los puntos de carga KIA (captura manual e importacion con vista previa editable), calcula el tablero y emite PDF y Excel. Resuelve los puntos por el puerto `KiaPointDirectory` (lo implementa Inventario) y archiva sus informes por `ReportArchive`. La disponibilidad estimada de prueba es solo para Administrador y Analista (`IntermittencyPermissions.AVAILABILITY`) y nunca se mezcla con Uptime. Ver `docs/adr/0013-modulo-intermitencias.md`.
+- `incident` lleva tickets de incidencias de equipos, del chatbot y de elementos del sitio: numeración `TICKET-`, episodios con hitos T0 a T4, cronología, evidencias, visitas manuales, mensaje para WhatsApp (solo texto, SARC no envía), cierre y reapertura, listado, tablero y los informes «Control de tickets» y «Gestión de incidencias». Resuelve equipos por el puerto `IncidentAssetDirectory` (lo implementa Inventario) y personal por `IncidentStaffDirectory` (lo implementa Identidad), y archiva sus informes por `ReportArchive`. Los informes salen de `IncidentReportQuery` e `IncidentManagementQuery` con un solo corte y las reglas puras de `domain/policy` (`TicketStateAt`, `MilestonesAsKnownAt`, `IncidentKpiCalculator`), así que el tablero, el PDF y el Excel coinciden. Las referencias de tiempo son operativas, no SLA. Ver `docs/adr/0014-modulo-incidencias.md`.
 
 ## Organizacion de paquetes
 

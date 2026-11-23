@@ -261,6 +261,11 @@ public class Equipment extends BaseAuditableEntity {
 		return connectors.stream().filter(Connector::isActive).toList();
 	}
 
+	/** Todos los conectores, tambien los retirados: el historial de incidencias los sigue referenciando. */
+	public List<Connector> allConnectors() {
+		return List.copyOf(connectors);
+	}
+
 	private Optional<Connector> connectorAt(int ordinal) {
 		return connectors.stream().filter(c -> c.getOrdinal() == ordinal).findFirst();
 	}

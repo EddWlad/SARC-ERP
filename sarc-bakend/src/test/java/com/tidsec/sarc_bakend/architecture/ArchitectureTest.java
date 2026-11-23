@@ -68,6 +68,20 @@ class ArchitectureTest {
 					"..modules.intermittency.infrastructure..", "..modules.intermittency.application..",
 					"..modules.intermittency.api..");
 
+	/** Feature 010: incidencias solo conoce el kernel compartido y los puertos de shared (catalog y security). */
+	@ArchTest
+	static final ArchRule incident_depends_only_on_the_shared_kernel = noClasses()
+			.that().resideInAPackage("..modules.incident..")
+			.should().dependOnClassesThat().resideInAnyPackage("..modules.consumption..", "..modules.inventory..",
+					"..modules.uptime..", "..modules.identity..", "..modules.reporting..",
+					"..modules.intermittency..");
+
+	/** Feature 010: ningun modulo importa clases de incidencias; se comunican por los puertos de shared. */
+	@ArchTest
+	static final ArchRule no_module_depends_on_incident = noClasses()
+			.that().resideOutsideOfPackage("..modules.incident..")
+			.should().dependOnClassesThat().resideInAPackage("..modules.incident..");
+
 	/** FR-047: las cifras de uptime no se mezclan con las de intermitencias, en ninguna direccion. */
 	@ArchTest
 	static final ArchRule uptime_and_intermittency_do_not_import_each_other = noClasses()
