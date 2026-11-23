@@ -37,3 +37,4 @@
 - P-01, el número inicial de tickets, DEBE consultarse al responsable justo antes de la puesta en marcha, no durante la especificación.
 - Las menciones a «Excel», «PDF» y «WhatsApp» son formatos y canales de negocio exigidos por el PRD, no decisiones técnicas.
 - Cierre, 2026-11-23: la implementación de US1 a US7 está hecha y sin publicar. La lista sigue pasando 16 de 16 puntos; P-01 y P-02, decisiones del responsable, se resolvieron ese mismo día.
+- Publicada el 2026-11-23 (versión `2026.11.23-49-a020133`, `COMPLETADA`). La lista sigue pasando 16 de 16 puntos.
