@@ -130,7 +130,10 @@ try {
         $exported = @{}
         foreach ($a in (Get-Content -LiteralPath $IndiceExportacion -Raw | ConvertFrom-Json).assets) { $exported[$a.public_id] = $true }
         $itmRefs = if ($hasIntermittency) { ' UNION ALL SELECT original_ref FROM itm_import_batch' } else { '' }
-        $refs = Invoke-Psql ("SELECT ref FROM (SELECT image_ref AS ref FROM asset_equipment UNION ALL SELECT original_ref FROM energy_import_batch UNION ALL SELECT original_ref FROM asset_import_batch UNION ALL SELECT original_ref FROM upt_import_batch{1} UNION ALL SELECT file_ref FROM report_issued) r WHERE ref IS NOT NULL ORDER BY random() LIMIT {0}" -f $MuestraReferencias, $itmRefs)
+        # Las copias anteriores a la Feature 010 no tienen inc_evidence: solo se muestrea si los metadatos la traen (carpeta incidents/evidence).
+        $hasIncidents = @($meta.tableCounts.PSObject.Properties.Name) -contains 'inc_evidence'
+        $incRefs = if ($hasIncidents) { ' UNION ALL SELECT storage_ref FROM inc_evidence' } else { '' }
+        $refs = Invoke-Psql ("SELECT ref FROM (SELECT image_ref AS ref FROM asset_equipment UNION ALL SELECT original_ref FROM energy_import_batch UNION ALL SELECT original_ref FROM asset_import_batch UNION ALL SELECT original_ref FROM upt_import_batch{1}{2} UNION ALL SELECT file_ref FROM report_issued) r WHERE ref IS NOT NULL ORDER BY random() LIMIT {0}" -f $MuestraReferencias, $itmRefs, $incRefs)
         $missing = @($refs | Where-Object { $_ -and -not $exported.ContainsKey($_.Trim()) })
         Add-Check ('muestra de {0} referencias a archivos presentes en la exportacion' -f @($refs).Count) ($missing.Count -eq 0) $(if ($missing.Count) { '{0} no estan en la exportacion (restaurables en Cloudinary?)' -f $missing.Count } else { '' })
     } else {
