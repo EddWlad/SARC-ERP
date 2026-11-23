@@ -45,7 +45,7 @@ Antes de diseñar, la spec y la trazabilidad se actualizaron con las decisiones 
 | 11 | P-13 Uptime e Intermitencias | FR-083 | Se remite a esos módulos; no se recalcula |
 | 12 | P-14 Red histórica | FR-007 | `network_at_t0` |
 | 13 | Lista de control | `checklists/requirements.md` | Se corrigió la nota obsoleta «Quedan tres»; 16/16 |
-| 14 | Pendientes | Sección «Decisiones» | Solo **P-01** (número inicial) y **P-02** (versión del protocolo). Ninguna bloquea el plan ni el desarrollo |
+| 14 | Pendientes | Sección «Decisiones» | **P-01** (número inicial) y **P-02** (versión del protocolo), resueltas el 2026-11-23 |
 
 ## Technical Context
 
@@ -278,7 +278,7 @@ Definiciones, con `E = min(fin del rango, cutOff)` y `S` como inicio del rango (
 
 ## Referencias, prioridades e indicadores
 
-- `inc_reference_version` y `inc_reference_rule`, sembradas por V021 con FR-034 y FR-051 (versión `PROTOCOLO-FIRMADO-1`, rótulo «por confirmar» hasta P-02).
+- `inc_reference_version` y `inc_reference_rule`, sembradas por V021 con FR-034 y FR-051 (versión `PROTOCOLO-FIRMADO-1`, rótulo «por confirmar» hasta P-02, que V022 corrigió a «versión 2.0»).
 - Cada episodio guarda su versión en T0.
 - `IncidentKpiCalculator` devuelve duraciones `null` cuando falta un hito, nunca 0, y un resultado de referencia de cuatro valores: `WITHIN`, `OUTSIDE`, `NOT_EVALUABLE` o `NO_REFERENCE`.
 - Los promedios llevan su denominador y los excluidos por causa (FR-080). Los cierres por duplicado o error quedan aparte (FR-050).
@@ -390,7 +390,7 @@ El detalle de escenarios está en [quickstart.md](quickstart.md).
 | Riesgo o dependencia | Impacto | Mitigación |
 |----------------------|---------|------------|
 | P-01 se fija tarde o mal | Números repetidos con la secuencia externa | No se siembra ningún número; producción queda bloqueada hasta configurar; se exige confirmar el código; la configuración solo es posible sin tickets |
-| P-02 (protocolo 2.0 o 1.0) | Rótulo de la fuente incorrecto | Rótulo «por confirmar». Si cambian los valores, se crea una versión nueva (P-03) sin tocar episodios anteriores |
+| P-02 (protocolo 2.0 o 1.0) | Rótulo de la fuente incorrecto | Rótulo «por confirmar»; resuelta, V022 lo cambió a «versión 2.0». Si cambian los valores, se crea una versión nueva (P-03) sin tocar episodios anteriores |
 | Una base de prueba se restaura en producción, o al revés | Numeración cruzada | Se compara el `environment` guardado con la propiedad del servidor |
 | Correcciones de T0 o T4 después de emitir | Informes contradictorios | Archivo inmutable, `rowsSha256` y `MilestonesAsKnownAt` |
 | Volumen de eventos y del informe de todo el historial | Lentitud | Índices de R19, paginación y generación en streaming; banco de rendimiento |
@@ -409,7 +409,7 @@ El detalle de escenarios está en [quickstart.md](quickstart.md).
 - La Feature 007, para publicar.
 - Uptime e Intermitencias, solo como enlaces.
 
-**Pendientes que no bloquean**: **P-01** y **P-02** (sección «Decisiones» de la spec). Se resuelven antes de la puesta en marcha (Principio II).
+**Decisiones resueltas antes de la puesta en marcha** (Principio II): **P-01** y **P-02**, el 2026-11-23 (sección «Decisiones» de la spec).
 
 ## Skills por etapa
 
