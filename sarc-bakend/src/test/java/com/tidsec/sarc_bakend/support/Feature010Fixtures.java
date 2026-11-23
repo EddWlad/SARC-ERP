@@ -54,7 +54,7 @@ public final class Feature010Fixtures {
 	public static final UUID RETIRED_CONNECTOR = equipmentId("retired-connector");
 	public static final UUID DELETED = equipmentId("deleted");
 
-	public static final String PASSWORD = "Prueba-Incidencias-2026";
+	public static final String PASSWORD = "prueba-de-incidencias";
 
 	/** Cada rol por separado, un segundo Analista y la combinacion Analista mas Gerente (union de permisos). */
 	public static final List<Set<Role>> ROLE_SETS = List.of(Set.of(Role.ADMINISTRADOR), Set.of(Role.ANALISTA),
