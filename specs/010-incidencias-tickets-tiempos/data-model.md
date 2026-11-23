@@ -46,7 +46,7 @@ Referencias externas, siempre por UUID y sin claves foráneas hacia otros módul
 |-------|------|--------|
 | id | UUID PK | |
 | code | VARCHAR(40) UNIQUE | Por ejemplo, `PROTOCOLO-FIRMADO-1` |
-| label | VARCHAR(160) | «Protocolo de monitoreo firmado (versión por confirmar)» hasta resolver P-02 |
+| label | VARCHAR(160) | «Protocolo de monitoreo firmado, versión 2.0» desde V022 (antes «versión por confirmar», P-02 resuelta el 2026-11-23) |
 | effective_from | TIMESTAMPTZ | Vigencia. No se solapan: rige la última con `effective_from ≤ T0` |
 | source_note | VARCHAR(500) | Fuente: PRD §10.3, Protocolo §5 |
 

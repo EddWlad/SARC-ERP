@@ -6,7 +6,7 @@
 
 **Created**: 2026-11-20
 
-**Status**: Aclarada y en planificación. Q1 a Q5 y las decisiones P-03 a P-16 se resolvieron el 2026-11-20. Solo siguen pendientes P-01 (número inicial, que se consulta justo antes de la puesta en marcha) y P-02 (versión vigente del protocolo). Ninguna de las dos bloquea el plan ni el desarrollo con datos de prueba. Plan técnico en `plan.md`, sin implementación.
+**Status**: Aclarada y en planificación. Q1 a Q5 y las decisiones P-03 a P-16 se resolvieron el 2026-11-20. P-02 (versión vigente del protocolo: 2.0) y P-01 (número inicial: lo configura el Administrador en producción) se resolvieron el 2026-11-23. Plan técnico en `plan.md`, sin implementación.
 
 **Input**: Módulo RF-006 de SARC: incidencias, tickets y tiempos. Centraliza el registro, la atención, el seguimiento y el cierre de incidencias de puntos de carga, electrolineras, el servicio de chatbot, barreras vehiculares y otros elementos del sitio. Ofrece trazabilidad por turnos, hitos T0–T4 verificables y un mensaje para copiar y enviar a mano por WhatsApp. Incluye dos reportes separados: «Control de tickets» y el reporte de gestión de incidencias. Evita digitar las 44 columnas del Excel actual.
 
@@ -494,7 +494,7 @@ Como Gerente, Supervisor, Asistente, Analista o Administrador, quiero un tablero
   | Paro de emergencia, novedad de instalación o conectividad, falla de elemento del sitio, incidencia no catalogada | Sin referencia aprobada | Sin referencia aprobada |
   | Falla del servicio de chatbot | Sin referencia aprobada (no se aplican los 5 min de las consultas de chatbot) | Sin referencia aprobada |
 
-- **FR-051a** [P-03, P-02]: Las referencias y prioridades propuestas DEBEN conservarse en **versiones** inmutables, cada una con su fecha de vigencia y su fuente. Cada episodio guarda la versión vigente en su T0, y sus juicios de referencia se calculan siempre con esa versión. Un cambio de referencias crea una versión nueva mediante un cambio controlado del sistema, sin modificar episodios ni reportes anteriores. La versión inicial se rotula «Protocolo de monitoreo firmado (versión por confirmar)» hasta que se resuelva P-02. Al resolverse, cambia solo ese rótulo, no los valores.
+- **FR-051a** [P-03, P-02]: Las referencias y prioridades propuestas DEBEN conservarse en **versiones** inmutables, cada una con su fecha de vigencia y su fuente. Cada episodio guarda la versión vigente en su T0, y sus juicios de referencia se calculan siempre con esa versión. Un cambio de referencias crea una versión nueva mediante un cambio controlado del sistema, sin modificar episodios ni reportes anteriores. La versión inicial se rotuló «Protocolo de monitoreo firmado (versión por confirmar)» hasta resolver P-02. El 2026-11-23 el responsable confirmó la versión 2.0 y la migración V022 cambió solo ese rótulo, a «Protocolo de monitoreo firmado, versión 2.0», sin tocar los valores.
 - **FR-052** [Propuesta, P-06]: La medida que se compara con cada referencia es la de la tabla: la atención referencial se compara con la recuperación (T3−T0), nunca con el cierre (T4−T0). Un episodio es «fuera de referencia» cuando:
   - su diferencia registrada supera el límite superior;
   - o, en Espera de conexión, la espera supera 60 min sin un escalamiento con destino técnico (técnicos propios o del proveedor) hecho dentro de esos 60 min. La espera termina en T3 registrado o, si el episodio sigue abierto, en el momento del corte. Un escalamiento técnico posterior al fin de la espera no cuenta: si la espera terminó en 60 min o menos, el episodio está dentro de la referencia. Si el episodio está cerrado sin T3 registrado y sin escalamiento técnico, es «no evaluable».
@@ -651,7 +651,7 @@ Como Gerente, Supervisor, Asistente, Analista o Administrador, quiero un tablero
 ### Conformidad constitucional
 
 - **Principio I**: esta especificación precede a cualquier cambio. No se implementa nada en esta solicitud.
-- **Principio II**: todas las reglas de numeración, hitos, cierre, referencias y reportes están descritas aquí. Solo quedan abiertas P-01 y P-02 (sección Decisiones), sin una regla implícita para ninguna de ellas.
+- **Principio II**: todas las reglas de numeración, hitos, cierre, referencias y reportes están descritas aquí. P-01 y P-02 están resueltas (sección Decisiones), sin una regla implícita para ninguna de ellas.
 - **Principio III**: no aplica en esta fase. El esquema se tratará en el plan con migraciones nuevas.
 - **D06 y D07**: los tickets referencian conectores por posición y conservan el equipo original ante un reemplazo.
 - **D09**: no hay importación de Excel en esta feature.
@@ -693,14 +693,14 @@ Como Gerente, Supervisor, Asistente, Analista o Administrador, quiero un tablero
 
 ## Decisiones
 
-Las decisiones P-03 a P-16 quedaron resueltas por el responsable del producto el 2026-11-20 (ver Clarifications). Siguen abiertas solo P-01 y P-02. Ninguna de las dos bloquea el plan ni el desarrollo con datos de prueba, pero ambas DEBEN resolverse antes de la puesta en marcha.
+Las decisiones P-03 a P-16 quedaron resueltas por el responsable del producto el 2026-11-20 (ver Clarifications). P-01 y P-02 se resolvieron el 2026-11-23 (ver la tabla).
 
 ### Pendientes
 
 | ID | Tema | Situación | Mientras tanto |
 |----|------|-----------|----------------|
-| P-01 | Número inicial | Debe consultarse al responsable justo antes de la puesta en marcha (FR-014), porque la secuencia externa sigue avanzando. | Sin valor de producción: en producción la creación queda bloqueada hasta configurarlo. Los ambientes de prueba usan números ficticios. |
-| P-02 | Versión del protocolo | La portada dice versión 2.0 (7 oct 2026, «Aprobado por gerencia»). Las páginas interiores y el control documental dicen versión 1.0 (10 feb 2026, «Versión inicial para aprobación gerencial»). | La versión de referencias que se carga al inicio se rotula «Protocolo de monitoreo firmado (versión por confirmar)». Al confirmarse, se corrige solo el rótulo de esa versión de referencias (FR-051a). |
+| P-01 | Número inicial | Debe consultarse al responsable justo antes de la puesta en marcha (FR-014), porque la secuencia externa sigue avanzando. | Sin valor de producción: en producción la creación queda bloqueada hasta configurarlo. Los ambientes de prueba usan números ficticios. **Resuelta el 2026-11-23**: el responsable decidió que ningún valor sale del desarrollo y que el Administrador configura el número inicial en producción, según la secuencia externa de ese momento. |
+| P-02 | Versión del protocolo | La portada dice versión 2.0 (7 oct 2026, «Aprobado por gerencia»). Las páginas interiores y el control documental dicen versión 1.0 (10 feb 2026, «Versión inicial para aprobación gerencial»). | La versión de referencias que se carga al inicio se rotula «Protocolo de monitoreo firmado (versión por confirmar)». Al confirmarse, se corrige solo el rótulo de esa versión de referencias (FR-051a). **Resuelta el 2026-11-23**: protocolo aprobado y final, versión 2.0; la migración V022 cambió solo el rótulo. |
 
 ### Resueltas
 

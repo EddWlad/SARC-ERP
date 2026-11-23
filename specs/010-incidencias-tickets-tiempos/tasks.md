@@ -843,10 +843,12 @@ description: "Lista de tareas de Feature 010: incidencias, tickets y tiempos"
   *Avance: `Ensayar-Restauracion.ps1` incluye `inc_evidence.storage_ref` en la muestra de referencias cuando los metadatos de la copia traen esa tabla (el script ya contrastaba todos los `tableCounts`, y `sarc-backup.sh` cuenta todas las tablas públicas). `docs/operacion/restaurar.md` lista las tablas `inc_*` y la carpeta `incidents/evidence`. El script se revisó con el analizador de PowerShell, sin ejecutarlo.*
 - [x] T114 [P] Actualizar la documentación del proyecto, si la tiene: la sección de módulos o arquitectura de `sarc-bakend` (README o CLAUDE.md) con el módulo `incident` y el puerto `IncidentAssetDirectory`.
   *Avance: Módulo `incident` y puertos `IncidentAssetDirectory` e `IncidentStaffDirectory` en `sarc-bakend/CLAUDE.md`, y estado actualizado en `docs/adr/0014-modulo-incidencias.md`.*
-- [ ] T115 Ensayar la restauración completa con datos sintéticos de incidencias (tickets, episodios, revisiones, eventos y evidencias en una carpeta propia `sarc-qa010-*`, vacía antes y después, porque la cuenta de Cloudinary es compartida). Registrar el resultado en `docs/operacion/pendientes-recursos-reales.md`.
+- [x] T115 Ensayar la restauración completa con datos sintéticos de incidencias (tickets, episodios, revisiones, eventos y evidencias en una carpeta propia `sarc-qa010-*`, vacía antes y después, porque la cuenta de Cloudinary es compartida). Registrar el resultado en `docs/operacion/pendientes-recursos-reales.md`.
+  *Hecho el 2026-11-23, con la autorización expresa del responsable para usar las credenciales de la cuenta compartida de Cloudinary solo en una carpeta propia. Se sembraron datos sintéticos en el sandbox (5 tickets, 5 episodios, 25 hitos, 10 revisiones de hitos, 20 eventos y 3 evidencias, V022) y se subieron 3 originales sintéticos a `sarc-qa010-t115/incidents/evidence/` (carpeta vacía antes y después). `Exportar-Cloudinary.ps1` los exportó con el SHA-256 igual al del original; la copia se cifró con una llave desechable (no con la clave de producción) y `Ensayar-Restauracion.ps1` la restauró en un PostgreSQL 18 aislado: **APROBADO 7/7 en 0,2 min** (pg_restore sin errores, V022, conteos de las 48 tablas iguales, auditoría, y las 3 referencias de `inc_evidence` presentes en la exportación). Se borró lo propio y la carpeta quedó con 0 recursos; temporales borrados. No se imprimió ningún secreto. Primer intento: la referencia sintética sin la extensión `.pdf` no coincidía con el `public_id` que Cloudinary asigna a los archivos raw; era un defecto del dato de prueba, no de la aplicación, que guarda el `public_id` devuelto.*
 - [x] T116 Al cerrar, actualizar el estado de CC-PRD-010-20261120 en `documents/control-cambios-prd.md` y la lista de control `specs/010-incidencias-tickets-tiempos/checklists/requirements.md`.
   *Avance: Estado de CC-PRD-010-20261120 en `documents/control-cambios-prd.md` y nota de cierre en `checklists/requirements.md`: implementada el 2026-11-23, sin publicar, con P-01 y P-02 abiertas.*
-- [ ] T117 **Decisión del responsable, no automatizable (P-02)**: confirmar si el protocolo vigente es la versión 2.0 o la 1.0. Si se confirma, cambiar solo el rótulo de `PROTOCOLO-FIRMADO-1` con una migración de datos nueva (V022 o la siguiente libre), sin cambiar valores (FR-051a). Si los valores también cambian, crear una versión nueva de referencias con su vigencia (P-03).
+- [x] T117 **Decisión del responsable, no automatizable (P-02)**: confirmar si el protocolo vigente es la versión 2.0 o la 1.0. Si se confirma, cambiar solo el rótulo de `PROTOCOLO-FIRMADO-1` con una migración de datos nueva (V022 o la siguiente libre), sin cambiar valores (FR-051a). Si los valores también cambian, crear una versión nueva de referencias con su vigencia (P-03).
+  *Resuelta el 2026-11-23: el responsable confirmó que el protocolo está aprobado y es final, en su versión 2.0 (7 oct 2026, «Aprobado por gerencia»), sin cambiar los valores. La migración nueva `V022__incidencias_rotulo_protocolo.sql` cambia solo el rótulo de `PROTOCOLO-FIRMADO-1` a «Protocolo de monitoreo firmado, versión 2.0»; V021 no se editó. Se probó en `IncidentMigrationTest` y `ReferenceCatalogTest`.*
 - [ ] T118 **Publicar solo cuando el responsable lo autorice y T009 esté cerrada**, con el flujo de la Feature 007:
   1. Respaldo previo con recibo.
   2. `ci.yml`, `version-candidata.yml` y `publicar.yml`, con aprobación del entorno `production`.
@@ -854,7 +856,7 @@ description: "Lista de tareas de Feature 010: incidencias, tickets y tiempos"
   4. Comparación de conteos contra la copia previa.
 
   Después de publicar, el *issue* `ensayo-restauracion` se cierra con un ensayo aprobado en 7 días.
-- [ ] T119 **Decisión del responsable, no automatizable (P-01)**: el día de la publicación, después de T118, pedir al responsable el número inicial disponible de la secuencia externa. Un Administrador lo configura en `/incidencias/numeracion` en el ambiente `PRODUCTION`, con la confirmación del código. Comprobar que el primer ticket real recibe ese número y que el número ya no se puede cambiar. **Nunca** se usa ni se escribe en el repositorio.
+- [x] T119 **Decisión del responsable, no automatizable (P-01)**: el día de la publicación, después de T118, pedir al responsable el número inicial disponible de la secuencia externa. Un Administrador lo configura en `/incidencias/numeracion` en el ambiente `PRODUCTION`, con la confirmación del código. Comprobar que el primer ticket real recibe ese número y que el número ya no se puede cambiar. **Nunca** se usa ni se escribe en el repositorio.
 
 ---
 
@@ -987,8 +989,9 @@ Task: "ControlReportApiTest en {INCT}/api/ControlReportApiTest.java"
 
 ## Notes
 
+  *Decisión del responsable, 2026-11-23: el desarrollo no configura ningún número inicial. La secuencia de WhatsApp sigue avanzando, así que el Administrador lo configura en producción, en `/incidencias/numeracion` (ambiente «Producción»), con el siguiente número libre de ese momento y la confirmación del código. Hasta entonces la creación de tickets queda bloqueada, que es el comportamiento diseñado (FR-014). El número no se escribe en el repositorio. Tras configurarlo conviene comprobar que el primer ticket real lo recibe y que ya no se puede cambiar; ese paso lo hace el Administrador al poner el sistema en uso, y se anota en `quickstart.md`, «Puesta en marcha».*
 - [P] = archivos distintos y sin dependencias pendientes.
 - [Story] traza cada tarea a su historia.
 - Las pruebas fallan antes de implementar.
 - Este archivo no autoriza commits, PR ni publicación: el responsable decide cuándo hacerlos.
-- **Pendientes del responsable**: P-01 (T119) y P-02 (T117). Ninguna bloquea el desarrollo.
+- **Decisiones del responsable**: P-01 (T119) y P-02 (T117) se resolvieron el 2026-11-23.

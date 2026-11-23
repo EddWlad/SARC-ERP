@@ -182,8 +182,8 @@ Quedan sin medir con una persona los tiempos de SC que requieren cronómetro, co
 
 ## Antes de publicar (solo como referencia; en esta etapa no se ejecuta)
 
-1. **P-01**: pedir al responsable el número inicial de producción el mismo día de la publicación. Después de publicar, un Administrador lo configura en la pantalla de numeración con la confirmación del código.
-2. **P-02**: confirmar la versión del protocolo. Si se resuelve, se cambia solo el rótulo de la versión de referencias, con una migración de datos que no cambia los valores.
+1. **P-01** (resuelta el 2026-11-23): el desarrollo no fija ningún número. Después de publicar, un Administrador lo configura en `/incidencias/numeracion`, ambiente «Producción», con el siguiente número libre de la secuencia externa de ese momento y la confirmación del código. Hasta entonces la creación de tickets queda bloqueada, a propósito.
+2. **P-02** (resuelta el 2026-11-23): el protocolo vigente es la versión 2.0. La migración V022 cambió solo el rótulo de la versión de referencias, a «Protocolo de monitoreo firmado, versión 2.0», sin tocar los valores.
 3. Respaldo previo, ensayo de V021 sobre la copia restaurada, y el flujo `ci.yml`, `version-candidata.yml` y `publicar.yml` con aprobación del entorno `production`.
 4. Después de publicar, el *issue* `ensayo-restauracion` de cambio con migración se cierra con un ensayo aprobado en 7 días.
 
@@ -222,3 +222,10 @@ La primera versión del resumen tardaba 16,7 s: la regla de referencia se pedía
 **Revisión del navegador, cierre de T110**: las cinco pantallas de lectura y los once diálogos del detalle se recorrieron a 360, 390, 768, 1024, 1366 y 1440 px, sin desbordes ni acciones fuera de pantalla, y con los estados de error de validación a 360 px. Contraste WCAG AA correcto en claro y oscuro; foco visible (2 px con separación de 2 px, regla global del sistema de diseño). Corregido: las etiquetas de confirmación de «Cerrar ticket» desbordaban a 360 px y se acortaron. Comparación con Inventario, Consumo e Intermitencias: mismos estilos de título, botones, campos y diálogos. `impeccable` sin hallazgos ni cambios. axe-core 4.14.1: 0 violaciones en los once diálogos a 360 px (claro y oscuro) y a 1366 px (claro). Pendiente con una persona: los cronómetros de SC-001 (menos de 1 minuto con tres datos) y SC-007 (no medido con reloj; contado en dos acciones). Protocolo: iniciar el reloj al abrir «Registrar», elegir equipo, tipo y escribir la descripción, y detenerlo al ver el ticket creado; repetir al menos cinco veces y anotar el mayor tiempo.
 
 **Ensayo de V021 sobre una copia de producción (T009)**: hecho el 2026-11-23 con la copia nocturna del mismo día en un PostgreSQL 18 desechable (sin red, sin puertos, rol sin superusuario). `pg_restore` sin errores con V020 y 35 tablas iguales a los metadatos; V021 se aplicó en 251 ms y dejó intactos los conteos y las columnas de las 35 tablas existentes, con 13 tablas `inc_*` nuevas y la numeración sin configurar. Entorno destruido. Con esto T118 ya no está bloqueada por T009; sigue necesitando tu autorización.
+
+## Puesta en marcha
+
+1. Publicar con el flujo de `docs/operacion/publicar.md` (CI verde, versión candidata, solicitud de «Publicar» y aprobación del entorno `production`). V021 y V022 se aplican solas al arrancar.
+2. Tras publicar, la creación de tickets está bloqueada a propósito: la numeración no tiene número inicial. Un Administrador entra en `/incidencias/numeracion`, confirma que el ambiente es «Producción», escribe el siguiente número libre de la secuencia externa de ese momento y confirma el código. El número ya no se puede cambiar tras el primer ticket, así que conviene confirmarlo con la secuencia de WhatsApp antes de guardar.
+3. Crear el primer ticket real y comprobar que recibe ese número. Con eso se cierra P-01 en la práctica.
+4. Seguimiento: medir con una persona los cronómetros de SC-001 y SC-007 (iniciar el reloj al pulsar «Nuevo ticket» y detenerlo al ver el ticket creado, al menos cinco veces; para SC-007, contar las acciones desde el detalle hasta copiar el mensaje).

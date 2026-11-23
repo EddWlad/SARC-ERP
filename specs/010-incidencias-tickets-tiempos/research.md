@@ -90,7 +90,7 @@ Cada apartado sigue el mismo formato: **Decisión**, **Motivo** y **Alternativas
 ## R6. Referencias de tiempo y prioridades por versión
 
 - **Decisión**: dos tablas sembradas por migración.
-  - `inc_reference_version`: `code`, `label`, `effective_from`, `source_note`. La versión inicial `PROTOCOLO-FIRMADO-1` se rotula «Protocolo de monitoreo firmado (versión por confirmar)».
+  - `inc_reference_version`: `code`, `label`, `effective_from`, `source_note`. La versión inicial `PROTOCOLO-FIRMADO-1` se rotuló «Protocolo de monitoreo firmado (versión por confirmar)» y, resuelta P-02 el 2026-11-23, V022 la rotula «Protocolo de monitoreo firmado, versión 2.0».
   - `inc_reference_rule`: por versión y tipo, `validation_max_min`, `recovery_max_min`, `escalation_max_min`, `persistent_after_min` (30; la duración exacta, en segundos, debe ser estrictamente mayor que 30 × 60, porque «más de 30»), `no_recovery_max` y `proposed_priority`.
 
   Cada episodio guarda `reference_version_id`, la versión vigente en su T0. Si una corrección de T0 cruza la fecha de vigencia de otra versión, se vuelve a resolver la versión y la revisión lo registra. Una versión nueva se agrega solo con una migración nueva, es decir, con un cambio controlado del sistema. Al confirmarse P-02 solo cambia `label` con otra migración, nunca los valores.
