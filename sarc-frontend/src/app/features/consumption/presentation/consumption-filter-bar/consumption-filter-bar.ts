@@ -10,10 +10,10 @@ import {
   TYPE_LABELS,
   TYPES,
 } from '../../../../shared/vocabulary/charging-infrastructure';
-import { PeriodSelection } from '../../application/period-selection';
+import { PeriodSelection } from '../../../../shared/ui/period/period-selection';
 import { ConsumptionFilters, SOURCE_LABELS, SOURCES } from '../../domain/consumption';
 import { EquipmentFilter } from '../equipment-filter/equipment-filter';
-import { PeriodFilter } from '../period-filter/period-filter';
+import { PeriodFilter } from '../../../../shared/ui/period/period-filter/period-filter';
 
 /**
  * Filtros de consumo en una fila sobre las graficas (PRD RF-003.13): periodo, red, plataforma,

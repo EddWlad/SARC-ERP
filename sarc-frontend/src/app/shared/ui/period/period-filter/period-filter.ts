@@ -1,12 +1,12 @@
 import { DatePipe } from '@angular/common';
-import { Component, input, signal } from '@angular/core';
+import { Component, computed, input, signal } from '@angular/core';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 
-import { PeriodSelection } from '../../application/period-selection';
+import { PeriodSelection } from '../period-selection';
 import {
   inclusiveRange,
   lastDay,
@@ -16,7 +16,7 @@ import {
   PERIOD_PRESETS,
   PeriodPreset,
   rangeDays,
-} from '../../domain/period';
+} from '../period';
 
 /**
  * Accesos rapidos de periodo (Hoy, ultimos 7 dias, este mes, mes anterior, este año) y rango
@@ -33,7 +33,7 @@ import {
       (change)="onPreset($event.value)"
       class="presets"
     >
-      @for (preset of presets; track preset) {
+      @for (preset of shown(); track preset) {
         <mat-chip-option [value]="preset" [selectable]="period().preset() !== preset">
           {{ labels[preset] }}
         </mat-chip-option>
@@ -61,9 +61,13 @@ import {
     }
 
     <p class="current" aria-live="polite">
-      {{ from() | date: 'longDate' }}
-      @if (days() > 1) {
-        al {{ to() | date: 'longDate' }}
+      @if (period().allHistory()) {
+        {{ labels.allHistory }}
+      } @else {
+        {{ from() | date: 'longDate' }}
+        @if (days() > 1) {
+          al {{ to() | date: 'longDate' }}
+        }
       }
     </p>
   `,
@@ -88,8 +92,12 @@ import {
 })
 export class PeriodFilter {
   readonly period = input.required<PeriodSelection>();
+  /** Ofrece «Todo el historial» al inicio (informes de incidencias). Apagado: Consumo no lo muestra. */
+  readonly allowAllHistory = input(false);
 
-  protected readonly presets = PERIOD_PRESETS;
+  protected readonly shown = computed<readonly PeriodPreset[]>(() =>
+    this.allowAllHistory() ? ['allHistory', ...PERIOD_PRESETS] : PERIOD_PRESETS,
+  );
   protected readonly labels = PERIOD_LABELS;
   protected readonly start = signal<Date | null>(null);
   protected readonly rangeError = signal<string | undefined>(undefined);

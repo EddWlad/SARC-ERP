@@ -16,7 +16,7 @@ import { TopEquipment } from '../../../../shared/ui/top-equipment/top-equipment'
 import { NETWORK_LABELS, TYPE_LABELS } from '../../../../shared/vocabulary/charging-infrastructure';
 import { ConsumptionDashboardFacade } from '../../application/consumption-dashboard-facade';
 import { SOURCE_LABELS } from '../../domain/consumption';
-import { parseIsoDate } from '../../domain/period';
+import { parseIsoDate } from '../../../../shared/ui/period/period';
 import { ConsumptionFilterBar } from '../consumption-filter-bar/consumption-filter-bar';
 import { DailyTable } from '../daily-table/daily-table';
 import { EnergyShare, energyShareEmpty, energyShareItem, rankedRow } from './consumption-shares';
