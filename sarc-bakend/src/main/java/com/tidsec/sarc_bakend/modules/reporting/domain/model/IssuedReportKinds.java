@@ -6,6 +6,10 @@ package com.tidsec.sarc_bakend.modules.reporting.domain.model;
  */
 public final class IssuedReportKinds {
 
+	/** Informes de incidencias (Feature 010): los cinco roles los descargan, no se restringen por contenido operativo. */
+	public static final String INCIDENT_CONTROL = "INCIDENT_CONTROL";
+	public static final String INCIDENT_MANAGEMENT = "INCIDENT_MANAGEMENT";
+
 	private IssuedReportKinds() {
 	}
 

@@ -16,9 +16,15 @@ public record ReportPublication(ReportContentProfile profile, Instant cutOff, Ma
 	/** Zona operativa en la que se interpretan los días del periodo. */
 	public static final String TIME_ZONE = "America/Guayaquil";
 
+	/** Base de seleccion de los informes de incidencias sin periodo (FR-072). */
+	public static final String ALL_HISTORY = "ALL_HISTORY";
+
 	private static final Set<String> KEYS = Set.of("from", "to", "network", "type", "source", "equipmentId", "timeZone",
 			"periodKind", "periodType", "brand", "connectorId", "selectionBasis", "referenceWeek", "temporalSection",
-			"periodPreset", "equipmentIds");
+			"periodPreset", "equipmentIds", "ticketState", "elementClass", "incidentType", "priority");
+	private static final Set<String> TICKET_STATES = Set.of("OPEN", "CLOSED");
+	/** Codigos de enumeraciones del modulo de incidencias: el kernel solo comprueba su forma, no su pertenencia. */
+	private static final java.util.regex.Pattern CODE = java.util.regex.Pattern.compile("[A-Z][A-Z0-9_]{0,39}");
 	private static final Set<String> PERIOD_KINDS = Set.of("OFFICIAL", "PROVISIONAL", "NONE");
 	private static final Set<String> PERIOD_TYPES = Set.of("ROLLING_24H", "ROLLING_7D", "ROLLING_30D", "EXACT_WEEK");
 	/** Periodos del dashboard de intermitencias; es una lista propia: no se mezcla con los de Uptime. */
@@ -40,6 +46,12 @@ public record ReportPublication(ReportContentProfile profile, Instant cutOff, Ma
                 throw new IllegalArgumentException("Referencia semanal incompatible");
             if(criteria.containsKey("temporalSection")&&!Set.of("KNOWN_RANGE","REFERENCE_WEEK").contains(criteria.get("temporalSection")))
                 throw new IllegalArgumentException("Apartado temporal inválido");
+        } else if (ALL_HISTORY.equals(criteria.get("selectionBasis"))) {
+            // Todo el historial (informes de incidencias): sin rango, la huella del corte basta para ubicarlo.
+            if (criteria.containsKey("from") || criteria.containsKey("to") || criteria.containsKey("referenceWeek")
+                    || criteria.containsKey("temporalSection")) {
+                throw new IllegalArgumentException("Todo el historial no lleva rango");
+            }
         } else {
             if(criteria.containsKey("referenceWeek")||criteria.containsKey("temporalSection")
                 ||criteria.containsKey("selectionBasis")&&!"ACTUAL_RANGE".equals(criteria.get("selectionBasis")))
@@ -80,6 +92,14 @@ public record ReportPublication(ReportContentProfile profile, Instant cutOff, Ma
 			}
 			for (String id : ids) {
 				UUID.fromString(id);
+			}
+		}
+		if (criteria.containsKey("ticketState") && !TICKET_STATES.contains(criteria.get("ticketState"))) {
+			throw new IllegalArgumentException("Estado de ticket inválido");
+		}
+		for (String key : new String[] { "elementClass", "incidentType", "priority" }) {
+			if (criteria.containsKey(key) && !CODE.matcher(criteria.get(key)).matches()) {
+				throw new IllegalArgumentException("Criterio de incidencias inválido: " + key);
 			}
 		}
 		if (criteria.containsKey("brand") && criteria.get("brand").isBlank()) {

@@ -110,6 +110,103 @@
         }
       }
     },
+    "/api/v1/incidents/tickets/{id}/episodes/{ordinal}/milestones/{kind}" : {
+      "put" : {
+        "tags" : [ "ticket-follow-up-controller" ],
+        "operationId" : "recordMilestone",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "ordinal",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "kind",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "T0", "T1", "T2", "T3", "T4" ]
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MilestoneRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/numbering" : {
+      "get" : {
+        "tags" : [ "ticket-numbering-controller" ],
+        "operationId" : "numberingState",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NumberingResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "ticket-numbering-controller" ],
+        "operationId" : "configureNumbering",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ConfigureNumberingRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NumberingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/equipment/{id}" : {
       "get" : {
         "tags" : [ "equipment-controller" ],
@@ -1929,6 +2026,676 @@
         }
       }
     },
+    "/api/v1/incidents/tickets" : {
+      "get" : {
+        "tags" : [ "ticket-controller" ],
+        "operationId" : "listTickets",
+        "parameters" : [ {
+          "name" : "state",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "OPEN", "CLOSED" ]
+          }
+        }, {
+          "name" : "elementClass",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "EQUIPMENT", "CHATBOT_SERVICE", "SITE_ELEMENT" ]
+          }
+        }, {
+          "name" : "incidentType",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "WAIT_FOR_CONNECTION", "DISCONNECTION", "CONNECTOR_FAILURE", "EMERGENCY_STOP", "CONNECTOR_STUCK", "CANNOT_STOP_CHARGING", "KIA_PERSISTENT_OUTAGE", "INTERMITTENCY", "INSTALLATION_OR_CONNECTIVITY", "CHATBOT_SERVICE_FAILURE", "SITE_ELEMENT_FAILURE", "UNCATALOGED" ]
+          }
+        }, {
+          "name" : "priority",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "MEDIUM", "HIGH", "CRITICAL" ]
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "^(KIA|JAC|CONECTZ|NONE)$"
+          }
+        }, {
+          "name" : "equipmentId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "responsibleId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "condition",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "RECOVERED_OBSERVING", "IN_ATTENTION", "PENDING_VALIDATION" ]
+          }
+        }, {
+          "name" : "search",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "sort",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "lastActivityAt,desc",
+            "pattern" : "^(code|state|type|network|priority|responsible|t0|lastActivityAt)(,(asc|desc))?$"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketPageResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "ticket-controller" ],
+        "operationId" : "createTicket",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateTicketRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/{id}/visits" : {
+      "post" : {
+        "tags" : [ "ticket-visit-controller" ],
+        "operationId" : "requestVisit",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VisitRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/{id}/visits/{visitId}/stage" : {
+      "post" : {
+        "tags" : [ "ticket-visit-controller" ],
+        "operationId" : "moveVisitStage",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "visitId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VisitStageRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/{id}/responsible" : {
+      "post" : {
+        "tags" : [ "ticket-follow-up-controller" ],
+        "operationId" : "assignResponsible",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResponsibleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/{id}/reopen" : {
+      "post" : {
+        "tags" : [ "ticket-lifecycle-controller" ],
+        "operationId" : "reopenTicket",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReopenRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/{id}/relations" : {
+      "post" : {
+        "tags" : [ "ticket-controller" ],
+        "operationId" : "addRelation",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AddRelationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/{id}/reclassify" : {
+      "post" : {
+        "tags" : [ "ticket-follow-up-controller" ],
+        "operationId" : "reclassify",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReclassifyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/{id}/priority" : {
+      "post" : {
+        "tags" : [ "ticket-follow-up-controller" ],
+        "operationId" : "changePriority",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PriorityRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/{id}/handover" : {
+      "post" : {
+        "tags" : [ "ticket-follow-up-controller" ],
+        "operationId" : "handover",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HandoverRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/{id}/evidence" : {
+      "post" : {
+        "tags" : [ "ticket-evidence-controller" ],
+        "operationId" : "uploadEvidence",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  },
+                  "meta" : {
+                    "$ref" : "#/components/schemas/EvidenceMeta"
+                  }
+                },
+                "required" : [ "file", "meta" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/{id}/events" : {
+      "post" : {
+        "tags" : [ "ticket-follow-up-controller" ],
+        "operationId" : "addEvent",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EventRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/{id}/events/{eventId}/annul" : {
+      "post" : {
+        "tags" : [ "ticket-follow-up-controller" ],
+        "operationId" : "annulEvent",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "eventId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AnnulRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/{id}/communications" : {
+      "post" : {
+        "tags" : [ "ticket-communication-controller" ],
+        "operationId" : "recordCommunication",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CommunicationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/{id}/close" : {
+      "post" : {
+        "tags" : [ "ticket-lifecycle-controller" ],
+        "operationId" : "closeTicket",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CloseRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/external-identities/{id}/verify" : {
       "post" : {
         "tags" : [ "external-identity-controller" ],
@@ -2948,6 +3715,68 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/RowChangeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/{id}" : {
+      "get" : {
+        "tags" : [ "ticket-controller" ],
+        "operationId" : "ticketDetail",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "ticket-follow-up-controller" ],
+        "operationId" : "correctData",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CorrectDataRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
                 }
               }
             }
@@ -4813,6 +5642,489 @@
         }
       }
     },
+    "/api/v1/incidents/tickets/{id}/message" : {
+      "get" : {
+        "tags" : [ "ticket-message-controller" ],
+        "operationId" : "ticketMessage",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "includeDetection",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        }, {
+          "name" : "includeActions",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/{id}/evidence/{evidenceId}" : {
+      "get" : {
+        "tags" : [ "ticket-evidence-controller" ],
+        "operationId" : "downloadEvidence",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "evidenceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/tickets/open-matches" : {
+      "get" : {
+        "tags" : [ "ticket-controller" ],
+        "operationId" : "openMatches",
+        "parameters" : [ {
+          "name" : "elementClass",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "EQUIPMENT", "CHATBOT_SERVICE", "SITE_ELEMENT" ]
+          }
+        }, {
+          "name" : "equipmentId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "siteElementKind",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "VEHICLE_BARRIER", "OTHER" ]
+          }
+        }, {
+          "name" : "referenceEquipmentId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "manualSiteName",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 150,
+            "minLength" : 0
+          }
+        }, {
+          "name" : "elementName",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/OpenMatchResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/summary" : {
+      "get" : {
+        "tags" : [ "incident-report-controller" ],
+        "operationId" : "summary_3",
+        "parameters" : [ {
+          "name" : "from",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          }
+        }, {
+          "name" : "elementClass",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "EQUIPMENT", "CHATBOT_SERVICE", "SITE_ELEMENT" ]
+          }
+        }, {
+          "name" : "incidentType",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "WAIT_FOR_CONNECTION", "DISCONNECTION", "CONNECTOR_FAILURE", "EMERGENCY_STOP", "CONNECTOR_STUCK", "CANNOT_STOP_CHARGING", "KIA_PERSISTENT_OUTAGE", "INTERMITTENCY", "INSTALLATION_OR_CONNECTIVITY", "CHATBOT_SERVICE_FAILURE", "SITE_ELEMENT_FAILURE", "UNCATALOGED" ]
+          }
+        }, {
+          "name" : "priority",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "MEDIUM", "HIGH", "CRITICAL" ]
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IncidentSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/responsibles" : {
+      "get" : {
+        "tags" : [ "incident-responsible-controller" ],
+        "operationId" : "eligibleResponsibles",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/EligibleResponsibleResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/reports/management" : {
+      "get" : {
+        "tags" : [ "incident-report-controller" ],
+        "operationId" : "managementReport",
+        "parameters" : [ {
+          "name" : "format",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "PDF", "XLSX" ]
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          }
+        }, {
+          "name" : "elementClass",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "EQUIPMENT", "CHATBOT_SERVICE", "SITE_ELEMENT" ]
+          }
+        }, {
+          "name" : "incidentType",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "WAIT_FOR_CONNECTION", "DISCONNECTION", "CONNECTOR_FAILURE", "EMERGENCY_STOP", "CONNECTOR_STUCK", "CANNOT_STOP_CHARGING", "KIA_PERSISTENT_OUTAGE", "INTERMITTENCY", "INSTALLATION_OR_CONNECTIVITY", "CHATBOT_SERVICE_FAILURE", "SITE_ELEMENT_FAILURE", "UNCATALOGED" ]
+          }
+        }, {
+          "name" : "priority",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "MEDIUM", "HIGH", "CRITICAL" ]
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Documento nuevo; X-Report-Id y X-Report-Cut-Off lo identifican",
+            "headers" : {
+              "X-Report-Cut-Off" : {
+                "style" : "simple",
+                "schema" : {
+                  "type" : "string",
+                  "format" : "date-time"
+                }
+              },
+              "X-Report-Id" : {
+                "style" : "simple",
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uuid"
+                }
+              }
+            },
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/reports/control" : {
+      "get" : {
+        "tags" : [ "incident-report-controller" ],
+        "operationId" : "controlReport",
+        "parameters" : [ {
+          "name" : "format",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "PDF", "XLSX" ]
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "state",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "OPEN", "CLOSED" ]
+          }
+        }, {
+          "name" : "network",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Documento nuevo; X-Report-Id y X-Report-Cut-Off lo identifican",
+            "headers" : {
+              "X-Report-Cut-Off" : {
+                "style" : "simple",
+                "schema" : {
+                  "type" : "string",
+                  "format" : "date-time"
+                }
+              },
+              "X-Report-Id" : {
+                "style" : "simple",
+                "schema" : {
+                  "type" : "string",
+                  "format" : "uuid"
+                }
+              }
+            },
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/providers" : {
+      "get" : {
+        "tags" : [ "ticket-visit-controller" ],
+        "operationId" : "visitProviders",
+        "parameters" : [ {
+          "name" : "search",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/assets" : {
+      "get" : {
+        "tags" : [ "incident-asset-controller" ],
+        "operationId" : "searchAssets",
+        "parameters" : [ {
+          "name" : "search",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 50,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/IncidentAssetResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/external-identities/resolve" : {
       "get" : {
         "tags" : [ "external-identity-controller" ],
@@ -4964,7 +6276,7 @@
     "/api/v1/energy/summary" : {
       "get" : {
         "tags" : [ "consumption-controller" ],
-        "operationId" : "summary_3",
+        "operationId" : "summary_4",
         "parameters" : [ {
           "name" : "from",
           "in" : "query",
@@ -5385,6 +6697,49 @@
         }
       }
     },
+    "/api/v1/incidents/tickets/{id}/relations/{relatedId}" : {
+      "delete" : {
+        "tags" : [ "ticket-controller" ],
+        "operationId" : "removeRelation",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "relatedId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "version",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/external-identities/{id}" : {
       "delete" : {
         "tags" : [ "external-identity-controller" ],
@@ -5679,6 +7034,697 @@
           }
         },
         "required" : [ "batchId", "fileName" ]
+      },
+      "MilestoneRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "RECORDED", "NOT_APPLICABLE", "NO_DATA" ]
+          },
+          "occurredAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "reason" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "justification" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "orderWarningAck" : {
+            "type" : [ "boolean", "null" ]
+          }
+        },
+        "required" : [ "status", "version" ]
+      },
+      "TicketClosure" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "type" : "string",
+            "enum" : [ "RECOVERED", "NO_FAULT_CONFIRMED", "DUPLICATE", "REGISTERED_IN_ERROR" ]
+          },
+          "duplicateOfTicketId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "duplicateOfCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "causeKind" : {
+            "type" : "string",
+            "enum" : [ "CONFIRMED", "PROBABLE", "UNDETERMINED" ]
+          },
+          "causeText" : {
+            "type" : [ "string", "null" ]
+          },
+          "recommendations" : {
+            "type" : [ "string", "null" ]
+          },
+          "closureChecks" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "finalEvidenceWaiver" : {
+            "type" : [ "string", "null" ]
+          },
+          "closureCommunicationWaiver" : {
+            "type" : [ "string", "null" ]
+          },
+          "deviationJustification" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "causeKind", "closureChecks", "result" ]
+      },
+      "TicketCommunicationResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "channel" : {
+            "type" : "string",
+            "enum" : [ "REDAE_INPSERCOM", "KIA_ELECTROLINERAS", "CARGADORES_ELECTRICOS", "AUTOEASTERN_ENERLINK", "DIRECTIVOS", "EMAIL", "OTHER" ]
+          },
+          "channelDetail" : {
+            "type" : [ "string", "null" ]
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "INITIAL", "UPDATE", "CLOSURE" ]
+          },
+          "sentAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "retroactive" : {
+            "type" : "boolean"
+          },
+          "justification" : {
+            "type" : [ "string", "null" ]
+          },
+          "recordedBy" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "recordedByName" : {
+            "type" : [ "string", "null" ]
+          },
+          "recordedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "annulled" : {
+            "type" : "boolean"
+          },
+          "annulReason" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "annulled", "channel", "id", "kind", "recordedAt", "retroactive", "sentAt" ]
+      },
+      "TicketConnectorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "positionAtT0" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "currentPosition" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "active" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "active", "id", "positionAtT0" ]
+      },
+      "TicketDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "summary" : {
+            "$ref" : "#/components/schemas/TicketSummaryResponse"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "reportOrigin" : {
+            "type" : "string",
+            "enum" : [ "PLATFORM", "CHATBOT", "SITE_STAFF", "CUSTOMER", "PROVIDER", "OTHER" ]
+          },
+          "reportOriginDetail" : {
+            "type" : [ "string", "null" ]
+          },
+          "equipment" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/TicketEquipment"
+          },
+          "connectors" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TicketConnectorResponse"
+            }
+          },
+          "chatbotScope" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "TOTAL", "PARTIAL" ]
+          },
+          "siteElement" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/TicketSiteElement"
+          },
+          "location" : {
+            "type" : [ "string", "null" ]
+          },
+          "mapsUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "referenceVersion" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/TicketReferenceVersion"
+          },
+          "episodes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TicketEpisode"
+            }
+          },
+          "relations" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TicketRelationResponse"
+            }
+          },
+          "timeline" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TicketEventResponse"
+            }
+          },
+          "visits" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TicketVisitResponse"
+            }
+          },
+          "evidence" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TicketEvidenceResponse"
+            }
+          },
+          "communications" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TicketCommunicationResponse"
+            }
+          },
+          "allowedActions" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "allowedActions", "communications", "connectors", "description", "episodes", "evidence", "relations", "reportOrigin", "summary", "timeline", "visits" ]
+      },
+      "TicketDuration" : {
+        "type" : "object",
+        "properties" : {
+          "pair" : {
+            "type" : "string"
+          },
+          "minutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "missing" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "T0", "T1", "T2", "T3", "T4" ]
+            }
+          }
+        },
+        "required" : [ "missing", "pair" ]
+      },
+      "TicketEpisode" : {
+        "type" : "object",
+        "properties" : {
+          "ordinal" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "state" : {
+            "type" : "string",
+            "enum" : [ "OPEN", "CLOSED" ]
+          },
+          "reopenReason" : {
+            "type" : [ "string", "null" ]
+          },
+          "milestones" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TicketMilestone"
+            }
+          },
+          "durations" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TicketDuration"
+            }
+          },
+          "references" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TicketReference"
+            }
+          },
+          "elapsedOpenMinutes" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "closure" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/TicketClosure"
+          }
+        },
+        "required" : [ "durations", "milestones", "ordinal", "references", "state" ]
+      },
+      "TicketEquipment" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "labelAtT0" : {
+            "type" : "string"
+          },
+          "currentName" : {
+            "type" : "string"
+          },
+          "active" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "active", "currentName", "id", "labelAtT0" ]
+      },
+      "TicketEventResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "TICKET_CREATED", "VALIDATION", "CORRECTIVE_ACTION", "ESCALATED", "OBSERVATION", "DATA_CORRECTED", "PRIORITY_CHANGED", "RESPONSIBLE_ASSIGNED", "SHIFT_HANDOVER", "RECLASSIFIED", "VISIT_STAGE", "COMMUNICATION_RECORDED", "EVIDENCE_ADDED", "MILESTONE_RECORDED", "MILESTONE_CORRECTED", "TICKET_CLOSED", "TICKET_REOPENED", "RELATION_ADDED" ]
+          },
+          "occurredAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "recordedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "recordedBy" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "recordedByName" : {
+            "type" : [ "string", "null" ]
+          },
+          "retroactive" : {
+            "type" : "boolean"
+          },
+          "text" : {
+            "type" : [ "string", "null" ]
+          },
+          "targetKind" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "TECHNICAL", "SUPERVISION", "PLATFORM_SUPPORT", "OTHER" ]
+          },
+          "targetRoleOrProvider" : {
+            "type" : [ "string", "null" ]
+          },
+          "details" : {
+            "type" : "object",
+            "additionalProperties" : { }
+          },
+          "annulled" : {
+            "type" : "boolean"
+          },
+          "annulledAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "annulReason" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "annulled", "details", "id", "occurredAt", "recordedAt", "retroactive", "type" ]
+      },
+      "TicketEvidenceResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "eventId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "communicationId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "purpose" : {
+            "type" : "string",
+            "enum" : [ "GENERAL", "INITIAL", "FINAL" ]
+          },
+          "format" : {
+            "type" : "string",
+            "enum" : [ "JPEG", "PNG", "WEBP", "PDF" ]
+          },
+          "sizeBytes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "sha256" : {
+            "type" : "string"
+          },
+          "originalName" : {
+            "type" : "string"
+          },
+          "uploadedBy" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "uploadedByName" : {
+            "type" : [ "string", "null" ]
+          },
+          "uploadedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "annulled" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "annulled", "eventId", "format", "id", "originalName", "purpose", "sha256", "sizeBytes", "uploadedAt" ]
+      },
+      "TicketMilestone" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "T0", "T1", "T2", "T3", "T4" ]
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "RECORDED", "NOT_APPLICABLE", "NO_DATA" ]
+          },
+          "occurredAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "reason" : {
+            "type" : [ "string", "null" ]
+          },
+          "retroactive" : {
+            "type" : "boolean"
+          },
+          "orderWarningAck" : {
+            "type" : "boolean"
+          },
+          "recordedBy" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "recordedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "kind", "orderWarningAck", "recordedAt", "retroactive", "status" ]
+      },
+      "TicketReference" : {
+        "type" : "object",
+        "properties" : {
+          "measure" : {
+            "type" : "string"
+          },
+          "limitMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "extendable" : {
+            "type" : "boolean"
+          },
+          "result" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "extendable", "limitMinutes", "measure", "result" ]
+      },
+      "TicketReferenceVersion" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "label" ]
+      },
+      "TicketRelationResponse" : {
+        "type" : "object",
+        "properties" : {
+          "ticketId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "code" : {
+            "type" : [ "string", "null" ]
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "INDEPENDENT_FAILURE", "COMMON_FAILURE" ]
+          },
+          "reason" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "kind", "ticketId" ]
+      },
+      "TicketResponsible" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "name" ]
+      },
+      "TicketSiteElement" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "VEHICLE_BARRIER", "OTHER" ]
+          },
+          "kindLabel" : {
+            "type" : "string"
+          },
+          "elementName" : {
+            "type" : [ "string", "null" ]
+          },
+          "referenceEquipmentId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "siteName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "kind", "kindLabel", "siteName" ]
+      },
+      "TicketSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "state" : {
+            "type" : "string",
+            "enum" : [ "OPEN", "CLOSED" ]
+          },
+          "elementClass" : {
+            "type" : "string",
+            "enum" : [ "EQUIPMENT", "CHATBOT_SERVICE", "SITE_ELEMENT" ]
+          },
+          "elementLabel" : {
+            "type" : "string"
+          },
+          "network" : {
+            "type" : [ "string", "null" ]
+          },
+          "incidentType" : {
+            "type" : "string",
+            "enum" : [ "WAIT_FOR_CONNECTION", "DISCONNECTION", "CONNECTOR_FAILURE", "EMERGENCY_STOP", "CONNECTOR_STUCK", "CANNOT_STOP_CHARGING", "KIA_PERSISTENT_OUTAGE", "INTERMITTENCY", "INSTALLATION_OR_CONNECTIVITY", "CHATBOT_SERVICE_FAILURE", "SITE_ELEMENT_FAILURE", "UNCATALOGED" ]
+          },
+          "incidentTypeLabel" : {
+            "type" : "string"
+          },
+          "priority" : {
+            "type" : "string",
+            "enum" : [ "MEDIUM", "HIGH", "CRITICAL" ]
+          },
+          "responsible" : {
+            "$ref" : "#/components/schemas/TicketResponsible"
+          },
+          "t0" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "lastActivityAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "condition" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "RECOVERED_OBSERVING", "IN_ATTENTION", "PENDING_VALIDATION" ]
+          },
+          "episodeCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "stateAtPeriodEnd" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "OPEN", "CLOSED" ]
+          }
+        },
+        "required" : [ "code", "elementClass", "elementLabel", "episodeCount", "id", "incidentType", "incidentTypeLabel", "lastActivityAt", "priority", "responsible", "state", "t0", "version" ]
+      },
+      "TicketVisitResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "episodeOrdinal" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "providerName" : {
+            "type" : [ "string", "null" ]
+          },
+          "stage" : {
+            "type" : "string",
+            "enum" : [ "REQUESTED", "ASSIGNED", "CONFIRMED", "CANCELLED", "POSTPONED", "EXECUTED", "REPORT_RECEIVED" ]
+          },
+          "cancelDecidedBy" : {
+            "type" : [ "string", "null" ]
+          },
+          "cancelEvidenceNote" : {
+            "type" : [ "string", "null" ]
+          },
+          "reescalationCondition" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "createdAt", "episodeOrdinal", "id", "stage", "updatedAt" ]
+      },
+      "ConfigureNumberingRequest" : {
+        "type" : "object",
+        "properties" : {
+          "startNumber" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 999999999,
+            "minimum" : 1
+          },
+          "environment" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "PRODUCTION|TEST"
+          },
+          "confirmation" : {
+            "type" : "string",
+            "maxLength" : 20,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "confirmation", "environment", "startNumber" ]
+      },
+      "NumberingResponse" : {
+        "type" : "object",
+        "properties" : {
+          "configured" : {
+            "type" : "boolean"
+          },
+          "environment" : {
+            "type" : [ "string", "null" ]
+          },
+          "startNumber" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "nextCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "expectedEnvironment" : {
+            "type" : [ "string", "null" ]
+          },
+          "ticketsExist" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "configured", "ticketsExist" ]
       },
       "UpdateEquipmentRequest" : {
         "type" : "object",
@@ -7863,6 +9909,502 @@
         },
         "required" : [ "text" ]
       },
+      "CreateTicketRequest" : {
+        "type" : "object",
+        "properties" : {
+          "clientRequestId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "elementClass" : {
+            "type" : "string",
+            "enum" : [ "EQUIPMENT", "CHATBOT_SERVICE", "SITE_ELEMENT" ]
+          },
+          "equipmentId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "connectorIds" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 3,
+            "minItems" : 0
+          },
+          "chatbotScope" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "TOTAL", "PARTIAL" ]
+          },
+          "siteElement" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/SiteElementRequest"
+          },
+          "incidentType" : {
+            "type" : "string",
+            "enum" : [ "WAIT_FOR_CONNECTION", "DISCONNECTION", "CONNECTOR_FAILURE", "EMERGENCY_STOP", "CONNECTOR_STUCK", "CANNOT_STOP_CHARGING", "KIA_PERSISTENT_OUTAGE", "INTERMITTENCY", "INSTALLATION_OR_CONNECTIVITY", "CHATBOT_SERVICE_FAILURE", "SITE_ELEMENT_FAILURE", "UNCATALOGED" ]
+          },
+          "description" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "reportOrigin" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "PLATFORM", "CHATBOT", "SITE_STAFF", "CUSTOMER", "PROVIDER", "OTHER" ]
+          },
+          "reportOriginDetail" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "priority" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "MEDIUM", "HIGH", "CRITICAL" ]
+          },
+          "priorityReason" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "t0" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "t0Reason" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "duplicateOverrideReason" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 300,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "clientRequestId", "description", "elementClass", "incidentType" ]
+      },
+      "SiteElementRequest" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "VEHICLE_BARRIER", "OTHER" ]
+          },
+          "elementName" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "referenceEquipmentId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "manualSiteName" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 150,
+            "minLength" : 0
+          },
+          "manualLocation" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "manualMapsUrl" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "kind" ]
+      },
+      "VisitRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "providerName" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "occurredAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "note" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "version" ]
+      },
+      "VisitStageRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "stage" : {
+            "type" : "string",
+            "enum" : [ "REQUESTED", "ASSIGNED", "CONFIRMED", "CANCELLED", "POSTPONED", "EXECUTED", "REPORT_RECEIVED" ]
+          },
+          "occurredAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "note" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "providerName" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "cancelDecidedBy" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 150,
+            "minLength" : 0
+          },
+          "cancelEvidenceNote" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "reescalationCondition" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 300,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "stage", "version" ]
+      },
+      "ResponsibleRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "responsibleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "responsibleId", "version" ]
+      },
+      "ReopenRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "reason" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "t0" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "t0Reason" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 300,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "reason", "version" ]
+      },
+      "AddRelationRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "relatedTicketId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "INDEPENDENT_FAILURE", "COMMON_FAILURE" ]
+          },
+          "reason" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 300,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "kind", "relatedTicketId", "version" ]
+      },
+      "ReclassifyRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "incidentType" : {
+            "type" : "string",
+            "enum" : [ "WAIT_FOR_CONNECTION", "DISCONNECTION", "CONNECTOR_FAILURE", "EMERGENCY_STOP", "CONNECTOR_STUCK", "CANNOT_STOP_CHARGING", "KIA_PERSISTENT_OUTAGE", "INTERMITTENCY", "INSTALLATION_OR_CONNECTIVITY", "CHATBOT_SERVICE_FAILURE", "SITE_ELEMENT_FAILURE", "UNCATALOGED" ]
+          },
+          "reason" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "incidentType", "reason", "version" ]
+      },
+      "PriorityRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "priority" : {
+            "type" : "string",
+            "enum" : [ "MEDIUM", "HIGH", "CRITICAL" ]
+          },
+          "reason" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "priority", "reason", "version" ]
+      },
+      "HandoverRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "incomingResponsibleId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "currentStatus" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "pending" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "nextCheckAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "closureCriterion" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "closureCriterion", "currentStatus", "incomingResponsibleId", "pending", "version" ]
+      },
+      "EvidenceMeta" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "purpose" : {
+            "type" : "string",
+            "enum" : [ "GENERAL", "INITIAL", "FINAL" ]
+          },
+          "eventId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "communicationId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "note" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "purpose", "version" ]
+      },
+      "EventRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "TICKET_CREATED", "VALIDATION", "CORRECTIVE_ACTION", "ESCALATED", "OBSERVATION", "DATA_CORRECTED", "PRIORITY_CHANGED", "RESPONSIBLE_ASSIGNED", "SHIFT_HANDOVER", "RECLASSIFIED", "VISIT_STAGE", "COMMUNICATION_RECORDED", "EVIDENCE_ADDED", "MILESTONE_RECORDED", "MILESTONE_CORRECTED", "TICKET_CLOSED", "TICKET_REOPENED", "RELATION_ADDED" ]
+          },
+          "occurredAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "text" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          },
+          "targetKind" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "TECHNICAL", "SUPERVISION", "PLATFORM_SUPPORT", "OTHER" ]
+          },
+          "targetRoleOrProvider" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 150,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "text", "type", "version" ]
+      },
+      "AnnulRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "reason" : {
+            "type" : "string",
+            "maxLength" : 300,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "reason", "version" ]
+      },
+      "CommunicationRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "channel" : {
+            "type" : "string",
+            "enum" : [ "REDAE_INPSERCOM", "KIA_ELECTROLINERAS", "CARGADORES_ELECTRICOS", "AUTOEASTERN_ENERLINK", "DIRECTIVOS", "EMAIL", "OTHER" ]
+          },
+          "channelDetail" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 150,
+            "minLength" : 0
+          },
+          "kind" : {
+            "type" : "string",
+            "enum" : [ "INITIAL", "UPDATE", "CLOSURE" ]
+          },
+          "sentAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "justification" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 300,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "channel", "kind", "sentAt", "version" ]
+      },
+      "Checks" : {
+        "type" : "object",
+        "properties" : {
+          "platformNormal" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "CONFIRMED", "NOT_APPLICABLE" ]
+          },
+          "stabilityChecked" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "CONFIRMED", "NOT_APPLICABLE" ]
+          },
+          "noAffectedUser" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "CONFIRMED", "NOT_APPLICABLE" ]
+          },
+          "postTest" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "CONFIRMED", "NOT_APPLICABLE" ]
+          }
+        }
+      },
+      "CloseRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "t4" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "t4Reason" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "result" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "RECOVERED", "NO_FAULT_CONFIRMED", "DUPLICATE", "REGISTERED_IN_ERROR" ]
+          },
+          "duplicateOfTicketId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "causeKind" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "CONFIRMED", "PROBABLE", "UNDETERMINED" ]
+          },
+          "causeText" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "recommendations" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 1000,
+            "minLength" : 0
+          },
+          "closureChecks" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/Checks"
+          },
+          "finalEvidenceWaiver" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "closureCommunicationWaiver" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 300,
+            "minLength" : 0
+          },
+          "deviationJustification" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "version" ]
+      },
       "ExternalIdentityResponse" : {
         "type" : "object",
         "properties" : {
@@ -8575,6 +11117,35 @@
           }
         },
         "required" : [ "startAt" ]
+      },
+      "CorrectDataRequest" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "description" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "reportOrigin" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "PLATFORM", "CHATBOT", "SITE_STAFF", "CUSTOMER", "PROVIDER", "OTHER" ]
+          },
+          "reportOriginDetail" : {
+            "type" : [ "string", "null" ],
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "justification" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "justification", "version" ]
       },
       "ChangeStatusRequest" : {
         "type" : "object",
@@ -10497,6 +13068,418 @@
           }
         },
         "required" : [ "day", "pendingRows" ]
+      },
+      "TicketPageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TicketSummaryResponse"
+            }
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "cutOff" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "notice" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "cutOff", "items", "page", "size", "total" ]
+      },
+      "MessageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string"
+          },
+          "missingFields" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "ticketCode" : {
+            "type" : "string"
+          },
+          "state" : {
+            "type" : "string",
+            "enum" : [ "OPEN", "CLOSED" ]
+          }
+        },
+        "required" : [ "missingFields", "state", "text", "ticketCode" ]
+      },
+      "OpenMatchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "incidentTypeLabel" : {
+            "type" : "string"
+          },
+          "priority" : {
+            "type" : "string",
+            "enum" : [ "MEDIUM", "HIGH", "CRITICAL" ]
+          },
+          "createdAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "code", "id", "incidentTypeLabel", "priority" ]
+      },
+      "IncidentCount" : {
+        "type" : "object",
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "count", "key" ]
+      },
+      "IncidentDeviation" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "episode" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "measure" : {
+            "type" : "string"
+          },
+          "justification" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "code", "episode", "measure", "type" ]
+      },
+      "IncidentReference" : {
+        "type" : "object",
+        "properties" : {
+          "measure" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "within" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "outside" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "notEvaluable" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "measure", "notEvaluable", "outside", "type", "within" ]
+      },
+      "IncidentSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cutOff" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "from" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "to" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "openTicketsAtCutOff" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totals" : {
+            "$ref" : "#/components/schemas/IncidentTotals"
+          },
+          "measures" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IncidentTimeMeasure"
+            }
+          },
+          "validation" : {
+            "$ref" : "#/components/schemas/IncidentValidation"
+          },
+          "references" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IncidentReference"
+            }
+          },
+          "withoutReference" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "deviations" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IncidentDeviation"
+            }
+          },
+          "byDay" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IncidentCount"
+            }
+          },
+          "byNetwork" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IncidentCount"
+            }
+          },
+          "byType" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IncidentCount"
+            }
+          },
+          "byPriority" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IncidentCount"
+            }
+          },
+          "byClass" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IncidentCount"
+            }
+          },
+          "byEquipment" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IncidentCount"
+            }
+          },
+          "byOrigin" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IncidentCount"
+            }
+          },
+          "visits" : {
+            "$ref" : "#/components/schemas/IncidentVisits"
+          },
+          "repeaters" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IncidentCount"
+            }
+          },
+          "referenceVersions" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "byClass", "byDay", "byEquipment", "byNetwork", "byOrigin", "byPriority", "byType", "cutOff", "deviations", "from", "measures", "openTicketsAtCutOff", "referenceVersions", "references", "repeaters", "to", "totals", "validation", "visits", "withoutReference" ]
+      },
+      "IncidentTimeMeasure" : {
+        "type" : "object",
+        "properties" : {
+          "pair" : {
+            "type" : "string"
+          },
+          "averageMinutes" : {
+            "type" : [ "number", "null" ]
+          },
+          "n" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "notApplicable" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "noData" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "open" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "n", "noData", "notApplicable", "open", "pair" ]
+      },
+      "IncidentTotals" : {
+        "type" : "object",
+        "properties" : {
+          "uniqueTickets" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "episodes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "openEpisodes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "closedEpisodes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "reopened" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "critical" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "excluded" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "closedEpisodes", "critical", "episodes", "excluded", "openEpisodes", "reopened", "uniqueTickets" ]
+      },
+      "IncidentValidation" : {
+        "type" : "object",
+        "properties" : {
+          "n" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "within" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "percent" : {
+            "type" : [ "number", "null" ]
+          }
+        },
+        "required" : [ "n", "within" ]
+      },
+      "IncidentVisits" : {
+        "type" : "object",
+        "properties" : {
+          "requested" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "confirmed" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "cancelledOrPostponed" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "executed" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "cancelledOrPostponed", "confirmed", "executed", "requested" ]
+      },
+      "EligibleResponsibleResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "name" ]
+      },
+      "AssetConnector" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "position" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "typeLabel" : {
+            "type" : "string"
+          },
+          "active" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "active", "id", "position", "typeLabel" ]
+      },
+      "IncidentAssetResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "assignedCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "network" : {
+            "type" : "string",
+            "enum" : [ "KIA", "JAC", "CONECTZ" ]
+          },
+          "infrastructureType" : {
+            "type" : "string",
+            "enum" : [ "CHARGING_POINT", "CHARGING_STATION" ]
+          },
+          "location" : {
+            "type" : [ "string", "null" ]
+          },
+          "mapsUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "connectors" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AssetConnector"
+            }
+          }
+        },
+        "required" : [ "connectors", "id", "infrastructureType", "name", "network" ]
       },
       "EquipmentSummaryResponse" : {
         "type" : "object",

@@ -1,6 +1,8 @@
 package com.tidsec.sarc_bakend.modules.identity.domain.repository;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,6 +17,9 @@ public interface UserRepository {
 	UserAccount save(UserAccount user);
 
 	Optional<UserAccount> findById(UUID id);
+
+	/** Cuentas por identidad, tambien inactivas. Lo que no existe no aparece. */
+	List<UserAccount> findAllById(Collection<UUID> ids);
 
 	Optional<UserAccount> findByEmail(String normalizedEmail);
 
