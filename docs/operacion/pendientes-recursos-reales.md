@@ -70,3 +70,13 @@ La versión `2026.11.13-35-9937edb` se publicó el 2026-11-13 con la aprobación
 - **Protocolo (P-02)**: el protocolo vigente es la versión 2.0; la migración V022 cambia solo un rótulo.
 - **Número inicial (P-01)**: no lo fija el desarrollo; el Administrador lo configura en producción cuando corresponda (`quickstart.md` de la Feature 010, «Puesta en marcha»).
 - **Seguimiento aceptado**: medición con una persona de SC-001 (crear un ticket de equipo en menos de 1 minuto con tres datos) y SC-007 (obtener y copiar el mensaje para WhatsApp en no más de dos acciones). Quién: responsable del producto. Cuándo: con el primer uso real. No bloquea publicar ni cerrar la feature.
+
+## Feature 010 (incidencias): publicada el 2026-11-23
+
+La versión `2026.11.23-49-a020133` se publicó el 2026-11-23 con la aprobación del responsable y quedó `COMPLETADA` ([Publicar #6](https://github.com/EddWlad/SARC-ERP/actions/runs/45287794210)). V021 y V022 se aplicaron al arrancar. Lo que sigue abierto:
+
+| # | Control | Condición de cierre | Quién | Cuándo |
+|---|---|---|---|---|
+| 1 | *Issue* #19 `ensayo-restauracion` (cambio crítico con migraciones) | Un ensayo de restauración aprobado sobre una copia posterior a V022 (por ejemplo la nocturna del 2026-11-24), con `Ensayar-Restauracion.ps1` | Responsable técnico y Claude | Antes del 2026-11-30 |
+| 2 | Número inicial de tickets en producción | Un Administrador lo configura en `/incidencias/numeracion` (ambiente Producción) con el siguiente número libre de la secuencia externa y confirma el código; el primer ticket real debe recibirlo. Hasta entonces la creación de tickets está bloqueada a propósito | Administrador | Al poner el módulo en uso |
+| 3 | Medición con una persona de SC-001 y SC-007 | Crear un ticket de equipo en menos de 1 minuto con tres datos (al menos cinco veces) y copiar el mensaje de WhatsApp en no más de dos acciones | Responsable del producto | Con el primer uso real |

@@ -849,13 +849,14 @@ description: "Lista de tareas de Feature 010: incidencias, tickets y tiempos"
   *Avance: Estado de CC-PRD-010-20261120 en `documents/control-cambios-prd.md` y nota de cierre en `checklists/requirements.md`: implementada el 2026-11-23, sin publicar, con P-01 y P-02 abiertas.*
 - [x] T117 **Decisión del responsable, no automatizable (P-02)**: confirmar si el protocolo vigente es la versión 2.0 o la 1.0. Si se confirma, cambiar solo el rótulo de `PROTOCOLO-FIRMADO-1` con una migración de datos nueva (V022 o la siguiente libre), sin cambiar valores (FR-051a). Si los valores también cambian, crear una versión nueva de referencias con su vigencia (P-03).
   *Resuelta el 2026-11-23: el responsable confirmó que el protocolo está aprobado y es final, en su versión 2.0 (7 oct 2026, «Aprobado por gerencia»), sin cambiar los valores. La migración nueva `V022__incidencias_rotulo_protocolo.sql` cambia solo el rótulo de `PROTOCOLO-FIRMADO-1` a «Protocolo de monitoreo firmado, versión 2.0»; V021 no se editó. Se probó en `IncidentMigrationTest` y `ReferenceCatalogTest`.*
-- [ ] T118 **Publicar solo cuando el responsable lo autorice y T009 esté cerrada**, con el flujo de la Feature 007:
+- [x] T118 **Publicar solo cuando el responsable lo autorice y T009 esté cerrada**, con el flujo de la Feature 007:
   1. Respaldo previo con recibo.
   2. `ci.yml`, `version-candidata.yml` y `publicar.yml`, con aprobación del entorno `production`.
   3. Comprobaciones posteriores.
   4. Comparación de conteos contra la copia previa.
 
   Después de publicar, el *issue* `ensayo-restauracion` se cierra con un ensayo aprobado en 7 días.
+  *Publicada el 2026-11-23: versión `2026.11.23-49-a020133` (PR #18, commit `a020133`), CI verde (backend, frontend, migraciones inmutables, dependencias, secretos y scripts de despliegue) y flujo [Publicar #6](https://github.com/EddWlad/SARC-ERP/actions/runs/45287794210) con aprobación del responsable en el entorno `production`: resultado `COMPLETADA` en 5 min 8 s (1 min 9 s de despliegue), con las comprobaciones posteriores del flujo (disponibilidad, base de datos y versión) correctas. V021 y V022 se aplicaron al arrancar. Se abrió solo el *issue* #19 `ensayo-restauracion` (cambio crítico con migraciones), que se cierra con un ensayo aprobado sobre una copia posterior a V022 dentro de 7 días. La numeración quedó sin configurar a propósito: un Administrador la configura en `/incidencias/numeracion` (T119).*
 - [x] T119 **Decisión del responsable, no automatizable (P-01)**: el día de la publicación, después de T118, pedir al responsable el número inicial disponible de la secuencia externa. Un Administrador lo configura en `/incidencias/numeracion` en el ambiente `PRODUCTION`, con la confirmación del código. Comprobar que el primer ticket real recibe ese número y que el número ya no se puede cambiar. **Nunca** se usa ni se escribe en el repositorio.
 
 ---
