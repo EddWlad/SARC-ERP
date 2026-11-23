@@ -1,5 +1,53 @@
 # Control de cambios del PRD SARC
 
+## CC-PRD-010-20261120 — Incidencias, tickets y tiempos: decisiones del responsable
+
+**Estado:** propuesta especificada en `specs/010-incidencias-tickets-tiempos/spec.md` el 2026-11-20. Ese mismo día se resolvieron las aclaraciones Q1 a Q5 y, al iniciar el plan, el responsable aprobó las decisiones P-03 a P-16. Las dos decisiones que quedaban se resolvieron el 2026-11-23: **P-02**, el protocolo vigente es la versión 2.0, aprobada y final (la migración V022 cambia solo su rótulo), y **P-01**, el número inicial no lo fija el desarrollo: lo configura el Administrador en producción según la secuencia externa de ese momento. El plan técnico (`plan.md`, `research.md`, `data-model.md`, `contracts/`, `quickstart.md`) se elaboró el 2026-11-20. Las tareas se generaron el mismo día. **Implementada el 2026-11-23** (historias US1 a US7: tickets, seguimiento, mensaje para WhatsApp, cierre y reapertura, «Control de tickets», tablero y reporte de gestión), **pendiente de publicar**: el ensayo de V021 sobre una copia de producción (T009) y el de restauración con datos de incidencias y un original en Cloudinary (T115) se hicieron el 2026-11-23 y quedaron aprobados. El PDF maestro aprobado permanece intacto.
+
+**Base:** PRD v1.1, RF-006 (§10.1 a §10.5) y §11. Protocolo de monitoreo y respuesta operativa firmado: la portada indica versión 2.0 y las páginas interiores, versión 1.0, discrepancia registrada como P-02 y resuelta el 2026-11-23 a favor de la versión 2.0.
+
+**Decisiones del responsable (2026-11-20):**
+
+- Solo dos estados principales, Abierto y Cerrado. Sustituye los cinco estados de RF-006.9. Validación, atención, recuperación, observación, escalamiento, visitas, responsables y relevo de turno se registran como hitos o eventos.
+- Un ticket puede referirse a una electrolinera completa sin elegir conectores, a uno o varios conectores de un mismo equipo, o al servicio de chatbot sin equipo físico. El origen del aviso se registra por separado del elemento afectado.
+- Identificador `TICKET-NNN`. El número inicial se consulta al responsable antes de la puesta en marcha y no tiene valor por defecto de producción.
+- El mensaje para WhatsApp incluye número, cargador o electrolinera, ubicación, enlace de Google Maps, novedad y estado. Por defecto no incluye la acción ni la hora de detección. Esto difiere de RF-006.4 y del protocolo §4.1. Aclaración Q3 (2026-11-20): dos opciones desactivadas por defecto permiten incluir T0 y las acciones realizadas.
+- Aclaración Q4 (2026-11-20): la campana de notificaciones (RF-006.22) se hará en una feature transversal aparte. La 010 registra los eventos que la alimentarán.
+- Nuevo informe operativo «Control de tickets», con todos los tickets abiertos y cerrados y filtros de período, separado del reporte de gestión de RF-006.
+
+**Decisiones aprobadas al iniciar el plan (2026-11-20):**
+
+- **P-16, histórico del Excel:** no se importan los tickets anteriores. SARC contiene solo los tickets creados en el sistema y el Excel histórico queda aparte.
+- **P-10, elementos del sitio:** se admiten barreras vehiculares y otros elementos del sitio, sin crear equipos ficticios ni atribuirles conectores o red. El responsable precisó tres puntos:
+  - la ubicación se toma de un equipo de referencia del mismo sitio (solo el nombre del sitio, la ubicación y el enlace de Maps) o, si el sitio no tiene equipos, se escribe a mano con un enlace de Maps opcional;
+  - en los repartos por red se cuentan en el grupo «Sin red»;
+  - el catálogo tiene dos clases: «Barrera vehicular» y «Otro elemento del sitio».
+
+  Se muestran como «Sitio / Elemento».
+
+**Ajustes del análisis de consistencia (2026-11-20, aprobados por el responsable):**
+
+- Los datos corregibles de un ticket son la descripción, el origen del aviso, el tipo y la prioridad, siempre con justificación. El elemento afectado no se corrige: se cierra como «Registrado por error» y se crea otro.
+- T1 recomienda adjuntar la primera evidencia, pero no la exige. Esto precisa la redacción «con la primera evidencia» de PRD §10.2 y del Protocolo §5.1.
+- La causa del cierre lleva descripción, salvo si no está determinada. Una causa probable exige al menos una evidencia del episodio.
+- El escalamiento registra su destino en una lista cerrada. Solo el destino técnico cuenta para la referencia de 60 min de la Espera de conexión.
+- «Más de 30 min» (P-04) se compara con la duración exacta.
+- SC-002 se limita a T1–T3. T4 se propone en el cierre.
+- Un escalamiento técnico posterior al fin de la Espera de conexión no la saca de la referencia.
+- El listado no se ordena por elemento afectado; ese campo solo se busca y se filtra. Esto precisa «ordenar» de PRD RF-006.15.
+- **P-12, estado en el informe de control:** con un período, se muestra el estado al final del período, no el actual, y se mantiene la regla de inclusión de Q1. Un ticket reabierto aparece una sola vez. Las correcciones posteriores no alteran los informes ya emitidos, que conservan su registro y su huella.
+- **P-03, referencias por versión:** cada episodio usa la versión de referencias vigente en su T0. Los cambios futuros crean una versión nueva sin modificar episodios ni informes anteriores.
+- **P-04:** un punto KIA es de caída persistente cuando lleva más de 30 minutos fuera de línea. Es una clasificación, no un límite de recuperación.
+- **P-05:** la prioridad se propone según el protocolo y el analista la ajusta con motivo.
+- **P-06:** la recuperación (T3−T0) y el cierre (T4−T0) son indicadores separados.
+- **P-07:** los gráficos se muestran sin ponderación hasta que se definan y aprueben los pesos. No se inventan.
+- **P-08:** las visitas y el proveedor se registran a mano, sin asignación ni comunicación automática.
+- **P-11:** el catálogo de tipos se mantiene con cambios controlados del sistema e incluye «Incidencia no catalogada».
+- **P-13:** la disponibilidad y las intermitencias se consultan en sus módulos y no se recalculan en Incidencias.
+- **P-14:** cada ticket conserva la red que tenía el equipo en el momento de la incidencia.
+
+**Impacto documental:** al consolidar el PRD, RF-006.9 y RF-006.15 deben reflejar los dos estados y las condiciones derivadas de los hitos. RF-006.1 debe admitir los elementos «servicio de chatbot», «barrera vehicular» y «otro elemento del sitio», y la afectación del equipo completo. RF-006.4 debe recoger el contenido del mensaje con las dos opciones de Q3. §10.3 debe citar las referencias versionadas y las prioridades propuestas, y §10.4 debe incorporar el informe «Control de tickets» con el estado al final del período. Debe constar además que el histórico del Excel no se migra.
+
 ## CC-PRD-009-20261113 — Consumo: fecha de la fuente, acciones por sesión y vistas estables
 
 **Estado:** precisiones especificadas en `specs/009-integridad-temporal-consumo/spec.md` (aclaraciones del 2026-11-11 y del 2026-11-13). La atribución por fecha de la fuente se publicó como hotfix el 2026-11-14 (`2026.11.14-41-793e92f`, V019). Las acciones por sesión (US3), el fin de origen (US1) y la estabilidad visual (US4) se publicaron el 2026-11-14 (`2026.11.14-43-3549f18`, V020). El PDF maestro aprobado permanece intacto.

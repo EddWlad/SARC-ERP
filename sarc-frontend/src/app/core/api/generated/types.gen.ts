@@ -85,6 +85,220 @@ export type UnconfirmedBatchResponse = {
     fileName: string;
 };
 
+export type MilestoneRequest = {
+    version: number;
+    status: 'PENDING' | 'RECORDED' | 'NOT_APPLICABLE' | 'NO_DATA';
+    occurredAt?: string | null;
+    reason?: string | null;
+    justification?: string | null;
+    orderWarningAck?: boolean | null;
+};
+
+export type TicketClosure = {
+    result: 'RECOVERED' | 'NO_FAULT_CONFIRMED' | 'DUPLICATE' | 'REGISTERED_IN_ERROR';
+    duplicateOfTicketId?: string | null;
+    duplicateOfCode?: string | null;
+    causeKind: 'CONFIRMED' | 'PROBABLE' | 'UNDETERMINED';
+    causeText?: string | null;
+    recommendations?: string | null;
+    closureChecks: {
+        [key: string]: string;
+    };
+    finalEvidenceWaiver?: string | null;
+    closureCommunicationWaiver?: string | null;
+    deviationJustification?: string | null;
+};
+
+export type TicketCommunicationResponse = {
+    id: string;
+    channel: 'REDAE_INPSERCOM' | 'KIA_ELECTROLINERAS' | 'CARGADORES_ELECTRICOS' | 'AUTOEASTERN_ENERLINK' | 'DIRECTIVOS' | 'EMAIL' | 'OTHER';
+    channelDetail?: string | null;
+    kind: 'INITIAL' | 'UPDATE' | 'CLOSURE';
+    sentAt: string;
+    retroactive: boolean;
+    justification?: string | null;
+    recordedBy?: string | null;
+    recordedByName?: string | null;
+    recordedAt: string;
+    annulled: boolean;
+    annulReason?: string | null;
+};
+
+export type TicketConnectorResponse = {
+    id: string;
+    positionAtT0: number;
+    currentPosition?: number | null;
+    active: boolean;
+};
+
+export type TicketDetailResponse = {
+    summary: TicketSummaryResponse;
+    description: string;
+    reportOrigin: 'PLATFORM' | 'CHATBOT' | 'SITE_STAFF' | 'CUSTOMER' | 'PROVIDER' | 'OTHER';
+    reportOriginDetail?: string | null;
+    equipment?: TicketEquipment;
+    connectors: Array<TicketConnectorResponse>;
+    chatbotScope?: 'TOTAL' | 'PARTIAL';
+    siteElement?: TicketSiteElement;
+    location?: string | null;
+    mapsUrl?: string | null;
+    referenceVersion?: TicketReferenceVersion;
+    episodes: Array<TicketEpisode>;
+    relations: Array<TicketRelationResponse>;
+    timeline: Array<TicketEventResponse>;
+    visits: Array<TicketVisitResponse>;
+    evidence: Array<TicketEvidenceResponse>;
+    communications: Array<TicketCommunicationResponse>;
+    allowedActions: Array<string>;
+};
+
+export type TicketDuration = {
+    pair: string;
+    minutes?: number | null;
+    missing: Array<'T0' | 'T1' | 'T2' | 'T3' | 'T4'>;
+};
+
+export type TicketEpisode = {
+    ordinal: number;
+    state: 'OPEN' | 'CLOSED';
+    reopenReason?: string | null;
+    milestones: Array<TicketMilestone>;
+    durations: Array<TicketDuration>;
+    references: Array<TicketReference>;
+    elapsedOpenMinutes?: number | null;
+    closure?: TicketClosure;
+};
+
+export type TicketEquipment = {
+    id: string;
+    labelAtT0: string;
+    currentName: string;
+    active: boolean;
+};
+
+export type TicketEventResponse = {
+    id: string;
+    type: 'TICKET_CREATED' | 'VALIDATION' | 'CORRECTIVE_ACTION' | 'ESCALATED' | 'OBSERVATION' | 'DATA_CORRECTED' | 'PRIORITY_CHANGED' | 'RESPONSIBLE_ASSIGNED' | 'SHIFT_HANDOVER' | 'RECLASSIFIED' | 'VISIT_STAGE' | 'COMMUNICATION_RECORDED' | 'EVIDENCE_ADDED' | 'MILESTONE_RECORDED' | 'MILESTONE_CORRECTED' | 'TICKET_CLOSED' | 'TICKET_REOPENED' | 'RELATION_ADDED';
+    occurredAt: string;
+    recordedAt: string;
+    recordedBy?: string | null;
+    recordedByName?: string | null;
+    retroactive: boolean;
+    text?: string | null;
+    targetKind?: 'TECHNICAL' | 'SUPERVISION' | 'PLATFORM_SUPPORT' | 'OTHER';
+    targetRoleOrProvider?: string | null;
+    details: {
+        [key: string]: unknown;
+    };
+    annulled: boolean;
+    annulledAt?: string | null;
+    annulReason?: string | null;
+};
+
+export type TicketEvidenceResponse = {
+    id: string;
+    eventId: string;
+    communicationId?: string | null;
+    purpose: 'GENERAL' | 'INITIAL' | 'FINAL';
+    format: 'JPEG' | 'PNG' | 'WEBP' | 'PDF';
+    sizeBytes: number;
+    sha256: string;
+    originalName: string;
+    uploadedBy?: string | null;
+    uploadedByName?: string | null;
+    uploadedAt: string;
+    annulled: boolean;
+};
+
+export type TicketMilestone = {
+    kind: 'T0' | 'T1' | 'T2' | 'T3' | 'T4';
+    status: 'PENDING' | 'RECORDED' | 'NOT_APPLICABLE' | 'NO_DATA';
+    occurredAt?: string | null;
+    reason?: string | null;
+    retroactive: boolean;
+    orderWarningAck: boolean;
+    recordedBy?: string | null;
+    recordedAt: string;
+};
+
+export type TicketReference = {
+    measure: string;
+    limitMinutes: number;
+    extendable: boolean;
+    result: string;
+};
+
+export type TicketReferenceVersion = {
+    code: string;
+    label: string;
+};
+
+export type TicketRelationResponse = {
+    ticketId: string;
+    code?: string | null;
+    kind: 'INDEPENDENT_FAILURE' | 'COMMON_FAILURE';
+    reason?: string | null;
+};
+
+export type TicketResponsible = {
+    id: string;
+    name: string;
+};
+
+export type TicketSiteElement = {
+    kind: 'VEHICLE_BARRIER' | 'OTHER';
+    kindLabel: string;
+    elementName?: string | null;
+    referenceEquipmentId?: string | null;
+    siteName: string;
+};
+
+export type TicketSummaryResponse = {
+    id: string;
+    code: string;
+    state: 'OPEN' | 'CLOSED';
+    elementClass: 'EQUIPMENT' | 'CHATBOT_SERVICE' | 'SITE_ELEMENT';
+    elementLabel: string;
+    network?: string | null;
+    incidentType: 'WAIT_FOR_CONNECTION' | 'DISCONNECTION' | 'CONNECTOR_FAILURE' | 'EMERGENCY_STOP' | 'CONNECTOR_STUCK' | 'CANNOT_STOP_CHARGING' | 'KIA_PERSISTENT_OUTAGE' | 'INTERMITTENCY' | 'INSTALLATION_OR_CONNECTIVITY' | 'CHATBOT_SERVICE_FAILURE' | 'SITE_ELEMENT_FAILURE' | 'UNCATALOGED';
+    incidentTypeLabel: string;
+    priority: 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    responsible: TicketResponsible;
+    t0: string;
+    lastActivityAt: string;
+    condition?: 'RECOVERED_OBSERVING' | 'IN_ATTENTION' | 'PENDING_VALIDATION';
+    episodeCount: number;
+    version: number;
+    stateAtPeriodEnd?: 'OPEN' | 'CLOSED';
+};
+
+export type TicketVisitResponse = {
+    id: string;
+    episodeOrdinal: number;
+    providerName?: string | null;
+    stage: 'REQUESTED' | 'ASSIGNED' | 'CONFIRMED' | 'CANCELLED' | 'POSTPONED' | 'EXECUTED' | 'REPORT_RECEIVED';
+    cancelDecidedBy?: string | null;
+    cancelEvidenceNote?: string | null;
+    reescalationCondition?: string | null;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type ConfigureNumberingRequest = {
+    startNumber: number;
+    environment: string;
+    confirmation: string;
+};
+
+export type NumberingResponse = {
+    configured: boolean;
+    environment?: string | null;
+    startNumber?: number | null;
+    nextCode?: string | null;
+    expectedEnvironment?: string | null;
+    ticketsExist: boolean;
+};
+
 export type UpdateEquipmentRequest = {
     version: number;
     brand: 'BENNY' | 'WALLBOX';
@@ -744,6 +958,144 @@ export type PasteIntermittencyImportRequest = {
     text: string;
 };
 
+export type CreateTicketRequest = {
+    clientRequestId: string;
+    elementClass: 'EQUIPMENT' | 'CHATBOT_SERVICE' | 'SITE_ELEMENT';
+    equipmentId?: string | null;
+    connectorIds?: Array<string> | null;
+    chatbotScope?: 'TOTAL' | 'PARTIAL';
+    siteElement?: SiteElementRequest;
+    incidentType: 'WAIT_FOR_CONNECTION' | 'DISCONNECTION' | 'CONNECTOR_FAILURE' | 'EMERGENCY_STOP' | 'CONNECTOR_STUCK' | 'CANNOT_STOP_CHARGING' | 'KIA_PERSISTENT_OUTAGE' | 'INTERMITTENCY' | 'INSTALLATION_OR_CONNECTIVITY' | 'CHATBOT_SERVICE_FAILURE' | 'SITE_ELEMENT_FAILURE' | 'UNCATALOGED';
+    description: string;
+    reportOrigin?: 'PLATFORM' | 'CHATBOT' | 'SITE_STAFF' | 'CUSTOMER' | 'PROVIDER' | 'OTHER';
+    reportOriginDetail?: string | null;
+    priority?: 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    priorityReason?: string | null;
+    t0?: string | null;
+    t0Reason?: string | null;
+    duplicateOverrideReason?: string | null;
+};
+
+export type SiteElementRequest = {
+    kind: 'VEHICLE_BARRIER' | 'OTHER';
+    elementName?: string | null;
+    referenceEquipmentId?: string | null;
+    manualSiteName?: string | null;
+    manualLocation?: string | null;
+    manualMapsUrl?: string | null;
+};
+
+export type VisitRequest = {
+    version: number;
+    providerName?: string | null;
+    occurredAt?: string | null;
+    note?: string | null;
+};
+
+export type VisitStageRequest = {
+    version: number;
+    stage: 'REQUESTED' | 'ASSIGNED' | 'CONFIRMED' | 'CANCELLED' | 'POSTPONED' | 'EXECUTED' | 'REPORT_RECEIVED';
+    occurredAt?: string | null;
+    note?: string | null;
+    providerName?: string | null;
+    cancelDecidedBy?: string | null;
+    cancelEvidenceNote?: string | null;
+    reescalationCondition?: string | null;
+};
+
+export type ResponsibleRequest = {
+    version: number;
+    responsibleId: string;
+};
+
+export type ReopenRequest = {
+    version: number;
+    reason: string;
+    t0?: string | null;
+    t0Reason?: string | null;
+};
+
+export type AddRelationRequest = {
+    version: number;
+    relatedTicketId: string;
+    kind: 'INDEPENDENT_FAILURE' | 'COMMON_FAILURE';
+    reason?: string | null;
+};
+
+export type ReclassifyRequest = {
+    version: number;
+    incidentType: 'WAIT_FOR_CONNECTION' | 'DISCONNECTION' | 'CONNECTOR_FAILURE' | 'EMERGENCY_STOP' | 'CONNECTOR_STUCK' | 'CANNOT_STOP_CHARGING' | 'KIA_PERSISTENT_OUTAGE' | 'INTERMITTENCY' | 'INSTALLATION_OR_CONNECTIVITY' | 'CHATBOT_SERVICE_FAILURE' | 'SITE_ELEMENT_FAILURE' | 'UNCATALOGED';
+    reason: string;
+};
+
+export type PriorityRequest = {
+    version: number;
+    priority: 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    reason: string;
+};
+
+export type HandoverRequest = {
+    version: number;
+    incomingResponsibleId: string;
+    currentStatus: string;
+    pending: string;
+    nextCheckAt?: string | null;
+    closureCriterion: string;
+};
+
+export type EvidenceMeta = {
+    version: number;
+    purpose: 'GENERAL' | 'INITIAL' | 'FINAL';
+    eventId?: string | null;
+    communicationId?: string | null;
+    note?: string | null;
+};
+
+export type EventRequest = {
+    version: number;
+    type: 'TICKET_CREATED' | 'VALIDATION' | 'CORRECTIVE_ACTION' | 'ESCALATED' | 'OBSERVATION' | 'DATA_CORRECTED' | 'PRIORITY_CHANGED' | 'RESPONSIBLE_ASSIGNED' | 'SHIFT_HANDOVER' | 'RECLASSIFIED' | 'VISIT_STAGE' | 'COMMUNICATION_RECORDED' | 'EVIDENCE_ADDED' | 'MILESTONE_RECORDED' | 'MILESTONE_CORRECTED' | 'TICKET_CLOSED' | 'TICKET_REOPENED' | 'RELATION_ADDED';
+    occurredAt?: string | null;
+    text: string;
+    targetKind?: 'TECHNICAL' | 'SUPERVISION' | 'PLATFORM_SUPPORT' | 'OTHER';
+    targetRoleOrProvider?: string | null;
+};
+
+export type AnnulRequest = {
+    version: number;
+    reason: string;
+};
+
+export type CommunicationRequest = {
+    version: number;
+    channel: 'REDAE_INPSERCOM' | 'KIA_ELECTROLINERAS' | 'CARGADORES_ELECTRICOS' | 'AUTOEASTERN_ENERLINK' | 'DIRECTIVOS' | 'EMAIL' | 'OTHER';
+    channelDetail?: string | null;
+    kind: 'INITIAL' | 'UPDATE' | 'CLOSURE';
+    sentAt: string;
+    justification?: string | null;
+};
+
+export type Checks = {
+    platformNormal?: 'CONFIRMED' | 'NOT_APPLICABLE';
+    stabilityChecked?: 'CONFIRMED' | 'NOT_APPLICABLE';
+    noAffectedUser?: 'CONFIRMED' | 'NOT_APPLICABLE';
+    postTest?: 'CONFIRMED' | 'NOT_APPLICABLE';
+};
+
+export type CloseRequest = {
+    version: number;
+    t4?: string | null;
+    t4Reason?: string | null;
+    result?: 'RECOVERED' | 'NO_FAULT_CONFIRMED' | 'DUPLICATE' | 'REGISTERED_IN_ERROR';
+    duplicateOfTicketId?: string | null;
+    causeKind?: 'CONFIRMED' | 'PROBABLE' | 'UNDETERMINED';
+    causeText?: string | null;
+    recommendations?: string | null;
+    closureChecks?: Checks;
+    finalEvidenceWaiver?: string | null;
+    closureCommunicationWaiver?: string | null;
+    deviationJustification?: string | null;
+};
+
 export type ExternalIdentityResponse = {
     id: string;
     equipmentId: string;
@@ -961,6 +1313,14 @@ export type EditImportRowRequest = {
 export type NewWindow = {
     startAt: string;
     endAt?: string;
+};
+
+export type CorrectDataRequest = {
+    version: number;
+    description?: string | null;
+    reportOrigin?: 'PLATFORM' | 'CHATBOT' | 'SITE_STAFF' | 'CUSTOMER' | 'PROVIDER' | 'OTHER';
+    reportOriginDetail?: string | null;
+    justification: string;
 };
 
 export type ChangeStatusRequest = {
@@ -1571,6 +1931,129 @@ export type BlockedDayRow = {
     pendingRows: number;
 };
 
+export type TicketPageResponse = {
+    items: Array<TicketSummaryResponse>;
+    total: number;
+    page: number;
+    size: number;
+    cutOff: string;
+    notice?: string | null;
+};
+
+export type MessageResponse = {
+    text: string;
+    missingFields: Array<string>;
+    ticketCode: string;
+    state: 'OPEN' | 'CLOSED';
+};
+
+export type OpenMatchResponse = {
+    id: string;
+    code: string;
+    incidentTypeLabel: string;
+    priority: 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    createdAt?: string | null;
+};
+
+export type IncidentCount = {
+    key: string;
+    count: number;
+};
+
+export type IncidentDeviation = {
+    code: string;
+    episode: number;
+    type: string;
+    measure: string;
+    justification?: string | null;
+};
+
+export type IncidentReference = {
+    measure: string;
+    type: string;
+    within: number;
+    outside: number;
+    notEvaluable: number;
+};
+
+export type IncidentSummaryResponse = {
+    cutOff: string;
+    from: string;
+    to: string;
+    openTicketsAtCutOff: number;
+    totals: IncidentTotals;
+    measures: Array<IncidentTimeMeasure>;
+    validation: IncidentValidation;
+    references: Array<IncidentReference>;
+    withoutReference: Array<string>;
+    deviations: Array<IncidentDeviation>;
+    byDay: Array<IncidentCount>;
+    byNetwork: Array<IncidentCount>;
+    byType: Array<IncidentCount>;
+    byPriority: Array<IncidentCount>;
+    byClass: Array<IncidentCount>;
+    byEquipment: Array<IncidentCount>;
+    byOrigin: Array<IncidentCount>;
+    visits: IncidentVisits;
+    repeaters: Array<IncidentCount>;
+    referenceVersions: string;
+};
+
+export type IncidentTimeMeasure = {
+    pair: string;
+    averageMinutes?: number | null;
+    n: number;
+    notApplicable: number;
+    noData: number;
+    open: number;
+};
+
+export type IncidentTotals = {
+    uniqueTickets: number;
+    episodes: number;
+    openEpisodes: number;
+    closedEpisodes: number;
+    reopened: number;
+    critical: number;
+    excluded: number;
+};
+
+export type IncidentValidation = {
+    n: number;
+    within: number;
+    percent?: number | null;
+};
+
+export type IncidentVisits = {
+    requested: number;
+    confirmed: number;
+    cancelledOrPostponed: number;
+    executed: number;
+};
+
+export type EligibleResponsibleResponse = {
+    id: string;
+    name: string;
+};
+
+export type AssetConnector = {
+    id: string;
+    position: number;
+    typeLabel: string;
+    active: boolean;
+};
+
+export type IncidentAssetResponse = {
+    id: string;
+    name: string;
+    assignedCode?: string | null;
+    network: 'KIA' | 'JAC' | 'CONECTZ';
+    infrastructureType: 'CHARGING_POINT' | 'CHARGING_STATION';
+    location?: string | null;
+    mapsUrl?: string | null;
+    connectors: Array<AssetConnector>;
+};
+
 export type EquipmentSummaryResponse = {
     id: string;
     name: string;
@@ -1786,6 +2269,58 @@ export type MarkResponses = {
 };
 
 export type MarkResponse = MarkResponses[keyof MarkResponses];
+
+export type RecordMilestoneData = {
+    body: MilestoneRequest;
+    path: {
+        id: string;
+        ordinal: number;
+        kind: 'T0' | 'T1' | 'T2' | 'T3' | 'T4';
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}/episodes/{ordinal}/milestones/{kind}';
+};
+
+export type RecordMilestoneResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type RecordMilestoneResponse = RecordMilestoneResponses[keyof RecordMilestoneResponses];
+
+export type NumberingStateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/incidents/numbering';
+};
+
+export type NumberingStateResponses = {
+    /**
+     * OK
+     */
+    200: NumberingResponse;
+};
+
+export type NumberingStateResponse = NumberingStateResponses[keyof NumberingStateResponses];
+
+export type ConfigureNumberingData = {
+    body: ConfigureNumberingRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/incidents/numbering';
+};
+
+export type ConfigureNumberingResponses = {
+    /**
+     * OK
+     */
+    200: NumberingResponse;
+};
+
+export type ConfigureNumberingResponse = ConfigureNumberingResponses[keyof ConfigureNumberingResponses];
 
 export type GetData = {
     body?: never;
@@ -2662,6 +3197,292 @@ export type Paste1Responses = {
 
 export type Paste1Response = Paste1Responses[keyof Paste1Responses];
 
+export type ListTicketsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        state?: 'OPEN' | 'CLOSED';
+        elementClass?: 'EQUIPMENT' | 'CHATBOT_SERVICE' | 'SITE_ELEMENT';
+        incidentType?: 'WAIT_FOR_CONNECTION' | 'DISCONNECTION' | 'CONNECTOR_FAILURE' | 'EMERGENCY_STOP' | 'CONNECTOR_STUCK' | 'CANNOT_STOP_CHARGING' | 'KIA_PERSISTENT_OUTAGE' | 'INTERMITTENCY' | 'INSTALLATION_OR_CONNECTIVITY' | 'CHATBOT_SERVICE_FAILURE' | 'SITE_ELEMENT_FAILURE' | 'UNCATALOGED';
+        priority?: 'MEDIUM' | 'HIGH' | 'CRITICAL';
+        network?: string;
+        equipmentId?: string;
+        responsibleId?: string;
+        condition?: 'RECOVERED_OBSERVING' | 'IN_ATTENTION' | 'PENDING_VALIDATION';
+        search?: string;
+        from?: string;
+        to?: string;
+        sort?: string;
+        page?: number;
+        size?: number;
+    };
+    url: '/api/v1/incidents/tickets';
+};
+
+export type ListTicketsResponses = {
+    /**
+     * OK
+     */
+    200: TicketPageResponse;
+};
+
+export type ListTicketsResponse = ListTicketsResponses[keyof ListTicketsResponses];
+
+export type CreateTicketData = {
+    body: CreateTicketRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/incidents/tickets';
+};
+
+export type CreateTicketResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type CreateTicketResponse = CreateTicketResponses[keyof CreateTicketResponses];
+
+export type RequestVisitData = {
+    body: VisitRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}/visits';
+};
+
+export type RequestVisitResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type RequestVisitResponse = RequestVisitResponses[keyof RequestVisitResponses];
+
+export type MoveVisitStageData = {
+    body: VisitStageRequest;
+    path: {
+        id: string;
+        visitId: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}/visits/{visitId}/stage';
+};
+
+export type MoveVisitStageResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type MoveVisitStageResponse = MoveVisitStageResponses[keyof MoveVisitStageResponses];
+
+export type AssignResponsibleData = {
+    body: ResponsibleRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}/responsible';
+};
+
+export type AssignResponsibleResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type AssignResponsibleResponse = AssignResponsibleResponses[keyof AssignResponsibleResponses];
+
+export type ReopenTicketData = {
+    body: ReopenRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}/reopen';
+};
+
+export type ReopenTicketResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type ReopenTicketResponse = ReopenTicketResponses[keyof ReopenTicketResponses];
+
+export type AddRelationData = {
+    body: AddRelationRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}/relations';
+};
+
+export type AddRelationResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type AddRelationResponse = AddRelationResponses[keyof AddRelationResponses];
+
+export type ReclassifyData = {
+    body: ReclassifyRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}/reclassify';
+};
+
+export type ReclassifyResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type ReclassifyResponse = ReclassifyResponses[keyof ReclassifyResponses];
+
+export type ChangePriorityData = {
+    body: PriorityRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}/priority';
+};
+
+export type ChangePriorityResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type ChangePriorityResponse = ChangePriorityResponses[keyof ChangePriorityResponses];
+
+export type HandoverData = {
+    body: HandoverRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}/handover';
+};
+
+export type HandoverResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type HandoverResponse = HandoverResponses[keyof HandoverResponses];
+
+export type UploadEvidenceData = {
+    body?: {
+        file: Blob | File;
+        meta: EvidenceMeta;
+    };
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}/evidence';
+};
+
+export type UploadEvidenceResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type UploadEvidenceResponse = UploadEvidenceResponses[keyof UploadEvidenceResponses];
+
+export type AddEventData = {
+    body: EventRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}/events';
+};
+
+export type AddEventResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type AddEventResponse = AddEventResponses[keyof AddEventResponses];
+
+export type AnnulEventData = {
+    body: AnnulRequest;
+    path: {
+        id: string;
+        eventId: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}/events/{eventId}/annul';
+};
+
+export type AnnulEventResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type AnnulEventResponse = AnnulEventResponses[keyof AnnulEventResponses];
+
+export type RecordCommunicationData = {
+    body: CommunicationRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}/communications';
+};
+
+export type RecordCommunicationResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type RecordCommunicationResponse = RecordCommunicationResponses[keyof RecordCommunicationResponses];
+
+export type CloseTicketData = {
+    body: CloseRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}/close';
+};
+
+export type CloseTicketResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type CloseTicketResponse = CloseTicketResponses[keyof CloseTicketResponses];
+
 export type VerifyData = {
     body: VersionRequest;
     path: {
@@ -3180,6 +4001,42 @@ export type EditResponses = {
 };
 
 export type EditResponse2 = EditResponses[keyof EditResponses];
+
+export type TicketDetailData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}';
+};
+
+export type TicketDetailResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type TicketDetailResponse2 = TicketDetailResponses[keyof TicketDetailResponses];
+
+export type CorrectDataData = {
+    body: CorrectDataRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}';
+};
+
+export type CorrectDataResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type CorrectDataResponse = CorrectDataResponses[keyof CorrectDataResponses];
 
 export type ChangeStatusData = {
     body: ChangeStatusRequest;
@@ -3848,6 +4705,189 @@ export type AvailabilityResponses = {
 
 export type AvailabilityResponse2 = AvailabilityResponses[keyof AvailabilityResponses];
 
+export type TicketMessageData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        includeDetection?: boolean;
+        includeActions?: boolean;
+    };
+    url: '/api/v1/incidents/tickets/{id}/message';
+};
+
+export type TicketMessageResponses = {
+    /**
+     * OK
+     */
+    200: MessageResponse;
+};
+
+export type TicketMessageResponse = TicketMessageResponses[keyof TicketMessageResponses];
+
+export type DownloadEvidenceData = {
+    body?: never;
+    path: {
+        id: string;
+        evidenceId: string;
+    };
+    query?: never;
+    url: '/api/v1/incidents/tickets/{id}/evidence/{evidenceId}';
+};
+
+export type DownloadEvidenceResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type OpenMatchesData = {
+    body?: never;
+    path?: never;
+    query: {
+        elementClass: 'EQUIPMENT' | 'CHATBOT_SERVICE' | 'SITE_ELEMENT';
+        equipmentId?: string;
+        siteElementKind?: 'VEHICLE_BARRIER' | 'OTHER';
+        referenceEquipmentId?: string;
+        manualSiteName?: string;
+        elementName?: string;
+    };
+    url: '/api/v1/incidents/tickets/open-matches';
+};
+
+export type OpenMatchesResponses = {
+    /**
+     * OK
+     */
+    200: Array<OpenMatchResponse>;
+};
+
+export type OpenMatchesResponse = OpenMatchesResponses[keyof OpenMatchesResponses];
+
+export type Summary3Data = {
+    body?: never;
+    path?: never;
+    query: {
+        from: string;
+        to: string;
+        network?: 'KIA' | 'JAC' | 'CONECTZ';
+        elementClass?: 'EQUIPMENT' | 'CHATBOT_SERVICE' | 'SITE_ELEMENT';
+        incidentType?: 'WAIT_FOR_CONNECTION' | 'DISCONNECTION' | 'CONNECTOR_FAILURE' | 'EMERGENCY_STOP' | 'CONNECTOR_STUCK' | 'CANNOT_STOP_CHARGING' | 'KIA_PERSISTENT_OUTAGE' | 'INTERMITTENCY' | 'INSTALLATION_OR_CONNECTIVITY' | 'CHATBOT_SERVICE_FAILURE' | 'SITE_ELEMENT_FAILURE' | 'UNCATALOGED';
+        priority?: 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    };
+    url: '/api/v1/incidents/summary';
+};
+
+export type Summary3Responses = {
+    /**
+     * OK
+     */
+    200: IncidentSummaryResponse;
+};
+
+export type Summary3Response = Summary3Responses[keyof Summary3Responses];
+
+export type EligibleResponsiblesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/incidents/responsibles';
+};
+
+export type EligibleResponsiblesResponses = {
+    /**
+     * OK
+     */
+    200: Array<EligibleResponsibleResponse>;
+};
+
+export type EligibleResponsiblesResponse = EligibleResponsiblesResponses[keyof EligibleResponsiblesResponses];
+
+export type ManagementReportData = {
+    body?: never;
+    path?: never;
+    query: {
+        format: 'PDF' | 'XLSX';
+        from: string;
+        to: string;
+        network?: 'KIA' | 'JAC' | 'CONECTZ';
+        elementClass?: 'EQUIPMENT' | 'CHATBOT_SERVICE' | 'SITE_ELEMENT';
+        incidentType?: 'WAIT_FOR_CONNECTION' | 'DISCONNECTION' | 'CONNECTOR_FAILURE' | 'EMERGENCY_STOP' | 'CONNECTOR_STUCK' | 'CANNOT_STOP_CHARGING' | 'KIA_PERSISTENT_OUTAGE' | 'INTERMITTENCY' | 'INSTALLATION_OR_CONNECTIVITY' | 'CHATBOT_SERVICE_FAILURE' | 'SITE_ELEMENT_FAILURE' | 'UNCATALOGED';
+        priority?: 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    };
+    url: '/api/v1/incidents/reports/management';
+};
+
+export type ManagementReportResponses = {
+    /**
+     * Documento nuevo; X-Report-Id y X-Report-Cut-Off lo identifican
+     */
+    200: Blob | File;
+};
+
+export type ManagementReportResponse = ManagementReportResponses[keyof ManagementReportResponses];
+
+export type ControlReportData = {
+    body?: never;
+    path?: never;
+    query: {
+        format: 'PDF' | 'XLSX';
+        from?: string;
+        to?: string;
+        state?: 'OPEN' | 'CLOSED';
+        network?: 'KIA' | 'JAC' | 'CONECTZ';
+    };
+    url: '/api/v1/incidents/reports/control';
+};
+
+export type ControlReportResponses = {
+    /**
+     * Documento nuevo; X-Report-Id y X-Report-Cut-Off lo identifican
+     */
+    200: Blob | File;
+};
+
+export type ControlReportResponse = ControlReportResponses[keyof ControlReportResponses];
+
+export type VisitProvidersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        search?: string;
+    };
+    url: '/api/v1/incidents/providers';
+};
+
+export type VisitProvidersResponses = {
+    /**
+     * OK
+     */
+    200: Array<string>;
+};
+
+export type VisitProvidersResponse = VisitProvidersResponses[keyof VisitProvidersResponses];
+
+export type SearchAssetsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        search?: string;
+        limit?: number;
+    };
+    url: '/api/v1/incidents/assets';
+};
+
+export type SearchAssetsResponses = {
+    /**
+     * OK
+     */
+    200: Array<IncidentAssetResponse>;
+};
+
+export type SearchAssetsResponse = SearchAssetsResponses[keyof SearchAssetsResponses];
+
 export type Resolve1Data = {
     body?: never;
     path?: never;
@@ -3924,7 +4964,7 @@ export type EquipmentImportTemplateResponses = {
 
 export type EquipmentImportTemplateResponse = EquipmentImportTemplateResponses[keyof EquipmentImportTemplateResponses];
 
-export type Summary3Data = {
+export type Summary4Data = {
     body?: never;
     path?: never;
     query: {
@@ -3938,14 +4978,14 @@ export type Summary3Data = {
     url: '/api/v1/energy/summary';
 };
 
-export type Summary3Responses = {
+export type Summary4Responses = {
     /**
      * OK
      */
     200: ConsumptionSummaryResponse;
 };
 
-export type Summary3Response = Summary3Responses[keyof Summary3Responses];
+export type Summary4Response = Summary4Responses[keyof Summary4Responses];
 
 export type Search2Data = {
     body?: never;
@@ -4074,6 +5114,27 @@ export type MeResponses = {
 };
 
 export type MeResponse = MeResponses[keyof MeResponses];
+
+export type RemoveRelationData = {
+    body?: never;
+    path: {
+        id: string;
+        relatedId: string;
+    };
+    query: {
+        version: number;
+    };
+    url: '/api/v1/incidents/tickets/{id}/relations/{relatedId}';
+};
+
+export type RemoveRelationResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetailResponse;
+};
+
+export type RemoveRelationResponse = RemoveRelationResponses[keyof RemoveRelationResponses];
 
 export type RemoveData = {
     body?: never;

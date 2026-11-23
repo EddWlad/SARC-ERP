@@ -56,6 +56,7 @@ Solo cuando no hay otra salida (ver la regla de oro de `recuperar.md`). **Sustit
    - historiales de importación de consumo, inventario, uptime e intermitencias (`itm_import_batch`, `itm_import_row`) y reportes emitidos con fecha posterior a `createdAt` de la copia;
    - la ubicación de sus originales en Cloudinary (`original_ref`, `file_ref`) o en la última exportación del computador local.
    - las tablas de intermitencias (`itm_window`, `itm_window_revision`, `itm_reviewed_day`, `itm_reviewed_day_event`) con el mismo conteo que los metadatos de la copia; los originales importados viven en la carpeta `imports/intermittency` de Cloudinary y entran en el respaldo y en la exportación mensual como el resto de importaciones.
+   - las tablas de incidencias (`inc_ticket`, `inc_episode`, `inc_milestone`, `inc_milestone_revision`, `inc_event`, `inc_communication`, `inc_visit` e `inc_evidence`, entre otras `inc_*`) con el mismo conteo que los metadatos de la copia; las evidencias viven en la carpeta `incidents/evidence` de Cloudinary (referencia `storage_ref` de `inc_evidence`) y entran en el respaldo y en la exportación mensual. Los tickets y su historial solo se anexan: no se vuelven a cargar a mano, se restauran con la copia.
    Esos datos se vuelven a cargar con las funciones normales de SARC.
 5. Iniciar el servicio y ejecutar las **comprobaciones posteriores** completas (`sarc-post-checks`): deben dar `COMPLETADA`.
 6. **Retirar el mantenimiento**: `sudo rm /var/lib/sarc/maintenance.flag`.

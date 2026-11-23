@@ -99,4 +99,32 @@ class ReportPublicationTest {
         }
     }
 
+
+    @Test void allHistoryHasNoRangeAndAcceptsTheIncidentFilters() {
+        var criteria = Map.of("selectionBasis", "ALL_HISTORY", "timeZone", ReportPublication.TIME_ZONE,
+            "ticketState", "OPEN", "network", "KIA", "elementClass", "CHATBOT_SERVICE",
+            "incidentType", "WAIT_FOR_CONNECTION", "priority", "HIGH");
+        assertThat(new ReportPublication(ReportContentProfile.OFFICIAL_ONLY, CUT_OFF, criteria).criteria())
+            .doesNotContainKeys("from", "to").containsEntry("ticketState", "OPEN");
+    }
+
+    @Test void allHistoryRejectsARangeAndInvalidIncidentFilters() {
+        for (var change : java.util.List.of(Map.of("from", "2026-10-01"), Map.of("to", "2026-11-01"),
+            Map.of("referenceWeek", "2026-10-26"), Map.of("ticketState", "PENDING"), Map.of("priority", "alta"),
+            Map.of("incidentType", "X; DROP"))) {
+            var values = new HashMap<String, String>(Map.of("selectionBasis", "ALL_HISTORY", "timeZone",
+                ReportPublication.TIME_ZONE));
+            values.putAll(change);
+            assertThatThrownBy(() -> new ReportPublication(ReportContentProfile.OFFICIAL_ONLY, CUT_OFF, values))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Test void aPeriodReportStillNeedsItsRangeEvenWithIncidentFilters() {
+        assertThat(publication(Map.of("ticketState", "CLOSED", "selectionBasis", "ACTUAL_RANGE")).criteria())
+            .containsEntry("ticketState", "CLOSED");
+        assertThatThrownBy(() -> new ReportPublication(ReportContentProfile.OFFICIAL_ONLY, CUT_OFF,
+            Map.of("ticketState", "OPEN", "timeZone", ReportPublication.TIME_ZONE)))
+            .isInstanceOf(RuntimeException.class);
+    }
 }

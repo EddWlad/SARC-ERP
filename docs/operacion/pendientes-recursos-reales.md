@@ -63,3 +63,10 @@ La versión `2026.11.13-35-9937edb` se publicó el 2026-11-13 con la aprobación
 - **Restauración con datos de intermitencias y sus originales**: hecha el 2026-11-13 con datos sintéticos. La base se restauró con los mismos conteos y un original sintético de `imports/intermittency/` en una carpeta propia de Cloudinary salió en la exportación con su SHA-256 y en la comprobación de referencias. Falta, en la tarea T083 de la Feature 007, crear la clave de API dedicada a la exportación y activar el Backup de Cloudinary para `sarc-prod`.
 - **Publicación**: solo con la autorización del responsable, el respaldo previo con recibo de menos de 24 h y `ci.yml`, `version-candidata.yml` y `publicar.yml` con la aprobación de `production`.
 
+## Feature 010 (incidencias, tickets y tiempos): antes de publicar (2026-11-23)
+
+- **Ensayo de V021 sobre una copia de producción (T009)**: hecho el 2026-11-23 con la copia nocturna del mismo día en un PostgreSQL 18 desechable. V021 se aplicó en 251 ms, con 13 tablas `inc_*` nuevas y las 35 existentes intactas.
+- **Restauración con datos de incidencias y un original en Cloudinary (T115)**: hecha el 2026-11-23 con datos sintéticos (5 tickets, 25 hitos, 10 revisiones, 20 eventos, 3 evidencias) y 3 originales en `sarc-qa010-t115/`, carpeta propia, vacía antes y después. La copia se cifró con una llave desechable. Exportación con SHA-256 igual y ensayo de restauración **APROBADO 7/7 en 0,2 min**. No se tocó `sarc-prod` ni se creó ninguna clave.
+- **Protocolo (P-02)**: el protocolo vigente es la versión 2.0; la migración V022 cambia solo un rótulo.
+- **Número inicial (P-01)**: no lo fija el desarrollo; el Administrador lo configura en producción cuando corresponda (`quickstart.md` de la Feature 010, «Puesta en marcha»).
+- **Seguimiento aceptado**: medición con una persona de SC-001 (crear un ticket de equipo en menos de 1 minuto con tres datos) y SC-007 (obtener y copiar el mensaje para WhatsApp en no más de dos acciones). Quién: responsable del producto. Cuándo: con el primer uso real. No bloquea publicar ni cerrar la feature.

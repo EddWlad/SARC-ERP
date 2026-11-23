@@ -85,6 +85,14 @@ sarc:
     # por X-Forwarded-For (server.forward-headers-strategy en prod).
     max-failed-logins-per-client: 20
     client-throttle-window: 15m
+  incidents:
+    numbering:
+      # Opcional: ambiente al que pertenece la numeracion de tickets (PRODUCTION o TEST). Sin valor, la aplicacion
+      # arranca pero no se puede configurar la numeracion ni crear tickets (feature 010, research R2).
+      # TEST en application-dev.yaml y PRODUCTION en application-prod.yaml.
+      environment:
+    evidence:
+      max-bytes: 10485760
   # Admin inicial: solo se crea si no existe ningun usuario. Definir ambas variables.
   bootstrap-admin:
     email: ${SARC_BOOTSTRAP_ADMIN_EMAIL:}

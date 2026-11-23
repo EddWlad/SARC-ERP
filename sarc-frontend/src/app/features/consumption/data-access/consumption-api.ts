@@ -17,7 +17,7 @@ import {
   SessionChanges,
   SessionDetail,
 } from '../domain/consumption';
-import { DateRange } from '../domain/period';
+import { DateRange } from '../../../shared/ui/period/period';
 
 export interface SessionQuery {
   readonly range: DateRange;

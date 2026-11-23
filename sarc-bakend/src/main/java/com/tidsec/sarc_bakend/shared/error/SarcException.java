@@ -9,7 +9,7 @@ import java.util.Map;
  */
 public abstract sealed class SarcException extends RuntimeException
 		permits NotFoundException, ConflictException, BusinessRuleException, ServiceUnavailableException,
-		TooManyRequestsException {
+		TooManyRequestsException, PayloadTooLargeException {
 
 	private final String code;
 	private final Map<String, Object> properties;

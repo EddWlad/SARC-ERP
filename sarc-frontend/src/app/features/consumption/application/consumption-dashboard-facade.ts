@@ -12,7 +12,7 @@ import {
   ConsumptionSummary,
   NO_CONSUMPTION_FILTERS,
 } from '../domain/consumption';
-import { PeriodSelection } from './period-selection';
+import { PeriodSelection } from '../../../shared/ui/period/period-selection';
 import { retainedQuery } from '../../../core/http/retained-value';
 
 /**

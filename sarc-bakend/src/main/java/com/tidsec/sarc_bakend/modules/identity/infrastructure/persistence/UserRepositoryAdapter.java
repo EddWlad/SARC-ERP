@@ -2,6 +2,7 @@ package com.tidsec.sarc_bakend.modules.identity.infrastructure.persistence;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -43,6 +44,11 @@ class UserRepositoryAdapter implements UserRepository {
 	@Override
 	public Optional<UserAccount> findById(UUID id) {
 		return jpa.findById(id);
+	}
+
+	@Override
+	public List<UserAccount> findAllById(Collection<UUID> ids) {
+		return ids.isEmpty() ? List.of() : jpa.findAllById(ids);
 	}
 
 	@Override

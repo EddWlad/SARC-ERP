@@ -19,7 +19,7 @@ import {
   EnergyReviewStatus,
   EnergyDecision,
 } from '../domain/consumption';
-import { PeriodSelection } from './period-selection';
+import { PeriodSelection } from '../../../shared/ui/period/period-selection';
 import { retainedQuery, retainedValue } from '../../../core/http/retained-value';
 
 const SEARCH_DEBOUNCE_MS = 300;
